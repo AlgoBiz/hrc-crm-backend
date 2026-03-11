@@ -1,0 +1,114 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.page-title{font-size:32px;font-weight:600;margin-bottom:8px;color:#111}
+.page-sub{color:#666;font-size:15px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.card-head h2,.card-head h3{font-size:18px;font-weight:600;color:#111}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search{position:relative;min-width:280px;flex:1;max-width:400px}
+.search input{width:100%;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:10px 12px 10px 40px;outline:none;font-size:14px}
+.search input:focus{border-color:#d4a017;background:#fff}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.5}
+.btn-add{display:inline-flex;align-items:center;gap:8px;background:#d4a017;color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn-add svg{width:16px;height:16px}
+.table-wrap{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;font-size:13px;font-weight:600;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;color:#374151;white-space:nowrap}
+tbody td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#111}
+tbody tr:last-child td{border-bottom:none}
+.sl{width:80px}
+.actions{display:flex;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.delete svg{stroke:#ef4444}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Resorts</h1>
+    <p class="page-sub">Manage resort partnerships</p>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>Resort List</h3>
+
+        <div class="tools">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+            </svg>
+            <input type="text" placeholder="Search resorts..." />
+          </div>
+
+          <a href="{% url 'sales:add_resort' %}" class="btn-add">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            Add Resort
+          </a>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sl">Sl No</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Place</th>
+              <th>Mobile</th>
+              <th style="min-width:160px;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for resort in resorts %}
+            <tr>
+              <td class="sl">{{ forloop.counter }}</td>
+              <td>{{ resort.resort_name }}</td>
+              <td>{{ resort.email }}</td>
+              <td>{{ resort.location }}</td>
+              <td>{{ resort.contact_number }}</td>
+              <td>
+                <div class="actions">
+                  <a href="{% url 'sales:view_resort' resort.id %}" class="icon-btn" title="View">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#111" stroke-width="2"/>
+                      <circle cx="12" cy="12" r="3" stroke="#111" stroke-width="2"/>
+                    </svg>
+                  </a>
+                  <a href="{% url 'sales:edit_resort' resort.id %}" class="icon-btn" title="Edit">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </a>
+                  <a href="{% url 'sales:delete_resort' resort.id %}" class="icon-btn delete" title="Delete" onclick="return confirm('Are you sure you want to delete this resort?')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 6h18" stroke="#e11d48" stroke-width="2" stroke-linecap="round"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <line x1="10" y1="11" x2="10" y2="17" stroke="#e11d48" stroke-width="2" stroke-linecap="round"/>
+                      <line x1="14" y1="11" x2="14" y2="17" stroke="#e11d48" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 40px;">
+                No resorts found. <a href="{% url 'sales:add_resort' %}" style="color: var(--accent); text-decoration: none;">Add your first resort</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+{% endblock %}

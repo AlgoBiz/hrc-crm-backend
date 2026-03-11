@@ -1,0 +1,248 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block title %}Add Destination | Whyte House{% endblock %}
+
+{% block content %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .back-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .header-text h2 {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .header-text p {
+        font-size: 14px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .form-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 30px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 8px;
+    }
+
+    .form-group label span {
+        color: #ef4444;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        border-color: #d4a017;
+        background: #fff;
+    }
+
+    .upload-box {
+        border: 2px dashed #e2e8f0;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: #fff;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .upload-box:hover {
+        border-color: #d4a017;
+        background: #fffdf9;
+    }
+
+    .upload-icon {
+        font-size: 32px;
+        color: #94a3b8;
+        margin-bottom: 10px;
+    }
+
+    .upload-text {
+        font-size: 14px;
+        color: #64748b;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: auto;
+    }
+
+    .form-footer {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .btn-submit {
+        flex: 1;
+        background: #d4a017;
+        color: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 15px;
+    }
+
+    .btn-cancel {
+        padding: 12px 25px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+        font-weight: 600;
+        text-decoration: none;
+        text-align: center;
+    }
+</style>
+
+<div class="form-container">
+    <div class="page-header">
+        <a href="{% url 'admin_panel:destinations' %}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div class="header-text">
+            <h2>Add New Destination</h2>
+            <p>Create a new destination for travel packages</p>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-card">
+            <div class="form-group">
+                <label>Destination Name <span>*</span></label>
+                <input type="text" name="name" class="form-control" placeholder="e.g., Goa, Paris, Tokyo" required>
+            </div>
+
+            <div class="form-group">
+                <label>Country <span>*</span></label>
+                <input type="text" name="country" class="form-control" placeholder="e.g., India, France, Japan" required>
+            </div>
+
+            <div class="form-group">
+                <label>Category <span>*</span></label>
+                <div style="padding: 12px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 14px; color: #475569; font-weight: 500;">
+                    {{ default_category }}
+                </div>
+                <input type="hidden" name="category" value="{{ default_category }}">
+            </div>
+
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" class="form-control" style="height: 100px;" placeholder="Brief description of the destination..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Packages Start From (₹)</label>
+                <input type="number" name="packages_start_from" class="form-control" placeholder="e.g., 15000" step="0.01">
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" name="is_popular" id="is_popular">
+                    <label for="is_popular">Mark as Popular Destination</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Destination Image</label>
+                <div class="upload-box" id="upload-box" onclick="document.getElementById('file-upload').click();">
+                    <div class="upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <div class="upload-text">Click to upload destination image</div>
+                    <img id="preview-img" src="" alt="Preview" style="display:none; max-width:100%; max-height:200px; margin-top:10px; border-radius:8px;" />
+                    <input type="file" id="file-upload" name="image" style="display:none;" accept="image/*">
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button type="submit" class="btn-submit">Create Destination</button>
+                <a href="{% url 'admin_panel:destinations' %}" class="btn-cancel">Cancel</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('file-upload');
+        const previewImg = document.getElementById('preview-img');
+        const uploadBox = document.getElementById('upload-box');
+
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    // hide upload icon/text when preview shown
+                    uploadBox.querySelector('.upload-icon').style.display = 'none';
+                    uploadBox.querySelector('.upload-text').style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                previewImg.src = '';
+                previewImg.style.display = 'none';
+                uploadBox.querySelector('.upload-icon').style.display = '';
+                uploadBox.querySelector('.upload-text').style.display = '';
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .back-btn { padding: 8px 16px; background: #f1f1f1; border-radius: 8px; text-decoration: none; color: #333; display: inline-block; margin-bottom: 20px; }
+    .package-header { background: #fff; padding: 30px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .package-title { font-size: 32px; font-weight: 700; margin-bottom: 10px; }
+    .package-meta { display: flex; gap: 20px; color: #666; font-size: 14px; margin-bottom: 15px; }
+    .package-price { font-size: 28px; color: #c89b2d; font-weight: 700; }
+    .package-image { width: 60%; height: 350px; object-fit: cover; border-radius: 14px; margin-bottom: 20px; }
+    .section { background: #fff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .section h3 { font-size: 20px; margin-bottom: 15px; color: #333; }
+    .section p, .section ul { color: #666; line-height: 1.8; }
+    .section ul { padding-left: 20px; }
+    .badge { padding: 6px 14px; border-radius: 20px; font-size: 13px; display: inline-block; }
+    .badge-active { background: #fdf6e7; color: #c89b2d; font-weight: bold; }
+    .badge-inactive { background: #f1f1f1; color: #999; }
+    .action-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .btn { padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block; }
+    .btn-edit { background: #c89b2d; color: white; }
+    .btn-delete { background: #ff4d4d; color: white; }
+</style>
+
+<a href="{% url 'admin_panel:travel_packages' %}?cat={{ package.category }}" class="back-btn">← Back to Packages</a>
+
+<div class="package-header">
+    <div class="package-title">{{ package.name }}</div>
+    <div class="package-meta">
+        <span><i class="fas fa-map-marker-alt"></i> {{ package.location }}</span>
+        <span><i class="fas fa-clock"></i> {{ package.duration }}</span>
+        <span><i class="fas fa-tag"></i> {{ package.category }}</span>
+        {% if package.destination %}
+        <span><i class="fas fa-globe"></i> {{ package.destination.name }}</span>
+        {% endif %}
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="package-price">₹ {{ package.price }}</div>
+        <span class="badge {% if package.active %}badge-active{% else %}badge-inactive{% endif %}">
+            {% if package.active %}Active{% else %}Inactive{% endif %}
+        </span>
+    </div>
+</div>
+
+{% if package.image %}
+<img src="{{ package.image.url }}" class="package-image" alt="{{ package.name }}">
+{% endif %}
+
+<div class="section">
+    <h3>Description</h3>
+    <p>{{ package.description|linebreaks }}</p>
+</div>
+
+{% if package.itinerary %}
+<div class="section">
+    <h3>Itinerary</h3>
+    <p>{{ package.itinerary|linebreaks }}</p>
+</div>
+{% endif %}
+
+{% if package.inclusions %}
+<div class="section">
+    <h3>Inclusions</h3>
+    <p>{{ package.inclusions|linebreaks }}</p>
+</div>
+{% endif %}
+
+{% if package.exclusions %}
+<div class="section">
+    <h3>Exclusions</h3>
+    <p>{{ package.exclusions|linebreaks }}</p>
+</div>
+{% endif %}
+
+<div class="action-btns">
+    <a href="{% url 'admin_panel:travel_package_edit' package.id %}" class="btn btn-edit">
+        <i class="far fa-edit"></i> Edit Package
+    </a>
+    <a href="{% url 'admin_panel:travel_package_delete' package.id %}" class="btn btn-delete" 
+       onclick="return confirm('Are you sure you want to delete this package?')">
+        <i class="far fa-trash-alt"></i> Delete Package
+    </a>
+</div>
+
+{% endblock %}

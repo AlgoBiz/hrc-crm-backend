@@ -1,0 +1,394 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{% block title %}Admin Dashboard{% endblock %}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+{% block extra_css %}{% endblock %}
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body{
+  background:#f2f2f2;
+  display:flex;
+}
+
+/* Hidden checkbox toggle */
+#toggle-sidebar{
+  display:none;
+}
+
+/* Sidebar */
+.sidebar{
+  width:280px;
+  height:100vh;
+  background: linear-gradient(180deg, #0f0f0f, #1a1a1a);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  left:0;
+  top:0;
+  transition:0.3s ease;
+  z-index:1000;
+}
+
+/* Collapsed State */
+#toggle-sidebar:checked ~ .sidebar{
+  width:70px;
+}
+
+/* Main Content */
+.main-content{
+  flex:1;
+  margin-left:280px;
+  transition:0.3s ease;
+  min-height:100vh;
+}
+
+#toggle-sidebar:checked ~ .main-content{
+  margin-left:70px;
+}
+
+/* Logo */
+.logo{
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.logo img{
+  height:40px;
+}
+
+/* Toggle Button */
+.toggle-btn{
+  font-size:20px;
+  cursor:pointer;
+  color:#fff;
+}
+
+/* Menu */
+.menu{
+  flex:1;
+  padding:20px 10px;
+  overflow-y:auto;
+}
+
+.menu a,
+.menu label{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  margin-bottom:10px;
+  color:#eee;
+  text-decoration:none;
+  border-radius:14px;
+  transition:0.3s;
+  font-size:16px;
+  cursor:pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu a:hover,
+.menu label:hover{
+  background:rgba(255,255,255,0.08);
+}
+
+.menu a.active{
+  background:#d4a847;
+  color:#000;
+  font-weight:600;
+}
+
+.menu svg{
+  flex-shrink:0;
+  width:22px;
+  height:22px;
+  stroke:currentColor;
+}
+
+/* Hide text when collapsed */
+#toggle-sidebar:checked ~ .sidebar .menu a,
+#toggle-sidebar:checked ~ .sidebar .menu label{
+  justify-content:center;
+}
+
+#toggle-sidebar:checked ~ .sidebar .menu a span,
+#toggle-sidebar:checked ~ .sidebar .menu label span,
+#toggle-sidebar:checked ~ .sidebar .bottom-user .info{
+  display:none;
+}
+
+/* Accordion */
+.accordion input{
+  display:none;
+}
+
+.submenu{
+  max-height:0;
+  overflow:hidden;
+  transition:0.4s ease;
+  margin-left:36px;
+}
+
+.submenu a{
+  font-size:14px;
+  padding:10px 16px;
+  margin-bottom:6px;
+  color:#bbb;
+}
+
+.submenu a:hover{
+  background:rgba(255,255,255,0.05);
+  color:#fff;
+}
+
+.submenu a.active{
+  background:#d4a847;
+  color:#000;
+  font-weight:600;
+}
+
+.accordion input:checked ~ .submenu{
+  max-height:400px;
+}
+
+.arrow{
+  margin-left:auto;
+  transition:0.3s;
+}
+
+.accordion input:checked + label .arrow{
+  transform:rotate(180deg);
+}
+
+/* Bottom User */
+.bottom-user{
+  padding:16px 18px;
+  border-top:1px solid rgba(255,255,255,0.08);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.bottom-user .info strong{
+  display:block;
+  font-size:15px;
+}
+
+.bottom-user .info span{
+  font-size:13px;
+  color:#aaa;
+}
+
+.logout{
+  text-decoration:none;
+  color:#fff;
+  font-size:20px;
+  padding:6px 10px;
+  border-radius:8px;
+}
+
+.logout:hover{
+  background:rgba(255,255,255,0.1);
+}
+
+/* Content Styles */
+.content-wrapper{
+  padding:30px;
+  background:#f5f7fb;
+  min-height:100vh;
+  position:relative;
+}
+
+.date-display{
+  position:absolute;
+  top:30px;
+  right:30px;
+  font-size:14px;
+  color:#666;
+  font-weight:500;
+}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{
+    width:70px;
+  }
+  .main-content{
+    margin-left:70px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Hidden Toggle Checkbox -->
+<input type="checkbox" id="toggle-sidebar">
+
+<div class="sidebar">
+
+  <div class="logo">
+    <img src="{% static 'images/logo.png' %}" alt="Whyte House">
+    <label for="toggle-sidebar" class="toggle-btn">☰</label>
+  </div>
+
+  <div class="menu">
+    
+
+    <a href="{% url 'admin_panel:dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Dashboard</span>
+    </a>
+
+    <!-- Sales Accordion -->
+    <div class="accordion">
+      <input type="checkbox" id="sales-toggle" {% if request.resolver_match.namespace == 'sales' and request.resolver_match.url_name != 'invoice_report' and request.resolver_match.url_name != 'voucher_report' and request.resolver_match.url_name != 'leads_report' and request.resolver_match.url_name != 'profit_report' and request.resolver_match.url_name != 'customer_report' %}checked{% endif %}>
+      <label for="sales-toggle" {% if request.resolver_match.namespace == 'sales' and request.resolver_match.url_name != 'invoice_report' and request.resolver_match.url_name != 'voucher_report' and request.resolver_match.url_name != 'leads_report' and request.resolver_match.url_name != 'profit_report' and request.resolver_match.url_name != 'customer_report' %}class="active"{% endif %}>
+        <svg fill="none" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <span>Sales</span>
+        <span class="arrow">⌄</span>
+      </label>
+
+      <div class="submenu">
+        <a href="{% url 'sales:customer_list' %}" {% if request.resolver_match.url_name == 'customer_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.418 0-8 2.239-8 5v3h16v-3c0-2.761-3.582-5-8-5z"/></svg>
+          <span>Customers</span>
+        </a>
+        <a href="{% url 'sales:resort_list' %}" {% if request.resolver_match.url_name == 'resort_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><path d="M3 21h18M4 21v-9h2v9M10 21v-5h4v5m-6-9l8-6 8 6v2H4v-2M18 21v-9h2v9"/></svg>
+          <span>Resorts</span>
+        </a>
+        <a href="{% url 'sales:account_list' %}" {% if request.resolver_match.url_name == 'account_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20M6 12h3M6 16h8"/></svg>
+          <span>Account Details</span>
+        </a>
+        <a href="{% url 'sales:meal_list' %}" {% if request.resolver_match.url_name == 'meal_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><path d="M7 2h10c1.1 0 2 .9 2 2v4c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2z"/><path d="M5 10h14v8H5zM8 22h8v-2H8zM3 18h18v2H3z"/></svg>
+          <span>Meals Plan</span>
+        </a>
+        <a href="{% url 'sales:invoice_list' %}" {% if request.resolver_match.url_name == 'invoice_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z"/><path d="M4 8h16M4 12h10M4 16h8"/></svg>
+          <span>Invoice</span>
+        </a>
+        <a href="{% url 'sales:voucher_list' %}" {% if request.resolver_match.url_name == 'voucher_list' %}class="active"{% endif %}>
+          <svg fill="none" viewBox="0 0 24 24"><path d="M3 5h18v3l-2 6v7H5v-7l-2-6V5z"/><circle cx="8" cy="13" r="2"/><circle cx="16" cy="13" r="2"/></svg>
+          <span>Vouchers</span>
+        </a>
+      </div>
+    </div>
+
+    <a href="{% url 'admin_panel:leads' %}" {% if request.resolver_match.url_name == 'leads' or request.resolver_match.url_name == 'add_lead' or request.resolver_match.url_name == 'edit_lead' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0113 0"/></svg>
+      <span>Leads</span>
+    </a>
+
+    <a href="{% url 'employee:employee_list' %}" {% if request.resolver_match.namespace == 'employee' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><circle cx="17" cy="7" r="3"/><path d="M2 21a7 7 0 0114 0"/><path d="M14 21a5 5 0 015-5"/></svg>
+      <span>Employee Management</span>
+    </a>
+
+    <a href="{% url 'sales:invoice_report' %}" {% if request.resolver_match.url_name == 'invoice_report' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M8 17V7"/><path d="M12 17V3"/><path d="M16 17v-5"/></svg>
+      <span>Report Generation</span>
+    </a>
+
+    <a href="{% url 'admin_panel:admin_hospitality' %}" {% if request.resolver_match.url_name == 'admin_hospitality' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 17h18"/></svg>
+      <span>Hospitality Management</span>
+    </a>
+
+    <a href="{% url 'admin_panel:travel_packages' %}" {% if request.resolver_match.url_name == 'travel_packages' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      <span>Travel Packages</span>
+    </a>
+
+    <a href="{% url 'admin_panel:destinations' %}" {% if request.resolver_match.url_name == 'destinations' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      <span>Destinations</span>
+    </a>
+
+    <a href="{% url 'blog:blog_list' %}" {% if request.resolver_match.namespace == 'blog' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8"/><path d="M8 12h8"/><path d="M8 16h6"/></svg>
+      <span>Blog Management</span>
+    </a>
+    <a href="{% url 'feedback:feedback_list' %}" {% if request.resolver_match.namespace == 'feedback' %}class="active"{% endif %}>
+      <svg fill="none" viewBox="0 0 24 24"><path d="M12 15l-5-5h10l-5 5z"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+      <span>Feedback Management</span>
+    </a>
+
+
+  </div>
+
+  <div class="bottom-user">
+    <div class="info">
+      <strong>Admin User</strong>
+      <span>admin@whytehouse.com</span>
+    </div>
+    <a href="{% url 'admin_panel:logout' %}" class="logout" title="Logout">
+      <svg fill="none" viewBox="0 0 24 24" style="width:22px; height:22px; stroke:currentColor; stroke-width:2;">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </a>
+  </div>
+
+</div>
+
+<div class="main-content">
+  <div class="content-wrapper">
+    {% if messages %}
+      <div class="alert-container" style="margin-bottom:20px;">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}" {% if message.tags == 'success' %}style="padding:12px 18px; border-radius:8px; margin-bottom:6px; background:#d1e7dd; color:#0f5132;"{% else %}style="padding:12px 18px; border-radius:8px; margin-bottom:6px; background:#f8d7da; color:#842029;"{% endif %}>
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="date-display" id="current-date"></div>
+    {% block content %}
+    <!-- Default content will go here -->
+    {% endblock %}
+  </div>
+</div>
+
+<script>
+  // Display current date
+  const dateDisplay = document.getElementById('current-date');
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const today = new Date();
+  dateDisplay.textContent = today.toLocaleDateString('en-US', options);
+
+  setTimeout(function() {
+    const alerts = document.querySelectorAll('.alert-success, .alert, [class*="alert-"]');
+    alerts.forEach(alert => {
+      alert.style.transition = 'opacity 0.5s ease';
+      alert.style.opacity = '0';
+      setTimeout(() => alert.remove(), 500);
+    });
+  }, 3000);
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

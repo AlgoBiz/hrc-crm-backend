@@ -1,0 +1,388 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --border:#e9eaef;
+    --text:#111318;
+    --muted:#6b7280;
+    --input:#f3f4f6;
+    --shadow:0 14px 28px rgba(17,19,24,.06);
+    --radius:20px;
+    --accent:#d4a42f;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:"Poppins",sans-serif}
+
+  /* Page header */
+  .page-title{
+    font-size:44px;
+    line-height:1.05;
+    font-weight:650;
+    margin:0 0 8px;
+    letter-spacing:-.3px;
+    color:#0b0d12;
+  }
+  .page-sub{
+    margin:0 0 24px;
+    font-size:18px;
+    color:#7a7f8c;
+    font-weight:500;
+  }
+
+  /* Messages */
+  .msg-wrap{max-width:1200px;margin-bottom:18px}
+  .alert{
+    padding:14px 18px;border-radius:16px;margin-bottom:10px;font-weight:550;
+  }
+
+  /* Card */
+  .card{
+    max-width:1200px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:22px 22px 16px;
+  }
+
+  .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding:8px 6px 16px;
+  }
+
+  .card-head h3{
+    font-size:22px;
+    font-weight:650;
+    margin:0;
+    color:#111318;
+  }
+
+  .tools{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex:1;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+
+  /* Search */
+  .search{
+    position:relative;
+    min-width:320px;
+    max-width:520px;
+    flex:1;
+  }
+  .search input{
+    width:100%;
+    border:1px solid transparent;
+    background:#f3f4f6;
+    border-radius:14px;
+    padding:14px 16px 14px 48px;
+    font-size:15px;
+    outline:none;
+    transition:.2s ease;
+  }
+  .search input:focus{
+    background:#fff;
+    border-color:#d9dbe4;
+    box-shadow:0 0 0 4px rgba(212,164,47,.12);
+  }
+  .search svg{
+    position:absolute;
+    left:16px;
+    top:50%;
+    transform:translateY(-50%);
+    width:20px;height:20px;
+    opacity:.6;
+  }
+
+  /* Add button */
+  .btn-add{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 18px;
+    border-radius:14px;
+    background:var(--accent);
+    border:1px solid rgba(0,0,0,.06);
+    color:#111;
+    font-weight:650;
+    cursor:pointer;
+    text-decoration:none;
+    box-shadow:0 12px 18px rgba(212,164,47,.22);
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .btn-add svg{width:18px;height:18px}
+
+  /* Table wrapper + scroll like screenshot */
+  .table-wrap{
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .scroll{
+    overflow-x:auto;
+    overflow-y:hidden;
+  }
+
+  /* Nice scrollbar */
+  .scroll::-webkit-scrollbar{height:12px}
+  .scroll::-webkit-scrollbar-track{background:#eceef3;border-radius:999px}
+  .scroll::-webkit-scrollbar-thumb{background:#8f8f8f;border-radius:999px}
+  .scroll::-webkit-scrollbar-thumb:hover{background:#6f6f6f}
+
+  table{width:100%;border-collapse:separate;border-spacing:0}
+  thead th{
+    text-align:left;
+    font-size:20px;
+    font-weight:700;
+    padding:22px 18px;
+    color:#0f172a;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+
+  tbody td{
+    padding:28px 18px;
+    font-size:18px;
+    border-bottom:1px solid #eef0f4;
+    vertical-align:middle;
+    color:#111318;
+  }
+  tbody tr:last-child td{border-bottom:none}
+
+  .muted{color:#7a7f8c;font-weight:520}
+  .bold{font-weight:700}
+  .wrap{min-width:220px}
+
+  .inv-no{font-weight:750;letter-spacing:.2px}
+  .badge-pending{
+    display:inline-block;
+    margin-top:10px;
+    padding:8px 12px;
+    border-radius:999px;
+    background:#e11d48;
+    color:#fff;
+    font-weight:700;
+    font-size:14px;
+  }
+
+  .price{
+    font-weight:800;
+    font-size:22px;
+  }
+  .profit{
+    margin-top:10px;
+    font-weight:750;
+    color:#16a34a;
+    font-size:18px;
+    line-height:1.2;
+  }
+
+  /* Actions */
+  .actions{display:flex;gap:12px;align-items:center}
+  .icon-btn{
+    width:44px;height:44px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:#fff;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    text-decoration:none;
+    transition:.15s ease;
+  }
+  .icon-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 18px rgba(17,19,24,.08);
+  }
+  .icon-btn svg{width:20px;height:20px;stroke:#111;fill:none}
+  .icon-btn.whatsapp svg{stroke:#16a34a}
+  .icon-btn.mail svg{stroke:#111}
+  .icon-btn.view svg{stroke:#111}
+  .icon-btn.edit svg{stroke:#111}
+  .icon-btn.delete svg{stroke:#e11d48}
+
+  /* Help bubble bottom-right like screenshot */
+  .help-fab{
+    position:fixed;
+    right:22px;
+    bottom:22px;
+    width:46px;height:46px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:#fff;
+    display:grid;
+    place-items:center;
+    box-shadow:0 14px 26px rgba(0,0,0,.10);
+    cursor:pointer;
+    z-index:50;
+  }
+  .help-fab span{
+    font-weight:800;
+    color:#2a2d36;
+    font-size:18px;
+  }
+
+  @media (max-width: 900px){
+    .page-title{font-size:36px}
+    .search{min-width:240px}
+    thead th{font-size:18px}
+    tbody td{font-size:16px;padding:22px 16px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="page-title">Invoice Management</h1>
+<p class="page-sub">Manage invoices and bookings</p>
+
+<section class="card">
+  <div class="card-head">
+    <h3>Invoice List</h3>
+
+    <div class="tools">
+      <!-- Search UI like screenshot -->
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+        </svg>
+
+        <!-- If you want real search, make it GET and filter in view -->
+        <input type="text" placeholder="Search invoices..." name="q" value="{{ request.GET.q|default:'' }}">
+      </div>
+
+      <a href="{% url 'sales:add_invoice' %}" class="btn-add">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+        Add Invoice
+      </a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px;">Sl<br>No</th>
+            <th style="min-width:140px;">Date</th>
+            <th style="min-width:240px;">Invoice</th>
+            <th style="min-width:260px;">Customer</th>
+            <th style="min-width:200px;">Price<br>Quoted</th>
+            <th style="min-width:180px;">Mobile</th>
+            <th style="min-width:160px;">Account</th>
+            <th style="min-width:170px;">Check-<br>in</th>
+            <th style="min-width:200px;">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for inv in invoices %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td>{{ inv.invoice_date|date:"d/m/Y" }}</td>
+
+            <td>
+              <div class="inv-no">{{ inv.invoice_no }}</div>
+              {% if inv.pending > 0 %}
+                <span class="badge-pending">Pending: ₹{{ inv.pending }}</span>
+              {% endif %}
+            </td>
+
+            <td class="wrap">
+              <div class="bold">{{ inv.customer.display_name|default:"N/A" }}</div>
+              <div class="muted">{{ inv.resort.resort_name|default:"N/A" }}</div>
+            </td>
+
+            <td>
+              <div class="price">₹{{ inv.total }}</div>
+              <div class="profit">Profit:<br>₹{{ inv.profit }}</div>
+            </td>
+
+            <td>{{ inv.customer.contact_number|default:"N/A" }}</td>
+            <td>{{ inv.bank_account.account_name|default:"N/A" }}</td>
+
+            <td>
+              <div>{{ inv.checkin_date|date:"d/m/Y"|default:"N/A" }}</div>
+              <div class="muted">{{ inv.checkin_time|default:"" }}</div>
+            </td>
+
+            <td>
+              <div class="actions">
+                <a href="https://wa.me/{{ inv.customer.contact_number|default:'' }}" class="icon-btn whatsapp" title="WhatsApp" target="_blank">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M20 11.5C20 16.194 16.194 20 11.5 20C10.09 20 8.76 19.66 7.59 19.06L4 20L4.96 16.56C4.35 15.37 4 14.01 4 12.58C4 7.886 7.806 4.08 12.5 4.08C17.194 4.08 21 7.806 21 12.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.2 9.8C9.5 10.9 10.6 12.2 11.6 12.9C12.7 13.7 13.6 14 14.4 14.1C15 14.1 15.6 13.8 16 13.4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <a href="mailto:{{ inv.customer.email|default:'' }}" class="icon-btn mail" title="Mail" target="_blank">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 6H20C21.105 6 22 6.895 22 8V16C22 17.105 21.105 18 20 18H4C2.895 18 2 17.105 2 16V8C2 6.895 2.895 6 4 6Z" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M22 8L12 13L2 8" stroke-width="2" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <a href="{% url 'sales:view_invoice' inv.id %}" class="icon-btn view" title="View">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M1 12C1 12 5 5 12 5C19 5 23 12 23 12C23 12 19 19 12 19C5 19 1 12 1 12Z" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="3" stroke-width="2"/>
+                  </svg>
+                </a>
+
+                <a href="{% url 'sales:edit_invoice' inv.id %}" class="icon-btn edit" title="Edit">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <a href="{% url 'sales:delete_invoice' inv.id %}" class="icon-btn delete" title="Delete"
+                   onclick="return confirm('Are you sure you want to delete this invoice?')">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M3 6h18" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="10" y1="11" x2="10" y2="17" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="14" y1="11" x2="14" y2="17" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="9" style="text-align:center;padding:44px;color:#6b7280;">
+              No invoices found.
+              <a href="{% url 'sales:add_invoice' %}" style="color:var(--accent);text-decoration:none;font-weight:700;">Create your first invoice</a>.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+</section>
+
+<button class="help-fab" type="button" aria-label="Help">
+  <span>?</span>
+</button>
+{% endblock %}

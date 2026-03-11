@@ -1,0 +1,272 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+{% csrf_token %}
+<style>
+    .msg{max-width:100%;margin:0 0 16px 0}
+    .msg .alert{border-radius:12px;padding:12px 14px;border:1px solid #e5e7eb;background:#fff;margin-bottom:10px}
+    .msg .alert.error{background:#fff1f2;border-color:#fecaca;color:#b91c1c}
+    .msg .alert.success{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
+    
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .page-header h1 { font-size: 26px; font-weight: 600; }
+    .page-header p { color: #777; margin-top: 5px; }
+
+    /* Category Pills */
+    .category-tabs { margin-top: 20px; display: flex; gap: 15px; margin-bottom: 25px; }
+    .tab { 
+        padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 14px; 
+        text-decoration: none; transition: 0.3s; font-weight: 500;
+    }
+
+    /* Destination Filter Pills */
+    .destination-filters { 
+        display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; align-items: center;
+    }
+    .destination-pill { 
+        padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; 
+        text-decoration: none; transition: 0.3s; font-weight: 500; border: 2px solid #e0e0e0;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .destination-pill:hover { border-color: #c89b2d; }
+    .destination-pill.active { background: #c89b2d; color: white; border-color: #c89b2d; }
+    .destination-pill .count { 
+        background: rgba(255,255,255,0.3); padding: 2px 8px; border-radius: 10px; font-size: 11px;
+    }
+    .destination-pill.active .count { background: rgba(255,255,255,0.4); }
+
+    /* Package Grid */
+    .package-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
+    .package-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s; }
+    .package-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+    .package-card img { width: 100%; height: 180px; object-fit: cover; background: #f9f9f9; }
+    .package-content { padding: 18px; }
+    .package-title { font-weight: 600; font-size: 18px; margin-bottom: 5px; }
+    .package-location { font-size: 14px; color: #777; margin-bottom: 10px; }
+    .package-price { font-weight: 700; color: #c89b2d; font-size: 18px; }
+
+    /* Custom Toggle Switch */
+    .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { 
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; 
+        background-color: #ccc; transition: .4s; border-radius: 20px; 
+    }
+    .slider:before { 
+        position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; 
+        background-color: white; transition: .4s; border-radius: 50%; 
+    }
+    input:checked + .slider { background-color: #c89b2d; }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    /* Dynamic Badges */
+    .status-badge { padding: 4px 12px; border-radius: 8px; font-size: 12px; display: inline-block; }
+    .badge-active { background: #fdf6e7; color: #c89b2d; font-weight: bold; }
+    .badge-inactive { background: #f1f1f1; color: #999; font-weight: normal; }
+
+    /* Action Buttons */
+    .card-actions { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f1f1; }
+    .btn-edit { 
+        flex: 1; text-align: center; padding: 8px; border: 1px solid #eee; 
+        border-radius: 8px; text-decoration: none; color: #333; font-size: 14px; 
+    }
+    .btn-delete { padding: 8px 12px; border: 1px solid #fee; border-radius: 8px; color: #ff4d4d; text-decoration: none; }
+    
+    .add-package-btn {
+        background: #c89b2d; color: white; padding: 10px 20px; border-radius: 8px; 
+        text-decoration: none; font-weight: 600; display: inline-block; font-size: 14px;
+    }
+    .add-package-btn:hover { background: #b08525; }
+
+    .search-box {
+        margin-bottom: 20px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 12px 18px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .search-box input:focus {
+        border-color: #c89b2d;
+        background: #fff;
+    }
+</style>
+
+
+
+<div class="page-header">
+    <div>
+        <h1>Travel Packages Management</h1>
+        <p>Manage your domestic and international travel packages</p>
+    </div>
+</div>
+
+<!-- Search Box -->
+<div class="search-box">
+    <form method="GET" action="{% url 'admin_panel:travel_packages' %}" id="searchForm">
+        <input type="text" name="search" placeholder="Search packages..." value="{{ search_query }}" id="searchInput">
+        <input type="hidden" name="cat" value="{{ selected_category }}">
+        {% if selected_destination %}<input type="hidden" name="dest" value="{{ selected_destination }}">{% endif %}
+    </form>
+</div>
+
+<div class="category-tabs">
+    <a href="?cat=Domestic" class="tab" 
+       style="background: {% if selected_category == 'Domestic' %}#c89b2d{% else %}#f1f1f1{% endif %}; 
+              color: {% if selected_category == 'Domestic' %}white{% else %}#555{% endif %};">
+        Domestic ({{ domestic_count }})
+    </a>
+    <a href="?cat=International" class="tab" 
+       style="background: {% if selected_category == 'International' %}#c89b2d{% else %}#f1f1f1{% endif %}; 
+              color: {% if selected_category == 'International' %}white{% else %}#555{% endif %};">
+        International ({{ international_count }})
+    </a>
+</div>
+
+<!-- Destination Filters -->
+{% if destinations %}
+<div class="destination-filters">
+    <a href="?cat={{ selected_category }}" 
+       class="destination-pill {% if not selected_destination %}active{% endif %}">
+        All Packages
+        <span class="count">{{ packages|length }}</span>
+    </a>
+    
+    {% for dest in destinations %}
+    <a href="?cat={{ selected_category }}&dest={{ dest.id }}" 
+       class="destination-pill {% if selected_destination == dest.id %}active{% endif %}">
+        {{ dest.name }}
+        <span class="count">{{ destination_counts|default_if_none:0|get_item:dest.id|default:0 }}</span>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Add Package Button -->
+{% if selected_destination %}
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'admin_panel:travel_package_add' %}?category={{ selected_category }}&destination={{ selected_destination }}" 
+       class="add-package-btn">
+        + Add Package to {{ selected_destination_obj.name }}
+    </a>
+</div>
+{% endif %}
+
+<div class="package-grid">
+    {% for package in packages %}
+    <div class="package-card" onclick="window.location.href='{% url 'admin_panel:travel_package_view' package.id %}'">
+        <img src="{% if package.image %}{{ package.image.url }}{% else %}{% static 'images/placeholder.png' %}{% endif %}">
+        
+        <div class="package-content">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div class="package-title">{{ package.name }}</div>
+                <form method="POST" action="{% url 'admin_panel:toggle_package_status' package.id %}" style="margin: 0;" onsubmit="return toggleStatus(event, '{{ package.id }}')">
+                    {% csrf_token %}
+                    <label class="switch" onclick="event.stopPropagation();">
+                        <input type="checkbox" id="toggle-{{ package.id }}" {% if package.active %}checked{% endif %} 
+                               onchange="this.form.submit()">
+                        <span class="slider"></span>
+                    </label>
+                </form>
+            </div>
+
+            <div class="package-location">
+                <i class="fas fa-map-marker-alt"></i> {{ package.location }}
+                {% if package.destination %}
+                <span style="background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;">
+                    {{ package.destination.name }}
+                </span>
+                {% endif %}
+            </div>
+
+            <p style="color: #666; font-size: 13px;">{{ package.description|truncatewords:12 }}</p>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div class="package-price">₹ {{ package.price }}</div>
+                
+                <div id="badge-{{ package.id }}" class="status-badge {% if package.active %}badge-active{% else %}badge-inactive{% endif %}">
+                    {% if package.active %}Active{% else %}Inactive{% endif %}
+                </div>
+            </div>
+
+            <div style="font-size: 12px; color: #999; margin-top: 8px;">{{ package.duration }}</div>
+
+            <div class="card-actions" onclick="event.stopPropagation();">
+                <a href="{% url 'admin_panel:travel_package_edit' package.id %}" class="btn-edit">
+                    <i class="far fa-edit"></i> Edit
+                </a>
+                
+                <a href="{% url 'admin_panel:travel_package_delete' package.id %}" 
+                   class="btn-delete" 
+                   onclick="return confirm('Are you sure you want to delete this package?')">
+                    <i class="far fa-trash-alt"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>No packages available{% if selected_destination_obj %} for {{ selected_destination_obj.name }}{% endif %}.</p>
+    {% endfor %}
+</div>
+
+<script>
+let searchTimeout;
+document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        document.getElementById('searchForm').submit();
+    }, 500);
+});
+
+function toggleStatus(event, packageId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const form = event.target;
+    const checkbox = document.getElementById('toggle-' + packageId);
+    const badge = document.getElementById('badge-' + packageId);
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update UI
+            if (data.active) {
+                badge.innerText = "Active";
+                badge.className = "status-badge badge-active";
+                checkbox.checked = true;
+            } else {
+                badge.innerText = "Inactive";
+                badge.className = "status-badge badge-inactive";
+                checkbox.checked = false;
+            }
+        } else {
+            checkbox.checked = !checkbox.checked;
+            alert('Failed: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        checkbox.checked = !checkbox.checked;
+        alert('Error: ' + error.message);
+    });
+    
+    return false;
+}
+</script>
+{% endblock %}

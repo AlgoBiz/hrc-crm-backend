@@ -1,0 +1,66 @@
+{% load static %}
+<footer class="main-footer">
+    <div class="footer-cta" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 80px;">
+        <div class="cta-text">
+            <h2 style="font-size: 32px; font-weight: 400; margin-bottom: 10px;">Book Your Tour Today</h2>
+            <p style="font-size: 14px; color: #999;">Join us for an unforgettable getaway and adventures</p>
+        </div>
+        <div class="subscribe-box" style="position: relative; display: flex; align-items: center; background: #1A1A1A; border-radius: 100px; padding: 5px 5px 5px 25px; width: 450px;">
+            <input type="email" placeholder="Enter your email" style="background: transparent; border: none; color: white; width: 100%; outline: none; font-size: 14px;">
+            <button class="subscribe-btn" style="background-color: #DB902B; color: black; border: none; padding: 12px 30px; border-radius: 100px; font-weight: 500; cursor: pointer;">Subscribe</button>
+        </div>
+    </div>
+
+    <div class="footer-content">
+        <div class="footer-brand">
+            <img src="{% static 'images/logo.png' %}" class="logo" alt="Whyte House" style="width: 120px; margin-bottom: 25px;">
+            <p style="font-size: 13px; line-height: 1.8; color: #888; margin-bottom: 25px;">Whether you're booking a holiday or managing a property, our promise remains the same.</p>
+            <div class="social-links" style="display: flex; gap: 15px;">
+                <a href="#" class="social-circle" title="Facebook"><img src="{% static 'images/facebook.png' %}" alt="Facebook" style="width: 40px; height: 40px;"></a>
+                <a href="#" class="social-circle" title="Instagram"><img src="{% static 'images/instagram.png' %}" alt="Instagram" style="width: 40px; height: 40px;"></a>
+                <a href="#" class="social-circle" title="YouTube"><img src="{% static 'images/youtube.png' %}" alt="YouTube" style="width: 40px; height: 40px;"></a>
+                <a href="#" class="social-circle" title="WhatsApp"><img src="{% static 'images/whatsapp.png' %}" alt="WhatsApp" style="width: 40px; height: 40px;"></a>
+            </div>
+        </div>
+
+        <div class="footer-col">
+            <h4>Location</h4>
+            <ul>
+                <li><a href="#">Kozhikode, Kerala</a></li>
+                <li><a href="#">Kakkanchery 673321</a></li>
+                <li><a href="#">Since 2015</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Contact</h4>
+            <ul>
+                <li><a href="#">+91 78 523 521 45</a></li>
+                <li><a href="#">hi@whytehouseholidays.com</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Company & Legals</h4>
+            <ul>
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Frequently ask question</a></li>
+                <li><a href="#">Terms of Service</a></li>
+                <li><a href="#">License</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <p class="copyright">© 2025 Whyte House Holidays. All Rights Reserved</p>
+</footer>
+
+<style>
+    .main-footer { background: #000; color: white; padding: 80px 100px 40px; }
+    .footer-content { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; border-top: 1px solid #333; padding-top: 50px; }
+    .footer-col h4 { font-size: 16px; font-weight: 500; margin-bottom: 25px; color: #FFFFFF; }
+    .footer-col ul { list-style: none; padding: 0; }
+    .footer-col ul li { margin-bottom: 15px; }
+    .footer-col ul li a { text-decoration: none; color: #888; font-size: 14px; transition: 0.3s; }
+    .footer-col ul li a:hover { color: #DB902B; }
+    .copyright { text-align: center; padding-top: 80px; font-size: 12px; color: #555; }
+</style>

@@ -1,0 +1,169 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP | Whyte House</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #fcfbf7;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .logo {
+            width: 50px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .otp-inputs input {
+            width: 100%;
+            padding: 14px;
+            text-align: center;
+            font-size: 18px;
+            border: 1px solid #f0f0f0;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .otp-inputs input:focus {
+            border-color: #DB902B;
+        }
+
+        .sign-in-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #fa9108;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .sign-in-btn:hover {
+            background-color: #c57e24;
+        }
+
+        .resend {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .resend a {
+            color: #DB902B;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 1px solid #fcc;
+        }
+        .success-message {
+            background-color: #e6ffed;
+            color: #256029;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 1px solid #6fd67a;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+       <img src="{% static 'images/logo.png' %}" alt="Logo" class="logo">
+        <h2>Verify OTP</h2>
+        <p class="subtitle">Enter the 6-digit code sent to your email / mobile</p>
+
+        {% if messages %}
+        <div class="message-container">
+            {% for message in messages %}
+            <div class="{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}{{ message.tags }}{% endif %}-message">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Enter OTP</label>
+                <input type="text" inputmode="numeric" maxlength="6" name="otp" placeholder="000000" required style="width: 100%; padding: 12px 15px; border: 1px solid #f0f0f0; background-color: #f9f9f9; border-radius: 8px; outline: none; font-size: 18px; text-align: center; letter-spacing: 8px;">
+            </div>
+
+            <button type="submit" class="sign-in-btn">Verify & Continue</button>
+        </form>
+
+        <div class="resend">
+            Didn't receive the code? <a href="{% url 'admin_panel:resend_otp' %}">Resend OTP</a>
+        </div>
+    </div>
+
+</body>
+</html>

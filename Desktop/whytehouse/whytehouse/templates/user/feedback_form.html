@@ -1,0 +1,625 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whytehouse | Submit Feedback</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root{
+      --primary:#d4a017;
+      --primary-dark:#b88910;
+      --secondary:#1f2937;
+      --bg:#f8f6f1;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --success-bg:#ecfdf3;
+      --success-text:#166534;
+      --success-border:#bbf7d0;
+      --error-bg:#fef2f2;
+      --error-text:#991b1b;
+      --error-border:#fecaca;
+      --shadow:0 12px 35px rgba(0,0,0,0.08);
+      --radius:18px;
+      --focus:0 0 0 4px rgba(212,160,23,.18);
+    }
+
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+    }
+
+    body{
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background:
+        linear-gradient(rgba(20,20,20,0.35), rgba(20,20,20,0.25)),
+        url("{% static 'images/resort.png' %}") center/cover no-repeat fixed;
+      min-height:100vh;
+      color:var(--text);
+      padding:40px 16px;
+    }
+
+    .overlay-wrap{
+      max-width:900px;
+      margin:0 auto;
+    }
+
+    .card{
+      background:rgba(255,255,255,0.96);
+      backdrop-filter:blur(10px);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,0.4);
+    }
+
+    .header{
+      padding:32px 32px 22px;
+      background:linear-gradient(135deg, rgba(212,160,23,0.14), rgba(255,255,255,0.95));
+      border-bottom:1px solid var(--border);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .brand-icon{
+      width:48px;
+      height:48px;
+      border-radius:50%;
+      background:linear-gradient(135deg, var(--primary), #f3cf72);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-size:20px;
+      box-shadow:0 6px 16px rgba(212,160,23,.28);
+    }
+
+    .brand-text h2{
+      font-size:20px;
+      font-weight:700;
+      color:var(--secondary);
+      margin:0;
+    }
+
+    .brand-text span{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .header h1{
+      font-size:30px;
+      color:var(--secondary);
+      margin-bottom:8px;
+      letter-spacing:-0.3px;
+    }
+
+    .lead{
+      color:var(--muted);
+      font-size:15px;
+      line-height:1.6;
+      max-width:650px;
+    }
+
+    .content{
+      padding:28px 32px 32px;
+    }
+
+    .alert{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px 16px;
+      border-radius:12px;
+      margin-bottom:20px;
+      font-size:14px;
+      font-weight:600;
+    }
+
+    .alert i{
+      margin-top:2px;
+      font-size:16px;
+    }
+
+    .alert-success{
+      background:var(--success-bg);
+      color:var(--success-text);
+      border:1px solid var(--success-border);
+    }
+
+    .alert-error{
+      background:var(--error-bg);
+      color:var(--error-text);
+      border:1px solid var(--error-border);
+    }
+
+    form{
+      margin-top:10px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+
+    .field{
+      margin-top:18px;
+    }
+
+    .field:first-child{
+      margin-top:0;
+    }
+
+    label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+      font-weight:700;
+      color:var(--secondary);
+      margin-bottom:8px;
+    }
+
+    .req-dot{
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:var(--primary);
+      display:inline-block;
+    }
+
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea,
+    select,
+    input[type="file"]{
+      width:100%;
+      padding:13px 14px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#fff;
+      font-size:14px;
+      color:var(--text);
+      outline:none;
+      transition:all .2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus{
+      border-color:rgba(212,160,23,.75);
+      box-shadow:var(--focus);
+    }
+
+    textarea{
+      min-height:150px;
+      resize:vertical;
+      line-height:1.5;
+    }
+
+    .help{
+      margin-top:7px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    .section-box{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      background:#fcfcfc;
+    }
+
+    .rating-box{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+    }
+
+    .stars{
+      display:flex;
+      flex-direction:row-reverse;
+      justify-content:flex-end;
+      gap:6px;
+    }
+
+    .stars input{
+      display:none;
+    }
+
+    .stars label{
+      cursor:pointer;
+      font-size:34px;
+      color:#d1d5db;
+      transition:.2s ease;
+      margin:0;
+      line-height:1;
+    }
+
+    .stars label:hover{
+      transform:scale(1.08);
+    }
+
+    .stars input:checked ~ label,
+    .stars label:hover,
+    .stars label:hover ~ label{
+      color:var(--primary);
+    }
+
+    .rating-text{
+      font-size:14px;
+      font-weight:700;
+      color:var(--muted);
+      min-width:160px;
+      text-align:right;
+    }
+
+    .preview-container{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .preview-container img{
+      width:120px;
+      height:90px;
+      object-fit:cover;
+      border-radius:10px;
+      border:1px solid var(--border);
+      box-shadow:0 4px 10px rgba(0,0,0,0.08);
+      background:#fff;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      margin-top:24px;
+      padding-top:18px;
+      border-top:1px solid var(--border);
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:12px 18px;
+      border:none;
+      border-radius:12px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+      transition:.2s ease;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .btn.primary{
+      background:linear-gradient(135deg, var(--primary), #e2ba3f);
+      color:#1a1a1a;
+      box-shadow:0 10px 18px rgba(212,160,23,0.22);
+    }
+
+    .btn.secondary{
+      background:#eef2f7;
+      color:#1f2937;
+    }
+
+    .btn.home-btn{
+      margin-top:8px;
+    }
+
+    .center{
+      text-align:center;
+      padding:8px 0 4px;
+    }
+
+    .success-box{
+      text-align:center;
+      padding:10px 0;
+    }
+
+    .success-icon{
+      width:72px;
+      height:72px;
+      margin:0 auto 16px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg, #22c55e, #86efac);
+      color:#fff;
+      font-size:28px;
+      box-shadow:0 10px 25px rgba(34,197,94,.22);
+    }
+
+    .success-box h2{
+      font-size:26px;
+      color:var(--secondary);
+      margin-bottom:8px;
+    }
+
+    .success-box p{
+      color:var(--muted);
+      margin-bottom:18px;
+      line-height:1.6;
+    }
+
+    @media (max-width:768px){
+      .grid{
+        grid-template-columns:1fr;
+      }
+
+      .header,
+      .content{
+        padding:22px 18px;
+      }
+
+      .header h1{
+        font-size:24px;
+      }
+
+      .rating-box{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+
+      .rating-text{
+        text-align:left;
+        min-width:auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay-wrap">
+    <div class="card">
+
+      {% if success %}
+        <div class="header">
+          <div class="brand">
+            <div class="brand-icon">
+              <i class="fa-solid fa-plane-departure"></i>
+            </div>
+            <div class="brand-text">
+              <h2>Whytehouse Holidays</h2>
+              <span>Travel with comfort, explore with joy</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="success-box">
+            <div class="success-icon">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <h2>Thank You for Your Feedback</h2>
+            <p>Your review has been submitted successfully. We truly value your experience and your time.</p>
+
+            <div class="alert alert-success">
+              <i class="fas fa-check-circle"></i>
+              <div>Your feedback helps us improve our travel services and serve you better.</div>
+            </div>
+
+            <a href="/" class="btn primary home-btn">
+              <i class="fa-solid fa-house"></i> Back to Home
+            </a>
+          </div>
+        </div>
+
+      {% else %}
+        <div class="header">
+          <div class="brand">
+            <div class="brand-icon">
+              <i class="fa-solid fa-plane-departure"></i>
+            </div>
+            <div class="brand-text">
+              <h2>Whytehouse Holidays</h2>
+              <span>Travel with comfort, explore with joy</span>
+            </div>
+          </div>
+
+          <h1>Share Your Travel Experience</h1>
+          <p class="lead">
+            We would love to hear about your journey with Whytehouse. Your feedback helps us improve our trips, hospitality, and customer service.
+          </p>
+        </div>
+
+        <div class="content">
+          {% if error %}
+            <div class="alert alert-error">
+              <i class="fas fa-exclamation-circle"></i>
+              <div>{{ error }}</div>
+            </div>
+          {% endif %}
+
+          <form method="post" action="{% url 'user_panel:feedback_form' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="grid">
+              <div class="field">
+                <label for="name">Full Name <span class="req-dot"></span></label>
+                <input type="text" id="name" name="name" required value="{{ request.POST.name }}" placeholder="Enter your full name">
+              </div>
+
+              <div class="field">
+                <label for="email">Email Address <span class="req-dot"></span></label>
+                <input type="email" id="email" name="email" required value="{{ request.POST.email }}" placeholder="Enter your email address">
+              </div>
+            </div>
+
+            <div class="grid">
+              <div class="field">
+                <label for="mobile_number">Mobile Number <span class="hint">(optional)</span></label>
+                <input type="tel" id="mobile_number" name="mobile_number" maxlength="10" value="{{ request.POST.mobile_number }}" placeholder="10-digit number">
+                <div class="help">Example: 9876543210</div>
+              </div>
+
+              <div class="field">
+                <label for="feedback_type">Feedback Type <span class="req-dot"></span></label>
+                <select id="feedback_type" name="feedback_type" required>
+                  <option value="" disabled {% if not request.POST.feedback_type %}selected{% endif %}>Select feedback type</option>
+                  {% for value, label in feedback_type_choices %}
+                    <option value="{{ value }}" {% if request.POST.feedback_type == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="feedback_images">Upload Travel Photos <span class="hint">(optional)</span></label>
+              <div class="section-box">
+                <input
+                  type="file"
+                  id="feedback_images"
+                  name="feedback_images"
+                  accept="image/png,image/jpeg,image/jpg"
+                  multiple
+                >
+                <div class="help">
+                  You can upload photos related to your trip, destination, stay, or overall experience.
+                </div>
+                <div id="imagePreviewContainer" class="preview-container"></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Rating <span class="req-dot"></span></label>
+              <div class="section-box rating-box" role="group" aria-label="Rating">
+                <div class="stars">
+                  <input type="radio" id="star5" name="rating" value="5" required {% if request.POST.rating == "5" %}checked{% endif %}>
+                  <label for="star5" title="Excellent">★</label>
+
+                  <input type="radio" id="star4" name="rating" value="4" {% if request.POST.rating == "4" %}checked{% endif %}>
+                  <label for="star4" title="Very Good">★</label>
+
+                  <input type="radio" id="star3" name="rating" value="3" {% if request.POST.rating == "3" %}checked{% endif %}>
+                  <label for="star3" title="Good">★</label>
+
+                  <input type="radio" id="star2" name="rating" value="2" {% if request.POST.rating == "2" %}checked{% endif %}>
+                  <label for="star2" title="Fair">★</label>
+
+                  <input type="radio" id="star1" name="rating" value="1" {% if request.POST.rating == "1" %}checked{% endif %}>
+                  <label for="star1" title="Poor">★</label>
+                </div>
+
+                <div class="rating-text" id="ratingText">Tap to rate</div>
+              </div>
+              <div class="help">Select a rating based on your overall experience.</div>
+            </div>
+
+            <div class="field">
+              <label for="feedback">Your Feedback <span class="req-dot"></span></label>
+              <textarea id="feedback" name="feedback" required placeholder="Tell us about your travel experience with Whytehouse...">{{ request.POST.feedback }}</textarea>
+            </div>
+
+            <div class="actions">
+              <button type="button" class="btn secondary" id="clearFormBtn">
+                <i class="fa-solid fa-eraser"></i> Clear Form
+              </button>
+              <button type="submit" class="btn primary">
+                <i class="fa-solid fa-paper-plane"></i> Submit Feedback
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <script>
+          (function () {
+            const map = {
+              "1":"Poor",
+              "2":"Fair",
+              "3":"Good",
+              "4":"Very Good",
+              "5":"Excellent"
+            };
+
+            const textEl = document.getElementById("ratingText");
+            const radios = document.querySelectorAll('input[name="rating"]');
+
+            function syncRating(){
+              const checked = document.querySelector('input[name="rating"]:checked');
+              if (!checked) {
+                textEl.textContent = "Tap to rate";
+                return;
+              }
+              textEl.textContent = checked.value + " / 5 • " + (map[checked.value] || "");
+            }
+
+            radios.forEach(radio => {
+              radio.addEventListener("change", syncRating);
+            });
+
+            syncRating();
+          })();
+
+          const imageInput = document.getElementById("feedback_images");
+          const previewContainer = document.getElementById("imagePreviewContainer");
+
+          imageInput.addEventListener("change", function () {
+            previewContainer.innerHTML = "";
+            const files = this.files;
+
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+              const reader = new FileReader();
+
+              reader.onload = function (e) {
+                const img = document.createElement("img");
+                img.src = e.target.result;
+                previewContainer.appendChild(img);
+              };
+
+              reader.readAsDataURL(file);
+            });
+          });
+
+          const clearBtn = document.getElementById("clearFormBtn");
+          const formEl = document.querySelector("form");
+
+          clearBtn.addEventListener("click", function () {
+            formEl.reset();
+
+            document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+
+            const ratingText = document.getElementById("ratingText");
+            if (ratingText) ratingText.textContent = "Tap to rate";
+
+            if (imageInput) imageInput.value = "";
+            if (previewContainer) previewContainer.innerHTML = "";
+          });
+        </script>
+      {% endif %}
+
+    </div>
+  </div>
+</body>
+</html>

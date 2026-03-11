@@ -1,0 +1,211 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ property.name }} | Whyte House{% endblock %}
+
+{% block content %}
+<style>
+    .view-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .back-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .header-text h2 {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .view-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .property-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .info-row {
+        display: flex;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #475569;
+        width: 200px;
+    }
+
+    .info-value {
+        color: #1e293b;
+        flex: 1;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-hotel {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-resort {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-homestay {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-edit {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .btn-delete {
+        background: #ef4444;
+        color: white;
+    }
+</style>
+
+<div class="view-container">
+    <div class="page-header">
+        <a href="{% url 'admin_panel:admin_hospitality' %}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div class="header-text">
+            <h2>{{ property.name }}</h2>
+        </div>
+    </div>
+
+    <div class="view-card">
+        {% if property.image %}
+            <img src="{{ property.image.url }}" alt="{{ property.name }}" class="property-image">
+        {% endif %}
+
+        <div class="info-row">
+            <div class="info-label">Property Name</div>
+            <div class="info-value">{{ property.name }}</div>
+        </div>
+
+        <div class="info-row">
+            <div class="info-label">Property Type</div>
+            <div class="info-value">
+                <span class="badge {% if property.property_type == 'Hotel' %}badge-hotel{% elif property.property_type == 'Resort' %}badge-resort{% else %}badge-homestay{% endif %}">
+                    {{ property.property_type }}
+                </span>
+            </div>
+        </div>
+
+        <div class="info-row">
+            <div class="info-label">Location</div>
+            <div class="info-value">{{ property.location }}</div>
+        </div>
+
+        {% if property.address %}
+        <div class="info-row">
+            <div class="info-label">Address</div>
+            <div class="info-value">{{ property.address }}</div>
+        </div>
+        {% endif %}
+
+        {% if property.website %}
+        <div class="info-row">
+            <div class="info-label">Website</div>
+            <div class="info-value">
+                <a href="{{ property.website }}" target="_blank" style="color: #3b82f6;">{{ property.website }}</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if property.owner_name %}
+        <div class="info-row">
+            <div class="info-label">Owner Name</div>
+            <div class="info-value">{{ property.owner_name }}</div>
+        </div>
+        {% endif %}
+
+        {% if property.owner_contact %}
+        <div class="info-row">
+            <div class="info-label">Owner Contact</div>
+            <div class="info-value">{{ property.owner_contact }}</div>
+        </div>
+        {% endif %}
+
+        {% if property.amenities %}
+        <div class="info-row">
+            <div class="info-label">Amenities</div>
+            <div class="info-value">{{ property.amenities }}</div>
+        </div>
+        {% endif %}
+
+        {% if property.summary %}
+        <div class="info-row">
+            <div class="info-label">Summary</div>
+            <div class="info-value">{{ property.summary }}</div>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="{% url 'admin_panel:admin_edit_property' property.id %}" class="btn btn-edit">
+                <i class="fas fa-edit"></i> Edit Property
+            </a>
+            <a href="{% url 'admin_panel:admin_delete_property' property.id %}" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this property?')">
+                <i class="fas fa-trash"></i> Delete Property
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

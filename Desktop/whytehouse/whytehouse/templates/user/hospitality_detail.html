@@ -1,0 +1,485 @@
+{% extends 'user/navbar.html' %}
+{% load static %}
+
+{% block title %}{{ property.name }} | Whyte House Hospitality{% endblock %}
+
+{% block content %}
+<style>
+    /* =========================
+       BASE
+    ========================= */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body, html {
+        font-family: 'Inter', sans-serif;
+        color: #000;
+        background: #fff;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Make navbar stay above hero like package page */
+    nav {
+        position: relative;
+        z-index: 1000;
+        padding-top: 20px !important;
+        background: transparent !important;
+    }
+
+    /* =========================
+       HERO SECTION
+    ========================= */
+    .detail-hero {
+        min-height: 82vh;
+        background:
+            linear-gradient(rgba(0,0,0,0.22), rgba(0,0,0,0.28)),
+            url("{% if property.image %}{{ property.image.url }}{% else %}{% static 'images/resort.png' %}{% endif %}");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+
+        /* Pull hero up behind navbar */
+        margin-top: -120px;
+
+        /* Give space at top so navbar doesn't overlap awkwardly */
+        padding: 170px 80px 40px;
+    }
+
+    .back-btn {
+        background: #D4A373;
+        color: #000;
+        padding: 14px 28px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+    }
+
+    .back-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-2px);
+    }
+
+    /* =========================
+       DETAILS SECTION
+    ========================= */
+    .property-details {
+        background: #fcfcfc url("{% static 'images/wavy-bg.png' %}") center/cover;
+        color: #333;
+        padding: 100px 8%;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 60px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .main-content h2 {
+        font-size: 42px;
+        margin-bottom: 30px;
+        color: #111;
+        line-height: 1.2;
+    }
+
+    .summary {
+        font-size: 18px;
+        line-height: 1.9;
+        color: #555;
+        margin-bottom: 40px;
+    }
+
+    /* =========================
+       AMENITIES
+    ========================= */
+    .amenities-section {
+        margin-top: 50px;
+    }
+
+    .amenities-section h3 {
+        font-size: 26px;
+        margin-bottom: 25px;
+        color: #1a1a1a;
+    }
+
+    .amenities-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 15px;
+    }
+
+    .amenity-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+
+    .amenity-icon {
+        width: 42px;
+        height: 42px;
+        background: #d4a017;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+        flex-shrink: 0;
+        font-weight: 700;
+    }
+
+    .amenity-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: #222;
+    }
+
+    /* =========================
+       SIDEBAR
+    ========================= */
+    .sidebar {
+        background: #fff;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 25px;
+        padding-bottom: 25px;
+        border-bottom: 1px solid #ececec;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .info-icon {
+        width: 48px;
+        height: 48px;
+        background: #f6f6f6;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #d4a017;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .info-content h4 {
+        font-size: 13px;
+        color: #999;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    .info-content p {
+        font-size: 16px;
+        color: #333;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .info-content a {
+        color: #d4a017;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .cta-button {
+        display: block;
+        width: 100%;
+        padding: 18px;
+        background: #d4a017;
+        color: #fff;
+        text-align: center;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 16px;
+        margin-top: 30px;
+        transition: all 0.3s ease;
+    }
+
+    .cta-button:hover {
+        background: #b88a14;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(212, 160, 23, 0.25);
+    }
+
+    /* =========================
+       RELATED PROPERTIES
+    ========================= */
+    .related-properties {
+        background: #000;
+        padding: 100px 8%;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .section-header h2 {
+        font-size: 42px;
+        margin-bottom: 15px;
+        color: #fff;
+    }
+
+    .section-header p {
+        color: #999;
+        font-size: 16px;
+    }
+
+    .properties-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 30px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .property-card {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+    }
+
+    .property-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+    }
+
+    .property-card img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .property-card-content {
+        padding: 25px;
+    }
+
+    .property-card-content h3 {
+        font-size: 22px;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+    }
+
+    .property-card-content .location {
+        color: #888;
+        font-size: 14px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .property-card-content .type-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        background: #f5f5f5;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+    }
+
+    /* =========================
+       RESPONSIVE
+    ========================= */
+    @media (max-width: 968px) {
+        .detail-hero {
+            min-height: 65vh;
+            margin-top: -110px;
+            padding: 150px 20px 30px;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+            gap: 35px;
+        }
+
+        .sidebar {
+            position: relative;
+            top: 0;
+        }
+
+        .properties-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .main-content h2 {
+            font-size: 30px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+        }
+    }
+</style>
+
+<!-- HERO -->
+<section class="detail-hero">
+    <a href="{% url 'user_panel:hospitality' %}" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Properties
+    </a>
+</section>
+
+<!-- PROPERTY DETAILS -->
+<section class="property-details">
+    <div class="details-grid">
+
+        <!-- LEFT -->
+        <div class="main-content">
+            <h2>About This Property</h2>
+            <p class="summary">{{ property.summary|linebreaksbr }}</p>
+
+            {% if property.amenity_list %}
+            <div class="amenities-section">
+                <h3>Amenities & Features</h3>
+                <div class="amenities-grid">
+                    {% for amenity in property.amenity_list %}
+                    <div class="amenity-item">
+                        <div class="amenity-icon">✓</div>
+                        <div class="amenity-text">{{ amenity }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- RIGHT -->
+        <aside class="sidebar">
+            <div class="info-row">
+                <div class="info-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </div>
+                <div class="info-content">
+                    <h4>Property Type</h4>
+                    <p>{{ property.get_property_type_display }}</p>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <div class="info-content">
+                    <h4>Location</h4>
+                    <p>{{ property.location }}</p>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                </div>
+                <div class="info-content">
+                    <h4>Contact</h4>
+                    {% if property.owner_name %}
+                    <p><strong>{{ property.owner_name }}</strong></p>
+                    {% endif %}
+                    {% if property.owner_contact %}
+                    <p>{{ property.owner_contact }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if property.website %}
+            <div class="info-row">
+                <div class="info-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="2" y1="12" x2="22" y2="12"/>
+                        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+                    </svg>
+                </div>
+                <div class="info-content">
+                    <h4>Website</h4>
+                    <p>
+                        <a href="{{ property.website }}" target="_blank">Visit Website →</a>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            <a href="{% url 'user_panel:contact' %}" class="cta-button">Inquire Now</a>
+        </aside>
+    </div>
+</section>
+
+<!-- RELATED PROPERTIES -->
+{% if related_properties %}
+<section class="related-properties">
+    <div class="section-header">
+        <h2>Related Properties</h2>
+        <p>Explore more exceptional properties</p>
+    </div>
+
+    <div class="properties-grid">
+        {% for related in related_properties %}
+        <a href="{% url 'user_panel:hospitality_detail' related.id %}" style="text-decoration: none;">
+            <div class="property-card">
+                <img src="{% if related.image %}{{ related.image.url }}{% else %}{% static 'images/resort.png' %}{% endif %}" alt="{{ related.name }}">
+                <div class="property-card-content">
+                    <h3>{{ related.name }}</h3>
+                    <div class="location">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {{ related.location }}
+                    </div>
+                    <span class="type-badge">{{ related.get_property_type_display }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

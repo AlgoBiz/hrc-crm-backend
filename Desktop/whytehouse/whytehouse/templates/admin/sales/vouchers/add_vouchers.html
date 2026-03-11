@@ -1,0 +1,594 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif}
+body{background:#f5f7fb;color:#111}
+
+/* MAIN */
+.main{padding:30px 40px}
+
+/* HEADER */
+.page-header{
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:22px;
+}
+.back-btn{
+  width:46px;height:46px;border-radius:12px;
+  border:1px solid #e5e7eb;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;color:#111;font-size:20px;font-weight:700;
+}
+.hgroup .title{font-size:34px;font-weight:700;line-height:1.1}
+.hgroup .sub{margin-top:8px;color:#6b7280;font-size:18px}
+
+/* CARD */
+.card{
+  background:#fff;
+  border:1px solid #eef0f4;
+  border-radius:18px;
+  padding:26px;
+  margin-bottom:22px;
+}
+.card-title{
+  font-size:20px;
+  font-weight:650;
+  margin-bottom:18px;
+}
+
+/* FORM GRID */
+.grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px 26px;
+}
+.field{display:flex;flex-direction:column;gap:10px}
+.label{
+  font-size:16px;
+  font-weight:600;
+  color:#111;
+}
+.req{color:#ef4444;margin-left:6px}
+.input, .select, .textarea{
+  width:100%;
+  border:1px solid #e5e7eb;
+  background:#f3f4f6;
+  padding:14px 16px;
+  border-radius:14px;
+  outline:none;
+  font-size:16px;
+  color:#111;
+}
+.textarea{
+  min-height:110px;
+  resize:none;
+}
+.helper{
+  color:#6b7280;
+  font-size:14px;
+  margin-top:-6px;
+}
+
+/* ICON INSIDE INPUT */
+.icon-input{
+  position:relative;
+}
+.icon-input .input{
+  padding-left:48px;
+}
+.icon-input svg{
+  position:absolute;
+  left:16px;
+  top:50%;
+  transform:translateY(-50%);
+  width:20px;height:20px;
+  color:#6b7280;
+}
+
+/* DATE + TIME ICON */
+.end-icon{
+  position:relative;
+}
+.end-icon .input{
+  padding-right:44px;
+}
+.end-icon svg{
+  position:absolute;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  width:20px;height:20px;
+  color:#6b7280;
+}
+
+/* SELECT LOOK */
+.select{
+  appearance:none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%);
+  background-position:
+    calc(100% - 22px) 50%,
+    calc(100% - 16px) 50%;
+  background-size:6px 6px, 6px 6px;
+  background-repeat:no-repeat;
+}
+
+/* COUNTER */
+.counter-row{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:18px 26px;
+}
+.counter{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.btn-mini{
+  width:44px;height:44px;
+  border-radius:12px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  font-size:22px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+.count-box{
+  flex:1;
+  height:44px;
+  border:1px solid #e5e7eb;
+  background:#f3f4f6;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  font-weight:650;
+}
+
+/* DIVIDER SPACE */
+.spacer{height:6px}
+
+/* PRICING GRID */
+.price-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px 26px;
+}
+
+/* NOTES SECTION */
+.notes-wrap{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:22px;
+}
+.note-block .label{
+  font-weight:650;
+}
+.note-block .helper{
+  margin-top:-4px;
+}
+
+/* FOOTER BUTTONS */
+.footer-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:14px;
+  padding:16px 0 10px;
+}
+.btn{
+  padding:14px 22px;
+  border-radius:14px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  font-weight:650;
+  font-size:16px;
+  cursor:pointer;
+}
+.btn.primary{
+  border:none;
+  background:#caa03a;
+  color:#111;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .main{padding:18px}
+  .grid-2,.counter-row,.price-grid{grid-template-columns:1fr}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+
+  
+  <div class="page-header">
+    <a class="back-btn" href="{% url 'sales:voucher_list' %}">←</a>
+    <div class="hgroup">
+      <div class="title">Add New Voucher</div>
+      <div class="sub">Fill in the voucher details</div>
+    </div>
+  </div>
+
+  <form method="POST" action="">
+    {% csrf_token %}
+
+    <!-- BASIC INFORMATION -->
+    <div class="card">
+      <div class="card-title">Basic Information</div>
+
+      <div class="grid-2">
+
+        <div class="field">
+          <div class="label">Customer Name <span class="req">*</span></div>
+          <div class="icon-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="M21 21l-4.3-4.3"></path>
+            </svg>
+            <input class="input" type="text" id="customerSearch" placeholder="Search customer..." autocomplete="off">
+            <input type="hidden" name="customer_id" id="customerId" required>
+            <div id="customerSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-top:4px;max-height:200px;overflow-y:auto;box-shadow:0 10px 24px rgba(17,19,24,.1);z-index:100;"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">Voucher Number <span class="req">*</span></div>
+          <input class="input" type="text" name="voucher_no" placeholder="e.g., VCH001" value="{{ form.voucher_no.value|default:'' }}" required>
+        </div>
+
+        <div class="field">
+          <div class="label">Voucher Date <span class="req">*</span></div>
+          <input class="input" type="date" name="voucher_date" value="{{ form.voucher_date.value|default:'' }}" required>
+        </div>
+
+        <div class="field">
+          <div class="label">Sales Person <span class="req">*</span></div>
+          <select class="select" name="sales_person" required>
+            <option value="">Select sales person</option>
+            {% for emp in employees %}
+              <option value="{{ emp.id }}">{{ emp.name }} - {{ emp.role }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PACKAGE DETAILS -->
+    <div class="card">
+      <div class="card-title">Package Details</div>
+
+      <div class="grid-2">
+
+        <div class="field" style="grid-column:1 / -1;">
+          <div class="label">Resort Name <span class="req">*</span></div>
+          <select class="select" name="resort" required>
+            <option value="">Select resort</option>
+            {% for resort in resorts %}
+              <option value="{{ resort.id }}">{{ resort.resort_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <div class="label">Check-in Date <span class="req">*</span></div>
+          <input class="input" type="date" name="checkin_date" value="{{ form.checkin_date.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Check-out Date <span class="req">*</span></div>
+          <input class="input" type="date" name="checkout_date" value="{{ form.checkout_date.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Check-in Time <span class="req">*</span></div>
+          <input class="input" type="time" name="checkin_time" value="{{ form.checkin_time.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Check-out Time <span class="req">*</span></div>
+          <input class="input" type="time" name="checkout_time" value="{{ form.checkout_time.value|default:'' }}">
+        </div>
+
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="counter-row">
+
+        <div class="field">
+          <div class="label">Adults <span class="req">*</span></div>
+          <div class="counter">
+            <button class="btn-mini" type="button">−</button>
+            <div class="count-box">2</div>
+            <button class="btn-mini" type="button">+</button>
+          </div>
+          <input type="hidden" name="adults" value="{{ form.adults.value|default:'2' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Children</div>
+          <div class="counter">
+            <button class="btn-mini" type="button">−</button>
+            <div class="count-box">0</div>
+            <button class="btn-mini" type="button">+</button>
+          </div>
+          <input type="hidden" name="children" value="{{ form.children.value|default:'0' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Number of Nights <span class="req">*</span></div>
+          <input class="input" type="number" min="1" name="nights" value="{{ form.nights.value|default:'1' }}">
+        </div>
+
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="field">
+        <div class="label">Pax Notes <span class="req">*</span></div>
+        <textarea class="textarea" name="pax_notes" placeholder="Enter notes about passengers...">{{ form.pax_notes.value|default:'' }}</textarea>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="grid-2">
+        <div class="field">
+          <div class="label">Room Type</div>
+          <input class="input" type="text" name="room_type" placeholder="e.g., Deluxe, Suite" value="{{ form.room_type.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Number of Rooms</div>
+          <div class="counter">
+            <button class="btn-mini" type="button">−</button>
+            <div class="count-box">1</div>
+            <button class="btn-mini" type="button">+</button>
+          </div>
+          <input type="hidden" name="no_of_rooms" value="{{ form.no_of_rooms.value|default:'1' }}">
+        </div>
+
+        <div class="field" style="grid-column:1 / -1;">
+          <div class="label">Meals Plan <span class="req">*</span></div>
+          <select class="select" name="meals_plan" required>
+            <option value="">Select meals plan</option>
+            {% for meal in meals %}
+              <option value="{{ meal.id }}">{{ meal.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PRICING DETAILS -->
+    <div class="card">
+      <div class="card-title">Pricing Details</div>
+
+      <div class="field" style="margin-bottom:18px;">
+        <div class="label">Bank Account <span class="req">*</span></div>
+        <select class="select" name="bank_account" required>
+          <option value="">Select bank account</option>
+          {% for account in accounts %}
+            <option value="{{ account.id }}">{{ account.account_name }} - {{ account.account_number }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="price-grid">
+
+        <div class="field">
+          <div class="label">Package Price <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="package_price" placeholder="0.00" value="{{ form.package_price.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Resort Price <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="resort_price" placeholder="0.00" value="{{ form.resort_price.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Total <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="total_amount" placeholder="0" value="{{ form.total_amount.value|default:'' }}" readonly style="background:#fff6e8;">
+        </div>
+
+        <div class="field">
+          <div class="label">Received Price <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="received" placeholder="0.00" value="{{ form.received.value|default:'' }}">
+        </div>
+
+        <div class="field">
+          <div class="label">Pending Price <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="pending" placeholder="0" value="{{ form.pending.value|default:'' }}" readonly style="background:#fff6e8;">
+        </div>
+
+        <div class="field">
+          <div class="label">From WhyteHouse <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="from_whytehouse" placeholder="0.00" value="{{ form.from_whytehouse.value|default:'' }}">
+        </div>
+
+        <div class="field" style="grid-column:1 / -1;">
+          <div class="label">Profit <span class="req">*</span></div>
+          <input class="input" type="number" step="0.01" name="profit" placeholder="0" value="{{ form.profit.value|default:'' }}" readonly style="background:#eefbf1;">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card">
+      <div class="card-title">Notes</div>
+
+      <div class="notes-wrap">
+
+        <div class="note-block">
+          <div class="label">Note for Resort</div>
+          <div class="helper">Maximum 130 characters</div>
+          <textarea class="textarea" name="note_for_resort" maxlength="130" placeholder="Enter notes for the resort...">{{ form.note_for_resort.value|default:'' }}</textarea>
+          <div class="helper" style="text-align:right;margin-top:8px;">0/130</div>
+        </div>
+
+        <div class="note-block">
+          <div class="label">Note for Guest</div>
+          <div class="helper">Maximum 130 characters</div>
+          <textarea class="textarea" name="note_for_guest" maxlength="130" placeholder="Enter notes for the guest...">{{ form.note_for_guest.value|default:'' }}</textarea>
+          <div class="helper" style="text-align:right;margin-top:8px;">0/130</div>
+        </div>
+
+      </div>
+
+      <div class="footer-actions">
+        <a class="btn" href="{% url 'sales:voucher_list' %}" style="text-decoration:none;color:#111;display:inline-flex;align-items:center;justify-content:center;">Cancel</a>
+        <button class="btn primary" type="submit">Create Voucher</button>
+      </div>
+
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+// Customer data from Django
+const customers = [
+  {% for customer in customers %}
+  {
+    id: {{ customer.id }},
+    name: "{{ customer.display_name|escapejs }}",
+    phone: "{{ customer.contact_number|escapejs }}"
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+
+// Customer search functionality
+const searchInput = document.getElementById('customerSearch');
+const customerIdInput = document.getElementById('customerId');
+const suggestionsDiv = document.getElementById('customerSuggestions');
+
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    
+    if (query.length === 0) {
+      suggestionsDiv.style.display = 'none';
+      customerIdInput.value = '';
+      return;
+    }
+
+    const filtered = customers.filter(c => 
+      c.name.toLowerCase().includes(query) || 
+      c.phone.includes(query)
+    );
+
+    if (filtered.length === 0) {
+      suggestionsDiv.innerHTML = '<div style="padding:12px;color:#6b7280;text-align:center;">No customers found</div>';
+      suggestionsDiv.style.display = 'block';
+      customerIdInput.value = '';
+      return;
+    }
+
+    suggestionsDiv.innerHTML = filtered.map(c => 
+      `<div class="suggestion-item" data-id="${c.id}" data-name="${c.name}" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid #e5e7eb;transition:0.2s;">
+        <div style="font-weight:600;font-size:14px;">${c.name}</div>
+        <div style="color:#6b7280;font-size:13px;margin-top:2px;">${c.phone}</div>
+      </div>`
+    ).join('');
+    
+    suggestionsDiv.style.display = 'block';
+
+    document.querySelectorAll('.suggestion-item').forEach(item => {
+      item.addEventListener('mouseenter', function() {
+        this.style.background = '#f3f4f6';
+      });
+      item.addEventListener('mouseleave', function() {
+        this.style.background = '#fff';
+      });
+      item.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const name = this.getAttribute('data-name');
+        searchInput.value = name;
+        customerIdInput.value = id;
+        suggestionsDiv.style.display = 'none';
+      });
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+      suggestionsDiv.style.display = 'none';
+    }
+  });
+}
+
+// Counter functionality
+const counters = document.querySelectorAll('.counter');
+counters.forEach(counter => {
+  const minusBtn = counter.querySelector('.btn-mini:first-child');
+  const plusBtn = counter.querySelector('.btn-mini:last-child');
+  const countBox = counter.querySelector('.count-box');
+  const hiddenInput = counter.parentElement.querySelector('input[type="hidden"]');
+  
+  minusBtn.addEventListener('click', () => {
+    let val = parseInt(countBox.textContent) || 0;
+    if (val > 0) {
+      val--;
+      countBox.textContent = val;
+      hiddenInput.value = val;
+    }
+  });
+  
+  plusBtn.addEventListener('click', () => {
+    let val = parseInt(countBox.textContent) || 0;
+    val++;
+    countBox.textContent = val;
+    hiddenInput.value = val;
+  });
+});
+
+// Auto-calculate pricing
+const packagePrice = document.querySelector('input[name="package_price"]');
+const resortPrice = document.querySelector('input[name="resort_price"]');
+const totalAmount = document.querySelector('input[name="total_amount"]');
+const received = document.querySelector('input[name="received"]');
+const pending = document.querySelector('input[name="pending"]');
+const profit = document.querySelector('input[name="profit"]');
+
+function calculateTotal() {
+  const pkg = parseFloat(packagePrice.value) || 0;
+  const resort = parseFloat(resortPrice.value) || 0;
+  totalAmount.value = (pkg + resort).toFixed(2);
+  calculatePending();
+  calculateProfit();
+}
+
+function calculatePending() {
+  const total = parseFloat(totalAmount.value) || 0;
+  const recv = parseFloat(received.value) || 0;
+  pending.value = (total - recv).toFixed(2);
+}
+
+function calculateProfit() {
+  const pkg = parseFloat(packagePrice.value) || 0;
+  const resort = parseFloat(resortPrice.value) || 0;
+  profit.value = (pkg - resort).toFixed(2);
+}
+
+if (packagePrice) packagePrice.addEventListener('input', calculateTotal);
+if (resortPrice) resortPrice.addEventListener('input', calculateTotal);
+if (received) received.addEventListener('input', calculatePending);
+</script>
+{% endblock %}

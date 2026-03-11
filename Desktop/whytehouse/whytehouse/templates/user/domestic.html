@@ -1,0 +1,1578 @@
+{% extends 'user/navbar.html' %}
+{% load static %}
+
+{% block title %}Whyte House Holidays | Escape the City{% endblock %}
+
+{% block nav_home %}class="active"{% endblock %}
+
+{% block content %}
+<style>
+        :root {
+            --primary: #D39C52;
+            --accent-green: #7ED957;
+            --white: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body { background-color: #0c0c0c; color: var(--white); overflow-x: hidden; }
+
+        nav {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            background: transparent;
+        }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), 
+                        url("{% static 'images/domestic.png' %}") center center / cover no-repeat;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- HERO CONTENT --- */
+        .hero-content {
+            margin: auto 0;
+            padding: 0 8%;
+            max-width: 900px;
+            z-index: 2;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(40px, 6vw, 80px);
+            line-height: 1.1;
+            font-weight: 600;
+            margin-bottom: 25px;
+            letter-spacing: -1px;
+        }
+
+        .hero-content h1 span { color: var(--accent-green); }
+
+        .cta-group { display: flex; gap: 40px; margin-top: 10px; }
+        
+        .cta-link {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 300;
+            border-bottom: 1px solid rgba(255,255,255,0.4);
+            padding-bottom: 5px;
+            transition: 0.3s;
+        }
+
+        .cta-link:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+        /* --- FLOATING LOCATION TAG --- */
+        .location-tag {
+            position: absolute;
+            right: 12%;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 300;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .location-tag i { font-size: 8px; color: var(--white); }
+
+        /* --- STATS BAR --- */
+        .stats-bar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: transparent; 
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            padding: 60px 8%;
+            z-index: 1;
+        }
+
+        .stat-item { 
+            text-align: center; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-item:last-child { border-right: none; }
+        .stat-item i { color: var(--white); font-size: 24px; margin-bottom: 15px; }
+        .stat-item h2 { font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+        .stat-item p { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 2px; }
+
+        /* --- WHY CHOOSE SECTION --- */
+        :root {
+            --primary: #e67e22;
+        }
+
+        .why-choose {
+            position: relative;
+            padding: 500px 8% 200px;
+            background-image: url("{% static 'images/whychoose.png' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .content-wrapper { 
+            width: 100%; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 60px;
+            margin-bottom: 80px;
+        }
+
+        .section-title { 
+            font-size: 42px; 
+            font-weight: 700; 
+            line-height: 1.2; 
+            color: #FFFFFF;
+            flex: 1;
+            margin-top: 260px;
+        }
+
+        .header-description { 
+            flex: 1.2; 
+            margin-top: 260px;
+        }
+
+        .header-description p { 
+            font-size: 16px; 
+            line-height: 1.6; 
+            color: rgba(255,255,255,0.9); 
+            margin-bottom: 30px; 
+        }
+
+        .btn-meet {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 14px 30px;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        /* Card Container Layout */
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            padding-top: 80px;
+        }
+
+        .info-card {
+            background: url("{% static 'images/card.png' %}") no-repeat center center;
+            background-size: 100% 100%;
+            padding: 40px 30px;
+            width: 450px;
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: #2c3e50;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 20px;
+        }
+
+        .card-left {
+            transform: rotate(-14deg) translateX(10px);
+        }
+
+        .card-center {
+            transform: rotate(12deg) translateX(0px);
+        }
+
+        .card-right {
+            transform: rotate(0deg) translateX(-10px) translateY(-20px);
+        }
+
+        .info-card:hover { 
+            transform: translateY(-10px) scale(1.05) !important; 
+            z-index: 10; 
+        }
+
+        /* UPDATED CARD HEADER */
+        .card-header{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .card-icon { 
+            font-size: 24px; 
+            margin-bottom: 0;
+            color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-card h3 { 
+            font-size: 20px; 
+            margin-bottom: 0; 
+            line-height: 1.2;
+        }
+
+        .info-card p { 
+            font-size: 14px; 
+            line-height: 1.5; 
+            opacity: 0.8; 
+        }
+        
+
+        /* --- DESTINATION EXPLORER --- */
+       .destination-explorer {
+    position: relative;
+    min-height: 120vh;   /* increase from 100vh */
+    background: url("{% static 'images/resort.png' %}") center center / cover no-repeat;
+    background-position: center 30%;
+    padding: 40px 8% 120px;   /* increase bottom padding */
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color:#004d4d;
+}
+
+        .dest-header { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
+        .dest-title { font-size: 42px; font-weight: 500; line-height: 1.2; color: white; }
+        .dest-title span { font-weight: 300; font-style: italic; }
+
+        .dest-nav { display: flex; gap: 40px; margin-top: 15px; }
+        .dest-link { color: rgba(255, 255, 255, 0.6); text-decoration: none; font-size: 16px; position: relative; padding-bottom: 5px; transition: 0.3s; }
+        .dest-link.active, .dest-link:hover { color: white; }
+        .dest-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--white); }
+        .resort-showcase { 
+    display: flex;
+    justify-content: space-between; 
+    align-items: flex-start;
+    padding-top: 20px;
+    gap: 40px;
+}
+        .resort-info { 
+        max-width: 400px;
+        margin-left: 500px;
+        margin-top: -40px;
+     }
+        .resort-subtitle { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; color: rgba(255,255,255,0.8); }
+        .resort-subtitle span { font-weight: 700; color: white; }
+       .resort-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.7);
+    max-width: 320px;
+}
+        .resort-cta { 
+            text-align: right;
+            border-left: 1px solid white;
+            padding-left: 40px;
+         }
+        .resort-name { font-size: 32px; font-weight: 500; margin-bottom: 15px; color: white; }
+
+        .btn-enquire {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        /* --- ZERO DEGREE JUNGLE RESORT --- */
+        .jungle-resort-hero {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            background: url("{% static 'images/jungle.png' %}") center center / cover no-repeat;
+            display: flex;
+            align-items: flex-end;
+            padding: 80px 8%;
+        }
+
+        .jungle-resort-hero::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            z-index: 1;
+        }
+
+        .jungle-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+        }
+
+        .jungle-text-box h2 { font-size: 42px; font-weight: 500; margin-bottom: 20px; }
+        
+        .btn-enquire-round {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--primary);
+            color: #1a1a1a;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-enquire-round .arrow-circle {
+            width: 26px; height: 26px;
+            border: 1px solid #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .jungle-tagline { font-style: italic; font-weight: 300; color: rgba(255,255,255,0.8); max-width: 400px; text-align: right; font-size: 18px; }
+
+        @media (max-width: 992px) {
+            .stats-bar { grid-template-columns: repeat(3, 1fr); position: relative; padding: 40px 8%; }
+            .header-flex { flex-direction: column; }
+            .cards-container { flex-direction: column; align-items: center; }
+            .info-card { transform: none !important; width: 100%; max-width: 400px; }
+            .resort-showcase, .jungle-content { flex-direction: column; align-items: flex-start; gap: 30px; }
+            .jungle-tagline { text-align: left; }
+        }
+
+        /* --- NEW: DESTINATIONS GALLERY SECTION --- */
+        .destinations-gallery {
+            background-color: var(--dark-section);
+            padding: 100px 0;
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 60px;
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .gallery-header .desc {
+            flex: 1.5;
+            font-size: 15px;
+            line-height: 1.8;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .gallery-header .title {
+            flex: 1;
+            font-size: 38px;
+            font-weight: 600;
+            line-height: 1.2;
+            text-align: right;
+        }
+
+        .gallery-header .title span {
+            font-weight: 300;
+            font-style: italic;
+            display: block;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        .gallery-card {
+            position: relative;
+            height: 400px;
+            border-radius: 20px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .gallery-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+        }
+
+        .gallery-card:hover img { transform: scale(1.1); }
+
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px;
+        }
+
+        .gallery-overlay h3 { font-size: 22px; font-weight: 500; }
+
+        .btn-explore-link {
+            align-self: flex-end;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 300;
+        }
+
+        .btn-explore-link i {
+            width: 32px; height: 32px;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: 0.3s;
+        }
+
+        .gallery-card:hover .btn-explore-link i {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Slider Arrows */
+        .gallery-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .hosp-counter {
+            font-size: 18px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .arrow-btn {
+            width: 55px; height: 55px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        .arrow-btn:hover { background: white; color: black; }
+
+        @media (max-width: 992px) {
+            .gallery-header { flex-direction: column; gap: 20px; text-align: left; }
+            .gallery-header .title { text-align: left; }
+            .gallery-grid { grid-template-columns: 1fr; }
+        }
+
+        /* --- NEW: HOSPITALITY SECTION --- */
+        .hospitality-section {
+            background-color: #ffffff;
+            color: #1a1a1a;
+            padding: 100px 0;
+        }
+
+        .hosp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 80px;
+        }
+
+        .hosp-header .left-col { flex: 1.5; }
+
+        .hosp-header .right-col {
+            flex: 1;
+            text-align: right;
+            font-size: 38px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .hosp-desc {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 30px;
+            max-width: 600px;
+        }
+
+        .btn-grow {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--primary);
+            color: #1a1a1a;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-grow .arrow-circle {
+            width: 26px; height: 26px;
+            border: 1px solid #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hosp-sub-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .hosp-counter { font-weight: 600; color: #ddd; }
+        .hosp-counter span { color: var(--primary); }
+
+        .property-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+        }
+
+        .prop-card { cursor: pointer; }
+
+        .prop-img {
+            width: 100%;
+            height: 350px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .prop-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: 0.5s;
+        }
+
+        .prop-card:hover .prop-img img { transform: scale(1.05); }
+
+        .prop-card h4 { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
+        .prop-loc { font-size: 13px; color: #888; display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+
+        .prop-card .visit-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            text-decoration: none;
+            margin-top: 10px;
+        }
+
+        /* Dark arrow buttons for the white section */
+        .dark-arrow { border-color: #ddd !important; color: #1a1a1a !important; }
+        .dark-arrow:hover { background: #1a1a1a !important; color: white !important; }
+
+        @media (max-width: 992px) {
+            .hosp-header { flex-direction: column-reverse; gap: 30px; }
+            .hosp-header .right-col { text-align: left; }
+            .property-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ================= VLOG SECTION ================= */
+        .vlog-section{
+            padding:120px 80px;
+            background:#f5f5f5;
+            color:#1A1A1A;
+        }
+
+        .vlog-section .section-title{
+            color:#000000;
+        }
+
+        .vlog-section .section-title i{
+            color:#000000;
+        }
+
+        .section-title{
+            font-size:48px;
+            font-weight:400;
+            margin-bottom:100px;
+            max-width:700px;
+            color:#FFFFFF; 
+        }
+
+        .section-title i{
+            font-family:'Playfair Display',serif;
+            font-style:italic;
+            color:#FFFFFF; 
+        }
+
+        .vlog-wrapper{
+            display:flex;
+            justify-content:space-between;
+            gap:100px;
+        }
+
+        .vlog-item{
+            display:flex;
+            gap:40px;
+            align-items:center;
+            max-width:650px;
+        }
+
+        .video-container{
+            width:358px;
+            height:358px;
+            border-radius:20px;
+            overflow:hidden;
+            position:relative;
+            flex-shrink:0;
+        }
+
+        .video-container img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+        }
+
+        .play-btn{
+            position:absolute;
+            bottom:20px;
+            right:20px;
+            width:50px;
+            height:50px;
+            background:white;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 10px 25px rgba(0,0,0,0.2);
+            cursor:pointer;
+        }
+
+        .vlog-content{
+            max-width:260px;
+        }
+
+        .quote{
+            font-size:14px;
+            line-height:1.7;
+            color:#666;
+            margin-bottom:30px;
+        }
+
+        .read-btn{
+            padding:12px 25px;
+            border:1px solid #000;
+            border-radius:30px;
+            background:transparent;
+            cursor:pointer;
+        }
+
+        /* ================= FAQ SECTION ================= */
+        .faq-container {
+          width: 100%;
+          max-width: 100%;
+          margin: 0 auto;
+          padding: 80px 24px;
+          background: #ffffff;
+          min-height: 100vh;
+          color: #000;
+        }
+
+        .faq-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 20px;
+          margin-bottom: 40px;
+        }
+
+        .faq-header h2 {
+          font-size: 36px;
+          font-weight: 600;
+          margin: 0;
+          color: #000;
+        }
+
+        .faq-header h2 span {
+          border-bottom: 5px solid #E79A2B;
+          padding-bottom: 6px;
+        }
+
+        .faq-header p {
+          max-width: 380px;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #000;
+          margin: 0;
+        }
+
+        .faq-item {
+          display: flex;
+          align-items: center;
+          padding: 22px 0;
+          border-bottom: 1px solid #999;
+          gap: 20px;
+          cursor: pointer;
+        }
+
+        .faq-icon {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          font-weight: bold;
+          flex-shrink: 0;
+          transition: transform 0.3s ease;
+        }
+
+        .faq-icon.orange { background: #E79A2B; color: #fff; }
+        .faq-icon.black { background: #000; color: #fff; }
+
+        .faq-text h4 { margin: 0; font-size: 16px; font-weight: 500; color: #000; }
+        .faq-text p { 
+          margin: 6px 0 0 0; 
+          font-size: 14px; 
+          color: #000; 
+          display: none;
+          max-height: 0;
+          overflow: hidden;
+          transition: max-height 0.3s ease, margin 0.3s ease;
+        }
+
+        .faq-text p.active { 
+          display: block; 
+          max-height: 200px;
+          margin-top: 12px;
+        }
+
+        .faq-item.active .faq-icon { 
+          transform: rotate(90deg); 
+        }
+
+        /*FAQ-RIBBON */
+        .ribbon-wrap { 
+          width: 100%; 
+          margin: 0;
+          padding: 60px 0;
+          background: #ffffff; 
+          overflow: visible;
+        }
+
+        .ribbon {
+          width: 100%;
+          padding: 12px 0;
+          font-size: 12px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          text-align: center;
+          white-space: nowrap;
+          margin-bottom: 10px;
+        }
+
+        .ribbon.orange { 
+          background: #E79A2B; 
+          color: #000; 
+          transform: rotate(-3deg);
+        }
+
+        .ribbon.white {
+          background: #ffffff;
+          color: #000;
+          transform: rotate(2deg);
+          border-top: 1px solid #ddd;
+          margin-top: -35px;
+        }
+
+        .ribbon span { 
+          margin: 0 20px; 
+          font-weight: 600; 
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+          .faq-header {
+            flex-direction: column;
+          }
+        }
+
+        /* --- FAQ SECTION: EXACT FIGMA MATCH --- */
+        .faq-section {
+            padding: 100px 0;
+            background: #fff;
+        }
+
+        .faq-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+
+        .faq-header h2 {
+            font-size: 36px;
+            font-weight: 600;
+        }
+
+        .faq-header h2 span.underline {
+            position: relative;
+            z-index: 1;
+        }
+
+        .faq-header h2 span.underline::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: #e2a25a;
+            z-index: -1;
+            border-radius: 2px;
+        }
+
+        .faq-row {
+            border-bottom: 1px solid #000;
+            padding: 25px 0;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .faq-icon-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #000;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .faq-icon-btn.active {
+            background: #e2a25a;
+        }
+
+        .faq-text h4 {
+            font-size: 16px;
+            font-weight: 400;
+            color: #444;
+        }
+
+        .faq-text p {
+            font-size: 14px;
+            color: #000;
+            margin-top: 10px;
+        }
+
+        /* --- TILTED MARQUEE --- */
+        .brand-marquee {
+            background: #e2a25a;
+            padding: 15px 0;
+            transform: rotate(-1.5deg) scale(1.1);
+            width: 100%;
+            overflow: hidden;
+            margin: 40px 0;
+        }
+
+        .marquee-content {
+            display: flex;
+            white-space: nowrap;
+            animation: scrollText 20s linear infinite;
+        }
+
+        .marquee-content span {
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 0 40px;
+        }
+
+        @keyframes scrollText {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* --- FINAL BLACK FOOTER --- */
+        .footer-dark {
+            background: #000;
+            color: #fff;
+            padding: 80px 0 40px;
+        }
+
+        .footer-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 60px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 60px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1fr;
+            gap: 40px;
+        }
+
+        .subscribe-box {
+            background: #1a1a1a;
+            border-radius: 50px;
+            padding: 5px 5px 5px 20px;
+            display: flex;
+            width: 400px;
+        }
+
+        .subscribe-box input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            flex: 1;
+            outline: none;
+        }
+
+        .btn-subscribe {
+            background: #e2a25a;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .social-circle {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #e2a25a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            margin-right: 10px;
+            text-decoration: none;
+        }
+</style>
+</head>
+<body>
+
+
+<section class="hero">
+    <div class="location-tag">
+        <i class="fa-solid fa-square"></i>
+        <span>Munnar, Kerala</span>
+    </div>
+
+    <div class="hero-content">
+        <h1>Escape the city<br>Find your <span>peace</span></h1>
+        <div class="cta-group">
+            <a href="{% url 'user_panel:domestic_packages' %}" class="cta-link">Explore Destinations</a>
+            <a href="{% url 'user_panel:hospitality' %}" class="cta-link">Hospitality Services</a>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <i class="fa-solid fa-award"></i>
+            <h2>10+</h2>
+            <p>Years of Excellence</p>
+        </div>
+        <div class="stat-item">
+            <i class="fa-solid fa-earth-americas"></i>
+            <h2>50+</h2>
+            <p>Tours of Excellence</p>
+        </div>
+        <div class="stat-item">
+            <i class="fa-solid fa-hotel"></i>
+            <h2>200+</h2>
+            <p>Managed Properties</p>
+        </div>
+        <div class="stat-item">
+            <i class="fa-solid fa-users"></i>
+            <h2>5000+</h2>
+            <p>Happy Travelers</p>
+        </div>
+        <div class="stat-item">
+            <i class="fa-solid fa-star"></i>
+            <h2>4.9/5</h2>
+            <p>Client Satisfaction</p>
+        </div>
+    </div>
+</section>
+
+<section class="why-choose">
+    <div class="content-wrapper">
+        <div class="header-flex">
+            <h2 class="section-title">Why Choose<br>Whyte House Holidays?</h2>
+            <div class="header-description">
+                <p>With over 10 years of experience in the travel and hospitality industry, Whyte House Holidays is a name trusted by travelers and property owners alike. We specialize in crafting seamless holiday experiences and managing exclusive properties with the highest standards of quality and care.</p>
+                <a href="{% url 'user_panel:about'%}" class="btn-meet">Meet Our Team <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+
+        <div class="cards-container">
+            <div class="info-card card-left">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-heart"></i></div>
+                    <h3>A Decade of Trust</h3>
+                </div>
+                <p>10+ years of proven expertise in the travel industry, trusted by travelers and property owners alike.</p>
+            </div>
+            
+            <div class="info-card card-center">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-award"></i></div>
+                    <h3>Curated Quality</h3>
+                </div>
+                <p>10+ years of proven expertise in the travel industry, trusted by travelers and property owners alike.</p>
+            </div>
+            
+            <div class="info-card card-right">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fa-solid fa-comment"></i></div>
+                    <h3>Dedicated Support</h3>
+                </div>
+                <p>10+ years of proven expertise in the travel industry, trusted by travelers and property owners alike.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="destination-explorer">
+    <div class="content-wrapper">
+        <div class="dest-header">
+            <h2 class="dest-title">Choose <span>where</span> are we<br>looking for?</h2>
+            <div class="dest-nav">
+                {% for dest in domestic_destinations %}
+                    <a href="#" class="dest-link {% if forloop.first %}active{% endif %}" data-dest="{{ dest.name|lower }}">{{ dest.name }}</a>
+                {% empty %}
+                    <a href="#" class="dest-link active" data-dest="kozhikode">Kozhikode</a>
+                    <a href="#" class="dest-link" data-dest="munnar">Munnar</a>
+                    <a href="#" class="dest-link" data-dest="wayanad">Wayanad</a>
+                    <a href="#" class="dest-link" data-dest="ooty">Ooty</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="resort-showcase">
+            <div class="resort-info">
+                <p class="resort-desc"></p>
+            </div>
+            <div class="resort-cta">
+                <h3 class="resort-name">Le Montigo Resorts</h3>
+                <a href="#" class="btn-enquire" id="resort-enquire-btn">Enquire Now <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="jungle-resort-hero">
+    <div class="jungle-content">
+        <div class="jungle-text-box">
+            <h2>Zero Degree Jungle Resort</h2>
+            <a href="#" class="btn-enquire-round" onclick="openEnquirePopup('Domestic')">
+                Enquire Now 
+                <span class="arrow-circle"><i class="fa-solid fa-arrow-up-right"></i></span>
+            </a>
+        </div>
+        <div class="jungle-tagline-box">
+            <p class="jungle-tagline">“A hidden gem surrounded by untouched nature!”</p>
+        </div>
+    </div>
+</section>
+
+<section class="destinations-gallery">
+    <div class="content-wrapper">
+        <div class="gallery-header">
+            <div class="desc">
+                Over 200 Curated Properties Across South India. Our strong network spans handpicked stays in Kerala, Tamil Nadu, Karnataka, and beyond. We collaborate only with verified partners, ensuring quality at every touchpoint.
+            </div>
+            <div class="title">
+                Explore <span>The Destinations</span>
+                and choose your favorite
+            </div>
+        </div>
+
+        <div class="gallery-grid">
+            {% if gallery_destinations %}
+                {% for destination in gallery_destinations %}
+                    <div class="gallery-card">
+                        <img src="{% if destination.image %}{{ destination.image.url }}{% else %}{% static 'images/tropical.png' %}{% endif %}" alt="{{ destination.name }}">
+                        <div class="gallery-overlay">
+                            <h3>{{ destination.name }}</h3>
+                            <a href="{% url 'user_panel:domestic_packages' %}?dest={{ destination.id }}" class="btn-explore-link">
+                                Explore <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="gallery-card">
+                    <img src="{% static 'images/tropical.png' %}" alt="Black Waters">
+                    <div class="gallery-overlay">
+                        <h3>Black Waters</h3>
+                        <a href="{% url 'user_panel:domestic_packages' %}" class="btn-explore-link">
+                            Explore <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="{% static 'images/munnar.png' %}" alt="Munnar">
+                    <div class="gallery-overlay">
+                        <h3>Munnar</h3>
+                        <a href="{% url 'user_panel:domestic_packages' %}" class="btn-explore-link">
+                            Explore <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="{% static 'images/wayanad.png' %}" alt="Wayanad">
+                    <div class="gallery-overlay">
+                        <h3>Wayanad</h3>
+                        <a href="{% url 'user_panel:domestic_packages' %}" class="btn-explore-link">
+                            Explore <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="gallery-footer">
+            <div class="hosp-counter"><span id="dest-current">1</span>/<span id="dest-total">1</span></div>
+            <div style="display: flex; gap: 10px;">
+                <button class="arrow-btn" id="dest-prev"><i class="fa-solid fa-arrow-left"></i></button>
+                <button class="arrow-btn" id="dest-next"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="hospitality-section">
+    <div class="content-wrapper">
+        <div class="hosp-header">
+            <div class="left-col">
+                <p class="hosp-desc">
+                    Transform Your Property Into a Thriving Business. With over a decade of hospitality expertise, we've helped 200+ property owners maximize their revenue and deliver exceptional guest experiences.
+                </p>
+                <a href="{% url 'user_panel:hospitality' %}" class="btn-grow">
+                    Grow your Property
+                    <span class="arrow-circle"><i class="fa-solid fa-arrow-up-right"></i></span>
+                </a>
+            </div>
+            <div class="right-col">
+                Beyond Travel;<br>
+                Whyte House Hospitality
+            </div>
+        </div>
+
+        <div class="hosp-sub-nav">
+            <div class="hosp-counter"><span id="hosp-current">1</span>/<span id="hosp-total">1</span></div>
+            <div class="gallery-footer" style="margin-top: 0;">
+                <button class="arrow-btn dark-arrow" id="hosp-prev"><i class="fa-solid fa-arrow-left"></i></button>
+                <button class="arrow-btn dark-arrow" id="hosp-next"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+
+        <div class="property-grid" id="property-grid">
+            {% if properties %}
+                {% for property in properties %}
+                    <div class="prop-card" data-page="{{ forloop.counter0|divisibleby:3|yesno:'0,1,2' }}" style="display:block;">
+                        <div class="prop-img">
+                            <img src="{% if property.image %}{{ property.image.url }}{% else %}{% static 'images/zenith.png' %}{% endif %}" alt="{{ property.name }}">
+                        </div>
+                        <h4>{{ property.name }}</h4>
+                        <p class="prop-loc"><i class="fa-solid fa-location-dot"></i> {{ property.location }}</p>
+                        {% if property.website %}
+                            <a href="{{ property.website }}" target="_blank" class="visit-link">Visit Now <i class="fa-solid fa-arrow-up-right" style="font-size: 10px;"></i></a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="prop-card" data-page="0">
+                    <div class="prop-img">
+                        <img src="{% static 'images/zenith.png' %}" alt="Zenith Pavilion">
+                    </div>
+                    <h4>The Zenith Pavilion Holidays</h4>
+                    <p class="prop-loc"><i class="fa-solid fa-location-dot"></i> Kozhikode, India</p>
+                </div>
+
+                <div class="prop-card" data-page="0">
+                    <div class="prop-img">
+                        <img src="{% static 'images/nilaya.png' %}" alt="Nilaya Shoreline">
+                    </div>
+                    <h4>Nilaya Shoreline Villas</h4>
+                    <p class="prop-loc"><i class="fa-solid fa-location-dot"></i> Goa, India</p>
+                    <a href="#" class="visit-link">Visit Now <i class="fa-solid fa-arrow-up-right" style="font-size: 10px;"></i></a>
+                </div>
+
+                <div class="prop-card" data-page="0">
+                    <div class="prop-img">
+                        <img src="{% static 'images/amber.png' %}" alt="Amber Vault">
+                    </div>
+                    <h4>The Amber Vault Cuisine</h4>
+                    <p class="prop-loc"><i class="fa-solid fa-location-dot"></i> Bengaluru, India</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <script>
+        // Gallery destinations navigation - show 3 at a time
+        document.addEventListener('DOMContentLoaded', function() {
+            const galleryCards = document.querySelectorAll('.gallery-grid .gallery-card');
+            const prevBtn = document.getElementById('dest-prev');
+            const nextBtn = document.getElementById('dest-next');
+            const currentSpan = document.getElementById('dest-current');
+            const totalSpan = document.getElementById('dest-total');
+            
+            const cardsPerPage = 3;
+            const totalCards = galleryCards.length;
+            const totalPages = Math.ceil(totalCards / cardsPerPage);
+            let currentPage = 0;
+            
+            galleryCards.forEach((card, index) => {
+                card.setAttribute('data-page', Math.floor(index / cardsPerPage));
+            });
+            
+            if (totalSpan) totalSpan.textContent = totalPages;
+            
+            function updateButtons() {
+                if (prevBtn) {
+                    if (currentPage === 0) {
+                        prevBtn.disabled = true;
+                        prevBtn.style.opacity = '0.3';
+                        prevBtn.style.cursor = 'not-allowed';
+                    } else {
+                        prevBtn.disabled = false;
+                        prevBtn.style.opacity = '1';
+                        prevBtn.style.cursor = 'pointer';
+                    }
+                }
+                
+                if (nextBtn) {
+                    if (currentPage === totalPages - 1) {
+                        nextBtn.disabled = true;
+                        nextBtn.style.opacity = '0.3';
+                        nextBtn.style.cursor = 'not-allowed';
+                    } else {
+                        nextBtn.disabled = false;
+                        nextBtn.style.opacity = '1';
+                        nextBtn.style.cursor = 'pointer';
+                    }
+                }
+            }
+            
+            function showPage(pageIndex) {
+                galleryCards.forEach((card) => {
+                    const cardPage = parseInt(card.getAttribute('data-page'));
+                    card.style.display = (cardPage === pageIndex) ? 'block' : 'none';
+                });
+                if (currentSpan) currentSpan.textContent = pageIndex + 1;
+                currentPage = pageIndex;
+                updateButtons();
+            }
+            
+            showPage(0);
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    if (currentPage > 0) {
+                        showPage(currentPage - 1);
+                    }
+                });
+            }
+            
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    if (currentPage < totalPages - 1) {
+                        showPage(currentPage + 1);
+                    }
+                });
+            }
+        });
+        
+        // Property carousel navigation - show 3 at a time
+        document.addEventListener('DOMContentLoaded', function() {
+            const propCards = document.querySelectorAll('#property-grid .prop-card');
+            const prevBtn = document.getElementById('hosp-prev');
+            const nextBtn = document.getElementById('hosp-next');
+            const currentSpan = document.getElementById('hosp-current');
+            const totalSpan = document.getElementById('hosp-total');
+            
+            const cardsPerPage = 3;
+            const totalCards = propCards.length;
+            const totalPages = Math.ceil(totalCards / cardsPerPage);
+            let currentPage = 0;
+            
+            propCards.forEach((card, index) => {
+                card.setAttribute('data-page', Math.floor(index / cardsPerPage));
+            });
+            
+            if (totalSpan) totalSpan.textContent = totalPages;
+            
+            function showPage(pageIndex) {
+                propCards.forEach((card) => {
+                    const cardPage = parseInt(card.getAttribute('data-page'));
+                    card.style.display = (cardPage === pageIndex) ? 'block' : 'none';
+                });
+                if (currentSpan) currentSpan.textContent = pageIndex + 1;
+                currentPage = pageIndex;
+            }
+            
+            showPage(0);
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function() {
+                    currentPage = (currentPage - 1 + totalPages) % totalPages;
+                    showPage(currentPage);
+                });
+            }
+            
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function() {
+                    currentPage = (currentPage + 1) % totalPages;
+                    showPage(currentPage);
+                });
+            }
+            
+            // FAQ Accordion functionality
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const answer = this.querySelector('.faq-text p');
+                    const icon = this.querySelector('.faq-icon');
+                    const isActive = answer.classList.contains('active');
+                    
+                    document.querySelectorAll('.faq-text p').forEach(p => {
+                        p.classList.remove('active');
+                    });
+                    document.querySelectorAll('.faq-item').forEach(faq => {
+                        faq.classList.remove('active');
+                    });
+                    document.querySelectorAll('.faq-icon').forEach(ic => {
+                        ic.classList.remove('orange');
+                        ic.classList.add('black');
+                    });
+                    
+                    if (!isActive) {
+                        answer.classList.add('active');
+                        this.classList.add('active');
+                        icon.classList.remove('black');
+                        icon.classList.add('orange');
+                    }
+                });
+            });
+        });
+        </script>
+    </div>
+</section>
+
+<section class="vlog-section">
+    <h2 class="section-title">
+        Capture your <b>unforgettable</b> moments <i>with us</i>
+    </h2>
+
+<script>
+// Destination switcher
+document.addEventListener('DOMContentLoaded', function() {
+    const destLinks = document.querySelectorAll('.dest-link');
+    const resortName = document.querySelector('.resort-name');
+    const resortDesc = document.querySelector('.resort-desc');
+    const enquireBtn = document.getElementById('resort-enquire-btn');
+    
+    const resorts = {
+        {% for dest in domestic_destinations %}
+        '{{ dest.name|lower }}': {
+            name: '{% if dest.packages.first %}{{ dest.packages.first.name }}{% else %}{{ dest.name }} Resort{% endif %}',
+            desc: '{% if dest.packages.first and dest.packages.first.description %}{{ dest.packages.first.description|truncatewords:15 }}{% elif dest.description %}{{ dest.description|truncatewords:15 }}{% else %}Discover the beauty of {{ dest.name }}.{% endif %}',
+            packageId: '{% if dest.packages.first %}{{ dest.packages.first.id }}{% else %}#{% endif %}'
+        },
+        {% endfor %}
+    };
+    
+    // Set initial description for first destination
+    if (resortDesc && destLinks.length > 0) {
+        const firstDest = destLinks[0].getAttribute('data-dest');
+        if (resorts[firstDest]) {
+            resortDesc.textContent = resorts[firstDest].desc;
+            resortName.textContent = resorts[firstDest].name;
+            if (enquireBtn && resorts[firstDest].packageId !== '#') {
+                enquireBtn.href = '/packages/' + resorts[firstDest].packageId + '/';
+            }
+        }
+    }
+    
+    destLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            destLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
+            const dest = this.getAttribute('data-dest');
+            if (resorts[dest]) {
+                resortName.textContent = resorts[dest].name;
+                if (resortDesc) {
+                    resortDesc.textContent = resorts[dest].desc;
+                }
+                if (enquireBtn) {
+                    if (resorts[dest].packageId !== '#') {
+                        enquireBtn.href = '/packages/' + resorts[dest].packageId + '/';
+                    } else {
+                        enquireBtn.href = '{% url "user_panel:domestic_packages" %}';
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
+
+    <div class="vlog-wrapper">
+        <div class="vlog-item">
+            <a href="https://www.instagram.com/reel/C3PmlL2rzwk/?igsh=b2R4bzl1Mmtwazdi" target="_blank" class="video-container" style="text-decoration:none; cursor:pointer;">
+                <img src="{% static 'images/avatar.png' %}" alt="Vlog 1">
+                <div class="play-btn">▶</div>
+            </a>
+
+            <div class="vlog-content">
+                <p class="quote">
+                    “The property itself looks and feels like a luxury hideaway,
+                    surrounded by lush greenery that makes you feel miles away
+                    from the chaos of everyday life.”
+                </p>
+
+                <a href="https://www.instagram.com/reel/C3PmlL2rzwk/?igsh=b2R4bzl1Mmtwazdi" target="_blank" class="read-btn" style="text-decoration:none; display:inline-block; color:inherit;">Preview the vlog</a>
+            </div>
+        </div>
+
+        <div class="vlog-item">
+            <a href="https://www.instagram.com/reel/C3PmlL2rzwk/?igsh=b2R4bzl1Mmtwazdi" target="_blank" class="video-container" style="text-decoration:none; cursor:pointer;">
+                <img src="{% static 'images/avatar2.png' %}" alt="Vlog 2">
+                <div class="play-btn">▶</div>
+            </a>
+
+            <div class="vlog-content">
+                <p class="quote">
+                    “The property itself looks and feels like a luxury hideaway,
+                    surrounded by lush greenery that makes you feel miles away
+                    from the chaos of everyday life.”
+                </p>
+
+                <a href="https://www.instagram.com/reel/C3PmlL2rzwk/?igsh=b2R4bzl1Mmtwazdi" target="_blank" class="read-btn" style="text-decoration:none; display:inline-block; color:inherit;">Preview the vlog</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="faq-container">
+    <div class="faq-header">
+        <h2>Frequently asked <span>questions</span> +</h2>
+        <p><strong>Get the answers you need below.</strong> If you can't find them, leave us a mail</p>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-icon black">→</div>
+        <div class="faq-text">
+            <h4>Can I change or cancel my booking, and what are the charges?</h4>
+            <p>You can change or cancel your booking, but charges depend on how soon you made the request.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-icon black">→</div>
+        <div class="faq-text">
+            <h4>Customized packages based on my budget and preferences?</h4>
+            <p>Yes, we can create personalized packages based on your budget and preferences.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-icon black">→</div>
+        <div class="faq-text">
+            <h4>Is my payment and personal information safe when I book through your agency?</h4>
+            <p>Absolutely. All transactions are encrypted and secure.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-icon black">→</div>
+        <div class="faq-text">
+            <h4>Do you provide 24/7 customer support during my trip?</h4>
+            <p>Yes, our support team is available around the clock for any assistance.</p>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-icon black">→</div>
+        <div class="faq-text">
+            <h4>Are there hidden charges or taxes in the packages?</h4>
+            <p>No, all charges are transparent and mentioned upfront.</p>
+        </div>
+    </div>
+</section>
+
+<div class="ribbon-wrap">
+    <div class="ribbon orange">
+        <span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span>
+    </div>
+    <div class="ribbon white">
+        <span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span><span>WHYTE HOUSE HOLIDAYS +</span>
+    </div>
+</div>
+
+{% include 'user/enquire_popup.html' %}
+{% endblock %}

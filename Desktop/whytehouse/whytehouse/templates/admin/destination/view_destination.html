@@ -1,0 +1,206 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block title %}{{ destination.name }} | Whyte House{% endblock %}
+
+{% block content %}
+<style>
+    .view-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .page-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .back-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: #333;
+    }
+
+    .header-text h2 {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .view-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        border: 1px solid #edf2f7;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .dest-image {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 30px;
+    }
+
+    .info-row {
+        display: flex;
+        padding: 15px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #475569;
+        width: 200px;
+    }
+
+    .info-value {
+        color: #1e293b;
+        flex: 1;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-domestic {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .badge-international {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-popular {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+
+    .btn-edit {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .btn-delete {
+        background: #ef4444;
+        color: white;
+    }
+</style>
+
+<div class="view-container">
+    <div class="page-header">
+        <a href="{% url 'admin_panel:destinations' %}?cat={{ destination.category }}" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <div class="header-text">
+            <h2>{{ destination.name }}</h2>
+        </div>
+    </div>
+
+    <div class="view-card">
+        {% if destination.image %}
+            <img src="{{ destination.image.url }}" alt="{{ destination.name }}" class="dest-image">
+        {% endif %}
+
+        <div class="info-row">
+            <div class="info-label">Destination Name</div>
+            <div class="info-value">{{ destination.name }}</div>
+        </div>
+
+        <div class="info-row">
+            <div class="info-label">Country</div>
+            <div class="info-value">{{ destination.country|default:"-" }}</div>
+        </div>
+
+        <div class="info-row">
+            <div class="info-label">Category</div>
+            <div class="info-value">
+                <span class="badge {% if destination.category == 'Domestic' %}badge-domestic{% else %}badge-international{% endif %}">
+                    {{ destination.category }}
+                </span>
+            </div>
+        </div>
+
+        {% if destination.description and destination.description|lower != 'none' %}
+        <div class="info-row">
+            <div class="info-label">Description</div>
+            <div class="info-value">{{ destination.description }}</div>
+        </div>
+        {% endif %}
+
+        {% if destination.packages_start_from %}
+        <div class="info-row">
+            <div class="info-label">Packages Start From</div>
+            <div class="info-value">₹ {{ destination.packages_start_from|floatformat:2 }}</div>
+        </div>
+        {% endif %}
+
+        <div class="info-row">
+            <div class="info-label">Popular Destination</div>
+            <div class="info-value">
+                {% if destination.is_popular %}
+                    <span class="badge badge-popular">Yes</span>
+                {% else %}
+                    No
+                {% endif %}
+            </div>
+        </div>
+
+        {% if destination.map_image %}
+        <div class="info-row">
+            <div class="info-label">Map Image</div>
+            <div class="info-value">
+                <img src="{{ destination.map_image.url }}" alt="Map" style="max-width: 200px; border-radius: 8px;">
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="info-row">
+            <div class="info-label">Created At</div>
+            <div class="info-value">{{ destination.created_at|date:"F d, Y - h:i A" }}</div>
+        </div>
+
+        <div class="action-buttons">
+            <a href="{% url 'admin_panel:edit_destination' destination.id %}" class="btn btn-edit">
+                <i class="fas fa-edit"></i> Edit Destination
+            </a>
+            <a href="{% url 'admin_panel:delete_destination' destination.id %}" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this destination?')">
+                <i class="fas fa-trash"></i> Delete Destination
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends 'admin/sidebar.html' %}
+{% block content %}
+
+<style>
+    .form-container { max-width: 1000px; margin: 40px auto; font-family: 'Segoe UI', sans-serif; color: #333; }
+    .card { background: #fff; padding: 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .card h4 { margin-top: 0; margin-bottom: 20px; font-size: 1.1rem; font-weight: 600; }
+
+    label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; }
+    .required-star { color: #ef4444; margin-left: 2px; }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: none;
+        border-radius: 8px;
+        background-color: #f3f4f6;
+        margin-bottom: 20px;
+        box-sizing: border-box;
+    }
+
+    textarea.form-control { min-height: 100px; resize: vertical; }
+    .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* Switch Styling */
+    .switch { position: relative; display: inline-block; width: 44px; height: 22px; vertical-align: middle; margin-right: 10px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc; transition: .4s; border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+        background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #c89b2d; }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    .btn-group { display: flex; gap: 15px; margin-top: 20px; }
+    .btn-submit { padding: 12px 30px; background: #c89b2d; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; }
+    .btn-cancel { padding: 12px 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; text-decoration: none; color: #333; font-weight: 600; }
+    
+    .img-preview { width: 150px; height: 100px; object-fit: cover; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd; }
+</style>
+
+<div class="form-container">
+
+    <div style="display:flex; align-items:center; gap:15px; margin-bottom:30px;">
+        <a href="{% url 'admin_panel:travel_packages' %}" style="text-decoration:none; color:#000; font-size:24px;">←</a>
+        <div>
+            <h2 style="margin:0; font-size: 1.5rem;">{% if package %}Edit{% else %}Add New{% endif %} Package</h2>
+            <small style="color:#6b7280;">Fill in package details</small>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="card">
+            <h4>Basic Information</h4>
+
+            <label>Package Title <span class="required-star">*</span></label>
+            <input type="text" name="name" value="{{ package.name|default:'' }}" required class="form-control">
+
+            <div class="grid-row">
+                <div>
+                    <label>Category <span class="required-star">*</span></label>
+                    <select name="category" id="category" required class="form-control">
+                        <option value="Domestic" {% if default_category == 'Domestic' or package.category == 'Domestic' %}selected{% endif %}>Domestic</option>
+                        <option value="International" {% if default_category == 'International' or package.category == 'International' %}selected{% endif %}>International</option>
+                    </select>
+                </div>
+
+                <div>
+                    {% if selected_destination_obj %}
+                    <label>Destination</label>
+                    <div style="padding: 12px 16px; border-radius: 8px; background-color: #f3f4f6; margin-bottom: 20px; font-weight: 500; color: #333;">
+                        {{ selected_destination_obj.name }}, {{ selected_destination_obj.country }}
+                    </div>
+                    <input type="hidden" name="destination" value="{{ selected_destination_id }}">
+                    {% else %}
+                    <label>Destination</label>
+                    <div style="padding: 12px 16px; border-radius: 8px; background-color: #f9f9f9; margin-bottom: 20px; color: #999; font-style: italic;">
+                        No destination selected
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid-row">
+                <div>
+                    <label>Price <span class="required-star">*</span></label>
+                    <input type="number" name="price" value="{{ package.price|default:'' }}" required class="form-control">
+                </div>
+
+                <div>
+                    <label>Duration</label>
+                    <input type="text" name="duration" value="{{ package.duration|default:'' }}" class="form-control" placeholder="e.g. 3 Days / 2 Nights">
+                </div>
+            </div>
+
+            <div class="grid-row">
+                <div>
+                    <label>Location <span class="required-star">*</span></label>
+                    <input type="text" name="location" value="{{ package.location|default:'' }}" required class="form-control" placeholder="e.g. Wayanad, Kerala">
+                </div>
+
+                <div>
+                    <label>Country <span class="required-star">*</span></label>
+                    <input type="text" name="country" value="{{ package.country|default:'' }}" required class="form-control" placeholder="e.g. India">
+                </div>
+            </div>
+
+            <label>Description</label>
+            <textarea name="description" class="form-control">{{ package.description|default:'' }}</textarea>
+
+            <label>Package Image <span class="required-star">*</span></label>
+            {% if package.image %}
+                <img src="{{ package.image.url }}" class="img-preview">
+                <p style="font-size: 0.8rem; color: #666;">Current: {{ package.image.name }}</p>
+            {% endif %}
+            <input type="file" name="image" accept="image/*" class="form-control" {% if not package %}required{% endif %}>
+
+            <div style="margin-top: 10px; display: flex; align-items: center;">
+                <label class="switch">
+                    <input type="checkbox" name="active" {% if package.active or not package %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+                <span style="font-weight: 500; font-size: 0.9rem;">Active Package</span>
+            </div>
+        </div>
+
+        <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h4 style="margin:0;">Itinerary</h4>
+        <button type="button" onclick="addDay()" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:6px; cursor:pointer;">+ Add Day</button>
+    </div>
+
+    <div id="itinerary-container">
+        <div class="itinerary-item">
+            <label>Day 1</label>
+            <textarea name="itinerary[]" class="form-control" placeholder="Activities for this day..."></textarea>
+        </div>
+    </div>
+</div>
+
+
+        <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h4 style="margin:0;">Inclusions</h4>
+        <button type="button" onclick="addInclusion()" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:6px; cursor:pointer;">+ Add Inclusion</button>
+    </div>
+
+    <div id="inclusion-container">
+        <input type="text" name="inclusions[]" class="form-control" placeholder="e.g., Hotel accommodation">
+    </div>
+</div>
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h4 style="margin:0;">Exclusions</h4>
+        <button type="button" onclick="addExclusion()" style="background:none; border:1px solid #ddd; padding:5px 12px; border-radius:6px; cursor:pointer;">+ Add Exclusion</button>
+    </div>
+
+    <div id="exclusion-container">
+        <input type="text" name="exclusions[]" class="form-control" placeholder="e.g., Flight tickets">
+    </div>
+</div>
+
+
+        <div class="card">
+            <h4>SEO Settings</h4>
+
+            <label>Meta Title</label>
+            <input type="text" name="meta_title" value="{{ package.meta_title|default:'' }}" class="form-control">
+
+            <label>Meta Description</label>
+            <textarea name="meta_description" class="form-control">{{ package.meta_description|default:'' }}</textarea>
+
+            <div class="btn-group">
+                <a href="{% url 'admin_panel:travel_packages' %}" class="btn-cancel">Cancel</a>
+                <button type="submit" class="btn-submit">{% if package %}Update{% else %}Submit{% endif %}</button>
+            </div>
+        </div>
+
+    </form>
+</div>
+<script>
+let dayCount = 1;
+
+function addDay() {
+    dayCount++;
+    const container = document.getElementById('itinerary-container');
+
+    const div = document.createElement('div');
+    div.classList.add('itinerary-item');
+
+    div.innerHTML = `
+        <label>Day ${dayCount}</label>
+        <textarea name="itinerary[]" class="form-control" placeholder="Activities for this day..."></textarea>
+    `;
+
+    container.appendChild(div);
+}
+
+function addInclusion() {
+    const container = document.getElementById('inclusion-container');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'inclusions[]';
+    input.className = 'form-control';
+    input.placeholder = 'e.g., Breakfast included';
+
+    container.appendChild(input);
+}
+
+function addExclusion() {
+    const container = document.getElementById('exclusion-container');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.name = 'exclusions[]';
+    input.className = 'form-control';
+    input.placeholder = 'e.g., Personal expenses';
+
+    container.appendChild(input);
+}
+</script>
+
+{% endblock %}

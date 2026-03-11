@@ -1,0 +1,178 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.page-title{font-size:32px;font-weight:600;margin-bottom:8px;color:#111}
+.page-sub{color:#666;font-size:15px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.card-head h3{font-size:18px;font-weight:600;color:#111}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search{position:relative;min-width:280px;flex:1;max-width:400px}
+.search input{width:100%;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:10px 12px 10px 40px;outline:none;font-size:14px}
+.search input:focus{border-color:#d4a017;background:#fff}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.5}
+.btn-add{display:inline-flex;align-items:center;gap:8px;background:#d4a017;color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn-add svg{width:16px;height:16px}
+.table-wrap{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:900px}
+thead th{text-align:left;font-size:13px;font-weight:600;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;color:#374151;white-space:nowrap}
+tbody td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#111;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr.data-row td{background:#fef9e7}
+.sl{width:80px}
+.name-cell{display:flex;align-items:center;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#f4ecd8;color:#b18a1e;display:grid;place-items:center;font-weight:700;font-size:16px}
+.name{font-weight:600}
+.wrap{white-space:normal;max-width:140px}
+.badge{display:inline-block;padding:6px 12px;border-radius:20px;font-weight:600;font-size:12px;background:#d4a017;color:#000}
+.actions{display:flex;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.delete svg{stroke:#ef4444}
+.alert-msg{padding:12px 16px;border-radius:10px;margin-bottom:16px;font-weight:500}
+.alert-success{background:#d4edda;color:#155724;border-left:4px solid #4caf50}
+.alert-error{background:#f8d7da;color:#721c24;border-left:4px solid #f5415a}
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Employee Management</h1>
+    <p class="page-sub">Manage employee records</p>
+
+    <section class="card">
+      <div class="card-head">
+        <div class="left">
+          <h3>Employee List</h3>
+        </div>
+
+        <div class="tools">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+            </svg>
+            <input type="text" placeholder="Search employees..." id="searchInput" onkeyup="filterEmployees()" />
+          </div>
+
+          <a href="{% url 'employee:add_employee' %}" class="btn-add">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            Add Employee
+          </a>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th class="sl">Sl No</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th style="min-width:160px;">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody id="employeeTableBody">
+              {% for employee in employees %}
+              <tr class="data-row">
+                <td class="sl">{{ forloop.counter }}</td>
+                <td>
+                  <div class="name-cell">
+                    <div class="avatar">{{ employee.name|first }}</div>
+                    <div class="name">{{ employee.name }}</div>
+                  </div>
+                </td>
+                <td>{{ employee.email }}</td>
+                <td>{{ employee.phone }}</td>
+                <td class="wrap">{{ employee.role|default:"—" }}</td>
+                <td>{{ employee.department|default:"—" }}</td>
+                <td><span class="badge">{{ employee.status|title }}</span></td>
+                <td>
+                  <div class="actions">
+                    <a href="{% url 'employee:view_employee' employee.id %}" class="icon-btn view" aria-label="View">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 5C7 5 2.73 8.11 1 12.5 2.73 16.89 7 20 12 20s9.27-3.11 11-7.5C21.27 8.11 17 5 12 5z" stroke="#111" stroke-width="2.2"/>
+                        <circle cx="12" cy="12.5" r="3.5" stroke="#111" stroke-width="2.2"/>
+                      </svg>
+                    </a>
+                    <a href="{% url 'employee:edit_employee' employee.id %}" class="icon-btn edit" aria-label="Edit">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 20H21" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M16.5 3.5C17.328 2.672 18.672 2.672 19.5 3.5C20.328 4.328 20.328 5.672 19.5 6.5L8 18L3 19L4 14L16.5 3.5Z" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </a>
+
+                    <button class="icon-btn delete" type="button" aria-label="Delete" onclick="openDeleteModal({{ employee.id }}, '{{ employee.get_full_name|escapejs }}')">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 6H21" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M8 6V4C8 3.448 8.448 3 9 3H15C15.552 3 16 3.448 16 4V6" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M19 6L18.2 20C18.137 20.552 17.668 21 17.113 21H6.887C6.332 21 5.863 20.552 5.8 20L5 6" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M10 11V17" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M14 11V17" stroke-width="2.2" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" style="text-align:center;padding:40px;">
+                  <p>No employees found.</p>
+                 
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+<!-- Delete Modal -->
+<div id="deleteModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;justify-content:center;align-items:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:400px;box-shadow:0 10px 40px rgba(0,0,0,0.2)">
+    <h2 style="margin-top:0">Delete Employee</h2>
+    <p id="deleteMessage"></p>
+    <div style="display:flex;gap:12px;margin-top:20px;justify-content:flex-end">
+      <button onclick="closeDeleteModal()" style="padding:10px 16px;border:1px solid #ddd;background:#fff;border-radius:8px;cursor:pointer">Cancel</button>
+      <form id="deleteForm" method="POST" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" style="padding:10px 16px;border:none;background:#ef4444;color:#fff;border-radius:8px;cursor:pointer;font-weight:500">Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openDeleteModal(employeeId, employeeName) {
+  document.getElementById('deleteMessage').textContent = 'Are you sure you want to delete "' + employeeName + '"? This action cannot be undone.';
+  document.getElementById('deleteForm').action = '/employee/delete/' + employeeId + '/';
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+function closeDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+}
+function filterEmployees() {
+  const input = document.getElementById('searchInput');
+  const filter = input.value.toLowerCase();
+  const rows = document.getElementById('employeeTableBody').getElementsByTagName('tr');
+  for (let i = 0; i < rows.length; i++) {
+    const text = rows[i].textContent || rows[i].innerText;
+    rows[i].style.display = text.toLowerCase().indexOf(filter) > -1 ? '' : 'none';
+  }
+}
+</script>
+{% endblock %}

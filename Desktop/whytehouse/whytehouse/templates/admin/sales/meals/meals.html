@@ -1,0 +1,132 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.page-title{font-size:32px;font-weight:600;margin-bottom:8px;color:#111}
+.page-sub{color:#666;font-size:15px;margin-bottom:24px}
+.messages{margin-bottom:20px}
+.alert{padding:12px 16px;border-radius:10px;border:1px solid;margin-bottom:10px;font-weight:500}
+.alert-success{background:#dcfce7;border-color:#86efac;color:#15803d}
+.alert-error{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.card-head h2,.card-head h3{font-size:18px;font-weight:600;color:#111}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search{position:relative;min-width:280px;flex:1;max-width:400px}
+.search input{width:100%;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:10px 12px 10px 40px;outline:none;font-size:14px}
+.search input:focus{border-color:#d4a017;background:#fff}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.5}
+.btn-add{display:inline-flex;align-items:center;gap:8px;background:#d4a017;color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn-add svg{width:16px;height:16px}
+.table-wrap{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;font-size:13px;font-weight:600;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;color:#374151;white-space:nowrap}
+tbody td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#111}
+tbody tr:last-child td{border-bottom:none}
+.sl{width:80px}
+.actions{display:flex;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.delete svg{stroke:#ef4444}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Meals Plan</h1>
+    <p class="page-sub">Manage meal plan options</p>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>Meal Plans</h3>
+
+        <div class="tools">
+          <form method="GET" class="search" id="searchForm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" name="search" placeholder="Search meals..." value="{{ search_query }}" id="searchInput">
+          </form>
+
+          <a href="{% url 'sales:add_meal' %}" class="btn-add">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+          </svg>
+          Add Meal Plan
+        </a>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sl">Sl No</th>
+              <th>Meals</th>
+              <th style="width:200px;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for meal in meals %}
+            <tr>
+              <td class="sl">{{ forloop.counter }}</td>
+              <td class="meal">{{ meal.name }}</td>
+              <td>
+                <div class="actions">
+                  <a href="{% url 'sales:view_meal' meal.id %}" class="icon-btn" title="View" aria-label="View">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2">
+                      <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </a>
+                  
+                  <a href="{% url 'sales:edit_meal' meal.id %}" class="icon-btn" title="Edit" aria-label="Edit">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M12 20H21" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+                      <path d="M16.5 3.5C17.328 2.672 18.672 2.672 19.5 3.5C20.328 4.328 20.328 5.672 19.5 6.5L8 18L3 19L4 14L16.5 3.5Z" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </a>
+
+                  <form method="POST" action="{% url 'sales:delete_meal' meal.id %}" style="display:inline;" onsubmit="return confirm('Delete {{ meal.name }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn delete" title="Delete" aria-label="Delete">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M3 6H21" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M8 6V4C8 3.448 8.448 3 9 3H15C15.552 3 16 3.448 16 4V6" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M19 6L18.2 20C18.137 20.552 17.668 21 17.113 21H6.887C6.332 21 5.863 20.552 5.8 20L5 6" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M10 11V17" stroke-width="2.2" stroke-linecap="round"/>
+                        <path d="M14 11V17" stroke-width="2.2" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" style="text-align:center;padding:40px;color:var(--muted);">
+                No meal plans found. <a href="{% url 'sales:add_meal' %}" style="color:var(--accent);font-weight:600;text-decoration:none;">Add your first meal plan</a>.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+<script>
+let timeout;
+const input = document.getElementById('searchInput');
+const form = document.getElementById('searchForm');
+
+input.addEventListener('input', function() {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    form.submit();
+  }, 500);
+});
+</script>
+{% endblock %}

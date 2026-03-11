@@ -1,0 +1,349 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  :root{
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --border:#e9eaef;
+    --text:#111318;
+    --muted:#7a7f8c;
+    --input:#f3f4f6;
+    --shadow:0 14px 28px rgba(17,19,24,.06);
+    --radius:22px;
+    --accent:#d4a42f;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:"Poppins",sans-serif}
+
+  /* Top header row */
+  .topbar{
+    max-width:1200px;
+    margin-bottom:22px;
+  }
+  .page-title{
+    font-size:44px;
+    line-height:1.05;
+    font-weight:650;
+    margin:0 0 8px;
+    letter-spacing:-.3px;
+    color:#0b0d12;
+  }
+  .page-sub{
+    margin:0;
+    font-size:18px;
+    color:var(--muted);
+    font-weight:500;
+  }
+
+  .btn-add{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 18px;
+    border-radius:10px;
+    background:var(--accent);
+    border:1px solid rgba(0,0,0,.06);
+    color:#111;
+    font-weight:650;
+    cursor:pointer;
+    text-decoration:none;
+    box-shadow:0 12px 18px rgba(212,164,47,.22);
+    white-space:nowrap;
+    margin-top:-36px;
+    float:right;
+    
+  }
+  .btn-add svg{width:18px;height:18px}
+
+  /* Cards */
+  .card{
+    max-width:1200px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:22px;
+    margin-bottom:18px;
+  }
+
+  /* Search card */
+  .searchbar{
+    position:relative;
+    width:100%;
+    background:var(--input);
+    border:1px solid transparent;
+    border-radius:16px;
+    padding:16px 18px 16px 54px;
+    font-size:18px;
+    outline:none;
+    transition:.2s ease;
+  }
+  .searchbar:focus{
+    background:#fff;
+    border-color:#d9dbe4;
+    box-shadow:0 0 0 4px rgba(212,164,47,.12);
+  }
+  .search-ic{
+    position:absolute;
+    left:22px;
+    top:50%;
+    transform:translateY(-50%);
+    width:22px;height:22px;
+    opacity:.55;
+  }
+
+  /* Table wrapper */
+  .table-wrap{
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .scroll{
+    overflow-x:auto;
+    overflow-y:hidden;
+  }
+
+  /* Scrollbar like screenshot */
+  .scroll::-webkit-scrollbar{height:12px}
+  .scroll::-webkit-scrollbar-track{background:#eceef3;border-radius:999px}
+  .scroll::-webkit-scrollbar-thumb{background:#7c7c7c;border-radius:999px}
+  .scroll::-webkit-scrollbar-thumb:hover{background:#5f5f5f}
+
+  table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    min-width:1200px;
+  }
+  thead th{
+    text-align:left;
+    font-size:18px;
+    font-weight:700;
+    padding:18px 18px;
+    color:#0f172a;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:20px 18px;
+    font-size:17px;
+    border-bottom:1px solid #eef0f4;
+    vertical-align:middle;
+    color:#111318;
+    white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:none}
+
+  /* Voucher no bold like screenshot */
+  .vno{font-weight:800}
+
+  /* Status pill */
+  .status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:8px 16px;
+    border-radius:999px;
+    font-weight:750;
+    font-size:15px;
+    background:#fff;
+    border:1.8px solid transparent;
+    line-height:1;
+  }
+  .status.pending{border-color:#f97316;color:#f97316}
+  .status.paid{border-color:#22c55e;color:#16a34a}
+
+  /* Actions */
+  .actions{
+    display:flex;
+    gap:14px;
+    align-items:center;
+  }
+  .icon-btn{
+    width:44px;height:44px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    background:#fff;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+    text-decoration:none;
+    transition:.15s ease;
+  }
+  .icon-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 18px rgba(17,19,24,.08);
+  }
+  .icon-btn svg{width:20px;height:20px;stroke:#111;fill:none}
+  .icon-btn.whatsapp svg{stroke:#16a34a}
+  .icon-btn.mail svg{stroke:#2563eb}
+  .icon-btn.delete svg{stroke:#e11d48}
+
+  /* Help button */
+  .help-fab{
+    position:fixed;
+    right:22px;
+    bottom:22px;
+    width:46px;height:46px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:#fff;
+    display:grid;
+    place-items:center;
+    box-shadow:0 14px 26px rgba(0,0,0,.10);
+    cursor:pointer;
+    z-index:50;
+  }
+  .help-fab span{font-weight:800;color:#2a2d36;font-size:18px}
+
+  @media (max-width: 900px){
+    .page-title{font-size:36px}
+    .searchbar{font-size:16px}
+    thead th{font-size:16px}
+    tbody td{font-size:15px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header + Add button (like screenshot) -->
+<div class="topbar">
+  <div>
+    <h1 class="page-title">Voucher Management</h1>
+    <p class="page-sub">Manage travel vouchers and bookings</p>
+  </div>
+
+  <a href="{% url 'sales:add_voucher' %}" class="btn-add">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    Add Voucher
+  </a>
+</div>
+
+<!-- Search card (separate card like screenshot) -->
+<section class="card">
+  <div style="position:relative;">
+    <svg class="search-ic" viewBox="0 0 24 24" fill="none">
+      <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+    </svg>
+    <input class="searchbar" type="text"
+      placeholder="Search by voucher number, customer, resort, or sales person...">
+  </div>
+</section>
+
+<!-- Table card -->
+<section class="card">
+  <div class="table-wrap">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Voucher No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Mobile</th>
+            <th>Sales Person</th>
+            <th>Resort</th>
+            <th>Check-in</th>
+            <th>Nights</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th style="min-width:240px;text-align:left;">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for v in vouchers %}
+          <tr>
+            <td class="vno">{{ v.voucher_no }}</td>
+            <td>{{ v.voucher_date|date:"d M Y" }}</td>
+            <td>{{ v.customer.display_name|default:"—" }}</td>
+            <td>{{ v.customer.contact_number|default:"—" }}</td>
+            <td>{{ v.sales_person.name|default:"—" }}</td>
+            <td>{{ v.resort.resort_name|default:"—" }}</td>
+            <td>{{ v.checkin_date|date:"d M Y" }}</td>
+            <td>{{ v.nights }}</td>
+            <td>₹{{ v.total_amount }}</td>
+
+            <td>
+              <span class="status {% if v.pending > 0 %}pending{% else %}paid{% endif %}">
+                {% if v.pending > 0 %}Pending{% else %}Paid{% endif %}
+              </span>
+            </td>
+
+            <td>
+              <div class="actions">
+                <!-- View -->
+                <a href="{% url 'sales:view_voucher' v.id %}" class="icon-btn" title="View">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </a>
+
+                <!-- Edit -->
+                <a href="{% url 'sales:edit_voucher' v.id %}" class="icon-btn" title="Edit">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path d="M12 20H21" stroke-width="2.2" stroke-linecap="round"/>
+                    <path d="M16.5 3.5C17.328 2.672 18.672 2.672 19.5 3.5C20.328 4.328 20.328 5.672 19.5 6.5L8 18L3 19L4 14L16.5 3.5Z" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <!-- WhatsApp -->
+                <a href="https://wa.me/{{ v.customer.contact_number|default:'' }}" class="icon-btn whatsapp" title="WhatsApp" target="_blank">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M20 11.5C20 16.194 16.194 20 11.5 20C10.09 20 8.76 19.66 7.59 19.06L4 20L4.96 16.56C4.35 15.37 4 14.01 4 12.58C4 7.886 7.806 4.08 12.5 4.08C17.194 4.08 21 7.806 21 12.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.2 9.8C9.5 10.9 10.6 12.2 11.6 12.9C12.7 13.7 13.6 14 14.4 14.1C15 14.1 15.6 13.8 16 13.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <!-- Mail -->
+                <a href="mailto:{{ v.customer.email|default:'' }}" class="icon-btn mail" title="Mail" target="_blank">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M4 6H20C21.105 6 22 6.895 22 8V16C22 17.105 21.105 18 20 18H4C2.895 18 2 17.105 2 16V8C2 6.895 2.895 6 4 6Z" stroke-linejoin="round"/>
+                    <path d="M22 8L12 13L2 8" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+
+                <!-- Delete (optional) -->
+                <form method="POST" action="{% url 'sales:delete_voucher' v.id %}" style="display:inline;"
+                      onsubmit="return confirm('Delete voucher {{ v.voucher_no }}?');">
+                  {% csrf_token %}
+                  <button type="submit" class="icon-btn delete" title="Delete" style="padding:0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 6H21"/>
+                      <path d="M8 6V4C8 3.448 8.448 3 9 3H15C15.552 3 16 3.448 16 4V6"/>
+                      <path d="M19 6L18.2 20C18.137 20.552 17.668 21 17.113 21H6.887C6.332 21 5.863 20.552 5.8 20L5 6"/>
+                      <path d="M10 11V17"/>
+                      <path d="M14 11V17"/>
+                    </svg>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" style="text-align:center;padding:44px;color:var(--muted);">
+              No vouchers found.
+              <a href="{% url 'sales:add_voucher' %}" style="color:var(--accent);font-weight:700;text-decoration:none;">Add your first voucher</a>.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<button class="help-fab" type="button" aria-label="Help"><span>?</span></button>
+{% endblock %}

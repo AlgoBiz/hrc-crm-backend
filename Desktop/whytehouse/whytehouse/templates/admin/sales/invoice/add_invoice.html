@@ -1,0 +1,750 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+:root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --border:#ececf2;
+      --text:#111318;
+      --muted:#7a7f8c;
+      --input:#f3f4f6;
+      --shadow:0 10px 24px rgba(17,19,24,.06);
+      --accent:#d4a42f;
+      --radius:22px;
+
+      --soft-warn:#fff6e8;
+      --soft-good:#eefbf1;
+      --soft-danger:#fff1f2;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",sans-serif}
+    body{background:var(--bg);color:var(--text)}
+
+    /* Header */
+    .header{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+      margin-bottom:18px;
+      max-width:1100px;
+    }
+    .back-btn{
+      width:42px;height:42px;
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      box-shadow:0 6px 14px rgba(0,0,0,.04);
+    }
+    .title h1{
+      font-size:40px;
+      font-weight:600;
+      margin-bottom:6px;
+    }
+    .title p{
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    /* Card */
+    .card{
+      max-width:1100px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:22px 22px 24px;
+      margin-bottom:18px;
+    }
+    .card h3{
+      font-size:18px;
+      font-weight:600;
+      margin-bottom:16px;
+    }
+
+    /* Form grid */
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px 18px;
+    }
+    .span-2{grid-column:1/-1}
+    .grid-3{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:16px 18px;
+    }
+
+    .field label{
+      display:block;
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:8px;
+    }
+    .req{color:#d13b3b;margin-left:4px}
+
+    input, select, textarea{
+      width:100%;
+      border:1px solid transparent;
+      background:var(--input);
+      border-radius:12px;
+      padding:14px 14px;
+      font-size:14px;
+      outline:none;
+      transition:.2s ease;
+    }
+    textarea{min-height:86px;resize:none}
+    input:focus, select:focus, textarea:focus{
+      background:#fff;
+      border-color:#d9dbe4;
+      box-shadow:0 0 0 4px rgba(212,164,47,.12);
+    }
+
+    /* select caret */
+    .select-wrap{position:relative}
+    select{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      padding-right:44px;
+      cursor:pointer;
+    }
+    .caret{
+      position:absolute;
+      right:14px;
+      top:50%;
+      transform:translateY(-50%);
+      width:18px;height:18px;
+      opacity:.65;
+      pointer-events:none;
+    }
+
+    /* input with icon (search/date/time) */
+    .icon-input{position:relative}
+    .icon-input input{padding-left:46px}
+    .icon-input .left-ic{
+      position:absolute;
+      left:14px;
+      top:50%;
+      transform:translateY(-50%);
+      width:18px;height:18px;
+      opacity:.65;
+      pointer-events:none;
+    }
+    .icon-input .right-ic{
+      position:absolute;
+      right:14px;
+      top:50%;
+      transform:translateY(-50%);
+      width:18px;height:18px;
+      opacity:.65;
+      pointer-events:none;
+    }
+
+    /* Readonly highlight */
+    .readonly-warn{background:var(--soft-warn)!important}
+    .readonly-good{background:var(--soft-good)!important}
+    .readonly-danger{background:var(--soft-danger)!important}
+
+    /* Pax block */
+    .pax-label{
+      font-size:13px;
+      font-weight:600;
+      margin-bottom:6px;
+    }
+    .pax-sub{color:var(--muted);font-weight:500;margin-top:-2px}
+
+    /* Rooms control (visual only) */
+    .rooms{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .btn-mini{
+      width:44px;height:44px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background:#fff;
+      display:grid;
+      place-items:center;
+      font-size:20px;
+      font-weight:600;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    /* Footer buttons */
+    .btn-row{
+      max-width:1100px;
+      display:flex;
+      gap:14px;
+      margin-top:18px;
+    }
+    .btn{
+      border-radius:14px;
+      padding:12px 22px;
+      font-weight:600;
+      cursor:pointer;
+      border:1px solid var(--border);
+      background:#fff;
+    }
+    .btn.primary{
+      background:var(--accent);
+      border-color:transparent;
+      color:#111;
+      box-shadow:0 10px 18px rgba(212,164,47,.22);
+    }
+
+    /* Help bubble */
+    .help-fab{
+      position:fixed;
+      right:18px;
+      bottom:18px;
+      width:44px;height:44px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background:#fff;
+      display:grid;
+      place-items:center;
+      box-shadow:0 14px 26px rgba(0,0,0,.10);
+      cursor:pointer;
+    }
+    .help-fab span{font-weight:700;color:#2a2d36}
+
+    /* Message styles */
+    .message-success {
+      background: #eefbf1;
+      border: 1px solid #bbf0c5;
+      color: #16a34a;
+    }
+    .message-error {
+      background: #fff1f2;
+      border: 1px solid #fda0a6;
+      color: #dc2626;
+    }
+    .message-warning, .message-info {
+      background: #fff6e8;
+      border: 1px solid #fde096;
+      color: #d97706;
+    }
+
+    @media (max-width: 980px){
+      .grid-3{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 720px){
+      .main{padding:22px 16px 60px}
+      .title h1{font-size:32px}
+      .grid{grid-template-columns:1fr}
+      .grid-3{grid-template-columns:1fr}
+      .rooms{gap:8px}
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header">
+      <button class="back-btn" type="button" onclick="history.back()" aria-label="Back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M15 18L9 12L15 6" stroke="#1a1d24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="title">
+        <h1>Add New Invoice</h1>
+        <p>Fill in the invoice details</p>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- BASIC INFORMATION -->
+      <section class="card">
+        <h3>Basic Information</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label>Customer Name <span class="req">*</span></label>
+            <div class="icon-input" style="position:relative;">
+              <svg class="left-ic" viewBox="0 0 24 24" fill="none">
+                <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+              </svg>
+              <input type="text" id="customerSearch" placeholder="Search customer..." autocomplete="off" style="padding-left:46px;">
+              <input type="hidden" name="customer_id" id="customerId" required>
+              <div id="customerSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:12px;margin-top:4px;max-height:200px;overflow-y:auto;box-shadow:0 10px 24px rgba(17,19,24,.1);z-index:100;"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Invoice No <span class="req">*</span></label>
+            <input type="text" name="invoice_no" placeholder="INV-001" required>
+          </div>
+
+          <div class="field">
+            <label>Invoice Date <span class="req">*</span></label>
+            <div class="icon-input">
+              <input type="text" name="invoice_date" placeholder="mm/dd/yyyy" required>
+              <svg class="right-ic" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#111" stroke-width="2"/>
+                <path d="M8 3V7M16 3V7" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+                <path d="M3 10H21" stroke="#111" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Sales Person <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select name="sales_person" required>
+                <option selected disabled>Select sales person</option>
+                {% for emp in employees %}
+                <option value="{{ emp.id }}">{{ emp.name }} - {{ emp.role }}</option>
+                {% endfor %}
+              </select>
+              <svg class="caret" viewBox="0 0 24 24" fill="none">
+                <path d="M7 10L12 15L17 10" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PACKAGE DETAILS -->
+      <section class="card">
+        <h3>Package Details</h3>
+
+        <div class="grid">
+          <div class="field span-2">
+            <label>Resort Name <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select name="resort" required>
+                <option selected disabled>Select resort</option>
+                {% for resort in resorts %}
+                <option value="{{ resort.id }}">{{ resort.resort_name }}</option>
+                {% endfor %}
+              </select>
+              <svg class="caret" viewBox="0 0 24 24" fill="none">
+                <path d="M7 10L12 15L17 10" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Check-in Date</label>
+            <div class="icon-input">
+              <input type="text" name="checkin_date" placeholder="mm/dd/yyyy">
+              <svg class="right-ic" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#111" stroke-width="2"/>
+                <path d="M8 3V7M16 3V7" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+                <path d="M3 10H21" stroke="#111" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Check-out Date</label>
+            <div class="icon-input">
+              <input type="text" name="checkout_date" placeholder="mm/dd/yyyy">
+              <svg class="right-ic" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="16" rx="2" stroke="#111" stroke-width="2"/>
+                <path d="M8 3V7M16 3V7" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+                <path d="M3 10H21" stroke="#111" stroke-width="2"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Check-in Time <span class="req">*</span></label>
+            <div class="icon-input">
+              <input type="time" name="checkin_time" required>
+              <svg class="right-ic" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#111" stroke-width="2"/>
+                <path d="M12 7V12L15 14" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Check-out Time <span class="req">*</span></label>
+            <div class="icon-input">
+              <input type="time" name="checkout_time" required>
+              <svg class="right-ic" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#111" stroke-width="2"/>
+                <path d="M12 7V12L15 14" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <!-- Pax -->
+        <div class="field span-2">
+          <label>Number of Pax <span class="req">*</span></label>
+          <div class="grid-3">
+            <div class="field" style="margin:0">
+              <div class="pax-label">Adults</div>
+              <input type="number" name="adults" value="2" min="0" required>
+            </div>
+            <div class="field" style="margin:0">
+              <div class="pax-label">Children</div>
+              <input type="number" name="children" value="0" min="0" required>
+            </div>
+            <div class="field" style="margin:0">
+              <div class="pax-label">Total</div>
+              <input type="number" name="pax_total" value="2" class="readonly-warn" readonly>
+            </div>
+          </div>
+        </div>
+
+        <div class="field span-2">
+          <label>Pax Notes</label>
+          <textarea name="pax_notes" placeholder="Additional notes about passengers..."></textarea>
+        </div>
+
+        <div class="grid-3">
+          <div class="field" style="margin:0">
+            <label>Number of Nights <span class="req">*</span></label>
+            <input type="number" name="nights" value="1" min="1" required>
+          </div>
+
+          <div class="field" style="margin:0">
+            <label>Room Type <span class="req">*</span></label>
+            <input type="text" name="room_type" placeholder="Deluxe, Suite, etc." required>
+          </div>
+
+          <div class="field" style="margin:0">
+            <label>Number of Rooms <span class="req">*</span></label>
+            <div class="rooms">
+              <button type="button" class="btn-mini">−</button>
+              <input type="number" name="rooms" value="1" min="1" style="text-align:center" required>
+              <button type="button" class="btn-mini">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Meals Plan <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select name="meals_plan" required>
+                <option selected disabled>Select meals plan</option>
+                {% for meal in meals %}
+                <option value="{{ meal.name }}">{{ meal.name }}</option>
+                {% endfor %}
+              </select>
+              <svg class="caret" viewBox="0 0 24 24" fill="none">
+                <path d="M7 10L12 15L17 10" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Bank Account <span class="req">*</span></label>
+            <div class="icon-input" style="position:relative;">
+              <svg class="left-ic" viewBox="0 0 24 24" fill="none">
+                <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+              </svg>
+              <input type="text" id="accountSearch" placeholder="Search bank account..." autocomplete="off" style="padding-left:46px;">
+              <input type="hidden" name="bank_account" id="accountId" required>
+              <div id="accountSuggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:12px;margin-top:4px;max-height:200px;overflow-y:auto;box-shadow:0 10px 24px rgba(17,19,24,.1);z-index:100;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRICING DETAILS -->
+      <section class="card">
+        <h3>Pricing Details</h3>
+
+        <div class="grid">
+          <div class="field">
+            <label>Package Price <span class="req">*</span></label>
+            <input type="number" name="package_price" value="0" min="0" required>
+          </div>
+
+          <div class="field">
+            <label>Tax <span class="req">*</span></label>
+            <input type="number" name="tax" value="0" min="0" required>
+          </div>
+
+          <div class="field">
+            <label>Resort Price <span class="req">*</span></label>
+            <input type="number" name="resort_price" value="0" min="0" required>
+          </div>
+
+          <div class="field">
+            <label>Total <span class="req">*</span></label>
+            <input type="number" name="total" value="0" class="readonly-warn" readonly>
+          </div>
+
+          <div class="field">
+            <label>Received Price <span class="req">*</span></label>
+            <input type="number" name="received" value="0" min="0" required>
+          </div>
+
+          <div class="field">
+            <label>Pending Price <span class="req">*</span></label>
+            <input type="number" name="pending" value="0" class="readonly-warn" readonly>
+          </div>
+
+          <div class="field span-2">
+            <label>Profit <span class="req">*</span></label>
+            <input type="number" name="profit" value="0" class="readonly-good" readonly>
+          </div>
+
+          <div class="field span-2">
+            <label>Notes</label>
+            <textarea name="notes" placeholder="Additional notes about the invoice..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <div class="btn-row">
+        <button type="button" class="btn" onclick="history.back()">Cancel</button>
+        <button type="submit" class="btn primary">Create Invoice</button>
+      </div>
+</form>
+
+<button class="help-fab" type="button" aria-label="Help">
+  <span>?</span>
+</button>
+
+  <script>
+    // Customer data from Django
+    const customers = [
+      {% for customer in customers %}
+      {
+        id: {{ customer.id }},
+        name: "{{ customer.display_name|escapejs }}",
+        phone: "{{ customer.contact_number|escapejs }}"
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    // Bank account data from Django
+    const accounts = [
+      {% for account in accounts %}
+      {
+        id: {{ account.id }},
+        name: "{{ account.account_name|escapejs }}",
+        number: "{{ account.account_number|escapejs }}"
+      }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ];
+
+    // Customer search functionality
+    const searchInput = document.getElementById('customerSearch');
+    const customerIdInput = document.getElementById('customerId');
+    const suggestionsDiv = document.getElementById('customerSuggestions');
+
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      
+      if (query.length === 0) {
+        suggestionsDiv.style.display = 'none';
+        customerIdInput.value = '';
+        return;
+      }
+
+      const filtered = customers.filter(c => 
+        c.name.toLowerCase().includes(query) || 
+        c.phone.includes(query)
+      );
+
+      if (filtered.length === 0) {
+        suggestionsDiv.innerHTML = '<div style="padding:12px;color:var(--muted);text-align:center;">No customers found</div>';
+        suggestionsDiv.style.display = 'block';
+        customerIdInput.value = '';
+        return;
+      }
+
+      suggestionsDiv.innerHTML = filtered.map(c => 
+        `<div class="suggestion-item" data-id="${c.id}" data-name="${c.name}" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:0.2s;">
+          <div style="font-weight:600;font-size:14px;">${c.name}</div>
+          <div style="color:var(--muted);font-size:13px;margin-top:2px;">${c.phone}</div>
+        </div>`
+      ).join('');
+      
+      suggestionsDiv.style.display = 'block';
+
+      // Add hover effect
+      document.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.background = 'var(--input)';
+        });
+        item.addEventListener('mouseleave', function() {
+          this.style.background = '#fff';
+        });
+        item.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const name = this.getAttribute('data-name');
+          searchInput.value = name;
+          customerIdInput.value = id;
+          suggestionsDiv.style.display = 'none';
+        });
+      });
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+        suggestionsDiv.style.display = 'none';
+      }
+    });
+
+    // Bank account search functionality
+    const accountSearchInput = document.getElementById('accountSearch');
+    const accountIdInput = document.getElementById('accountId');
+    const accountSuggestionsDiv = document.getElementById('accountSuggestions');
+
+    accountSearchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      
+      if (query.length === 0) {
+        accountSuggestionsDiv.style.display = 'none';
+        accountIdInput.value = '';
+        return;
+      }
+
+      const filtered = accounts.filter(a => 
+        a.name.toLowerCase().includes(query) || 
+        a.number.includes(query)
+      );
+
+      if (filtered.length === 0) {
+        accountSuggestionsDiv.innerHTML = '<div style="padding:12px;color:var(--muted);text-align:center;">No accounts found</div>';
+        accountSuggestionsDiv.style.display = 'block';
+        accountIdInput.value = '';
+        return;
+      }
+
+      accountSuggestionsDiv.innerHTML = filtered.map(a => 
+        `<div class="account-suggestion-item" data-id="${a.id}" data-name="${a.name}" style="padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:0.2s;">
+          <div style="font-weight:600;font-size:14px;">${a.name}</div>
+          <div style="color:var(--muted);font-size:13px;margin-top:2px;">${a.number}</div>
+        </div>`
+      ).join('');
+      
+      accountSuggestionsDiv.style.display = 'block';
+
+      document.querySelectorAll('.account-suggestion-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.background = 'var(--input)';
+        });
+        item.addEventListener('mouseleave', function() {
+          this.style.background = '#fff';
+        });
+        item.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const name = this.getAttribute('data-name');
+          accountSearchInput.value = name;
+          accountIdInput.value = id;
+          accountSuggestionsDiv.style.display = 'none';
+        });
+      });
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!accountSearchInput.contains(e.target) && !accountSuggestionsDiv.contains(e.target)) {
+        accountSuggestionsDiv.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Calculate total
+      function calculateTotal() {
+        const packagePrice = parseFloat(document.querySelector('input[name="package_price"]').value) || 0;
+        const tax = parseFloat(document.querySelector('input[name="tax"]').value) || 0;
+        const resortPrice = parseFloat(document.querySelector('input[name="resort_price"]').value) || 0;
+        const total = packagePrice + tax + resortPrice;
+        
+        document.querySelector('input[name="total"]').value = total.toFixed(2);
+        calculatePending();
+      }
+      
+      // Calculate pending amount
+      function calculatePending() {
+        const total = parseFloat(document.querySelector('input[name="total"]').value) || 0;
+        const received = parseFloat(document.querySelector('input[name="received"]').value) || 0;
+        const pending = total - received;
+        
+        document.querySelector('input[name="pending"]').value = pending.toFixed(2);
+        calculateProfit();
+      }
+      
+      // Calculate profit
+      function calculateProfit() {
+        const packagePrice = parseFloat(document.querySelector('input[name="package_price"]').value) || 0;
+        const resortPrice = parseFloat(document.querySelector('input[name="resort_price"]').value) || 0;
+        const profit = packagePrice - resortPrice;
+        
+        document.querySelector('input[name="profit"]').value = profit.toFixed(2);
+      }
+      
+      // Calculate total pax
+      function calculatePaxTotal() {
+        const adults = parseInt(document.querySelector('input[name="adults"]').value) || 0;
+        const children = parseInt(document.querySelector('input[name="children"]').value) || 0;
+        const total = adults + children;
+        
+        document.querySelector('input[name="pax_total"]').value = total;
+      }
+      
+      // Update total when any price field changes
+      document.querySelectorAll('input[name="package_price"], input[name="tax"], input[name="resort_price"]').forEach(input => {
+        input.addEventListener('input', calculateTotal);
+      });
+      
+      // Update pending when total or received changes
+      document.querySelectorAll('input[name="total"], input[name="received"]').forEach(input => {
+        input.addEventListener('input', calculatePending);
+      });
+      
+      // Update profit when package or resort price changes
+      document.querySelectorAll('input[name="package_price"], input[name="resort_price"]').forEach(input => {
+        input.addEventListener('input', calculateProfit);
+      });
+      
+      // Update pax total when adults or children change
+      document.querySelectorAll('input[name="adults"], input[name="children"]').forEach(input => {
+        input.addEventListener('input', calculatePaxTotal);
+      });
+      
+      // Handle room counter buttons
+      document.querySelector('.btn-mini:nth-child(1)').addEventListener('click', function() {
+        const input = document.querySelector('input[name="rooms"]');
+        let value = parseInt(input.value) || 1;
+        if (value > 1) {
+          input.value = value - 1;
+        }
+      });
+      
+      document.querySelector('.btn-mini:nth-child(3)').addEventListener('click', function() {
+        const input = document.querySelector('input[name="rooms"]');
+        let value = parseInt(input.value) || 1;
+        input.value = value + 1;
+      });
+      
+      // Date picker initialization
+      document.querySelectorAll('input[name="invoice_date"], input[name="checkin_date"], input[name="checkout_date"]').forEach(input => {
+        input.type = 'date';
+      });
+      
+      // Set default date for invoice date
+      const today = new Date().toISOString().split('T')[0];
+      const invoiceDateInput = document.querySelector('input[name="invoice_date"]');
+      if (invoiceDateInput && !invoiceDateInput.value) {
+        invoiceDateInput.value = today;
+      }
+    });
+  </script>
+{% endblock %}

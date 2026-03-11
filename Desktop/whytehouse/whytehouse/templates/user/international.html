@@ -1,0 +1,1495 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whyte House - International</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+    :root {
+      --accent-orange: #DB902B;
+      --text-dark: #1A1A1A;
+      --text-gray: #666666;
+      --border-light: #E0E0E0;
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+    }
+
+    body { background-color: #000; overflow-x: hidden; }
+
+    /* ================= HERO SECTION ================= */
+    .hero-section {
+      background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3)),
+                  url("{% static 'images/picture.png' %}") no-repeat center center/cover;
+      height: 100vh;
+      width: 100%;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 50px 100px;
+      position: absolute;
+      top: 20px;
+      width: 100%;
+      background: transparent;
+      z-index: 100;
+    }
+
+    .logo-img { height: 65px; width: auto; }
+
+    .nav-center {
+      background: var(--glass-bg);
+      backdrop-filter: blur(25px);
+      padding: 15px 45px;
+      border-radius: 60px;
+      display: flex;
+      gap: 35px;
+      border: 1px solid var(--glass-border);
+    }
+
+    .nav-center a {
+      text-decoration: none;
+      color: white;
+      font-size: 15px;
+      opacity: 0.8;
+      transition: 0.3s;
+    }
+
+    .nav-center .active {
+      opacity: 1;
+      font-weight: 600;
+      border-bottom: 2px solid var(--accent-orange);
+    }
+
+    .nav-right {
+      background: var(--glass-bg);
+      backdrop-filter: blur(25px);
+      padding: 15px 30px;
+      border-radius: 60px;
+      border: 1px solid var(--glass-border);
+      font-size: 15px;
+    }
+
+    .hero-text {
+      text-align: center;
+      margin-top: 180px;
+    }
+
+    .hero-text h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      line-height: 1.1;
+      font-weight: 400;
+    }
+
+    .hero-text .italic-peace {
+      font-weight: 700;
+      font-style: italic;
+    }
+
+    /* --- SIDE DESTINATIONS --- */
+    .side-tabs {
+      position: absolute;
+      left: 100px;
+      top: 55%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 50;
+    }
+
+    .tab {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(15px);
+      padding: 10px 25px 10px 10px;
+      border-radius: 50px;
+      width: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: 0.3s;
+      color: white;
+    }
+
+    .tab:hover {
+      background: var(--accent-orange);
+      border-color: transparent;
+      transform: translateX(5px);
+    }
+
+    .tab.active {
+      background: var(--accent-orange);
+      border-color: transparent;
+    }
+
+    .tab-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tab img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .flight-icon {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    /* --- BOTTOM GALLERY AREA --- */
+    .bottom-container{
+      position: absolute;
+      bottom: 60px;
+      right: 100px;
+      left: 100px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      z-index: 30;
+    }
+
+    .gallery-strip{
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      position: relative;
+    }
+
+    .gallery-item-wrap{
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .gallery-card{
+      position: relative;
+      width: 120px;
+      height: 250px;
+      border-radius: 30px;
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.35s ease;
+      transform: scale(1);
+      opacity: 0.7;
+    }
+
+    .gallery-card img{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .gallery-card::after{
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.08));
+      transition: 0.3s ease;
+    }
+
+    .gallery-card .mini-book-btn{
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(14px);
+      background: var(--accent-orange);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .gallery-card .mini-label{
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 2;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      transition: 0.3s ease;
+    }
+
+    .gallery-card:hover,
+    .gallery-card.active{
+      width: 250px;
+      height: 180px;
+      opacity: 1;
+      transform: translateY(-8px);
+    }
+
+    .gallery-card:hover::after,
+    .gallery-card.active::after{
+      background: linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.03));
+    }
+
+    .gallery-card:hover .mini-book-btn,
+    .gallery-card.active .mini-book-btn{
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .gallery-card:hover .mini-label,
+    .gallery-card.active .mini-label{
+      opacity: 0;
+    }
+
+    .card-description{
+      width: 350px;
+      margin-top: 10px;
+      color: #fff;
+      font-size: 14px;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .gallery-item-wrap.active .card-description{
+      display: block;
+    }
+
+    .progress-bar {
+      position: absolute;
+      bottom: 35px;
+      right: 100px;
+      width: 520px;
+      height: 2px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .progress-fill {
+      width: 25%;
+      height: 100%;
+      background: white;
+      transition: width 0.4s ease;
+    }
+
+    /* ================= UNIFIED WAVY BACKGROUND ================= */
+    .unified-wavy-bg {
+      background: #FFF url("{% static 'images/wavy-bg.png' %}") center/cover;
+    }
+
+    /* ================= ABOUT SECTION ================= */
+    .wavy-bg { padding: 120px 0; }
+
+    .about-section {
+      padding: 0 100px;
+      color: var(--text-dark);
+      position: relative;
+    }
+
+    .section-tag {
+      position: absolute;
+      top: -50px;
+      left: 100px;
+      padding: 10px 25px;
+      background: white;
+      border: 1px solid var(--border-light);
+      border-radius: 100px;
+      font-size: 14px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .about-header {
+      text-align: center;
+      margin-bottom: 100px;
+    }
+
+    .about-header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 58px;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .about-header .highlight {
+      color: var(--accent-orange);
+      font-weight: 500;
+    }
+
+    .pill-divider {
+      display: inline-block;
+      width: 160px;
+      height: 55px;
+      background: url("{% static 'images/vietnam.png' %}") center/cover;
+      border-radius: 40px;
+      vertical-align: middle;
+      margin: 0 10px;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 60px;
+      align-items: flex-start;
+      margin-bottom: 100px;
+    }
+
+    .about-left h2 {
+      font-size: 44px;
+      margin-bottom: 30px;
+    }
+
+    .why-underline {
+      position: relative;
+      font-style: italic;
+      font-weight: 700;
+      z-index: 1;
+    }
+
+    .why-underline::after {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      width: 100%;
+      height: 10px;
+      background: var(--accent-orange);
+      opacity: 0.3;
+      z-index: -1;
+      border-radius: 20px;
+    }
+
+    .about-desc {
+      font-size: 17px;
+      color: var(--text-gray);
+      line-height: 1.7;
+      margin-bottom: 40px;
+    }
+
+    .team-cta {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .avatar-stack { display: flex; }
+
+    .avatar-img {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      border: 3px solid white;
+      margin-left: -18px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .avatar-img:first-child { margin-left: 0; }
+
+    .cta-arrow {
+      background: var(--accent-orange);
+      color: white;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    .about-gallery {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+    }
+
+    .gallery-main {
+      width: 100%;
+      height: 530px;
+      border-radius: 30px;
+      object-fit: cover;
+    }
+
+    .gallery-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .stack-img-top {
+      width: 100%;
+      height: 330px;
+      border-radius: 30px;
+      object-fit: cover;
+    }
+
+    .stack-img-bot {
+      width: 100%;
+      height: 180px;
+      border-radius: 30px;
+      object-fit: cover;
+    }
+
+    .features-container {
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+.feature-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 60px;
+  padding: 20px 0;
+  border-top: 2px solid #ffffff;
+}
+
+
+/* Remove line above first item */
+.feature-row:first-child {
+  border-top: none;
+}
+
+.feature-row h4 {
+  font-size: 26px;
+  font-weight: 500;
+  width: 300px;
+}
+
+.feature-row p {
+  font-size: 15px;
+  color: var(--text-gray);
+  max-width: 500px;
+  line-height: 1.6;
+}
+
+.row-1 { padding-right: 15%; }
+.row-2 { padding-left: 10%; padding-right: 10%; }
+.row-3 { padding-left: 15%; border-bottom: 2px solid #ffffff; }
+
+    /* ================= PACKAGES SECTION ================= */
+    .packages-section {
+      padding: 80px 40px;
+      overflow: hidden;
+    }
+
+    .section-title-main {
+      font-size: 44px;
+      font-weight: 300;
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1A1A1A;
+      letter-spacing: -0.5px;
+    }
+
+    .package-nav {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-bottom: 50px;
+    }
+
+    .nav-tab {
+      display: inline-block;
+      font-size: 18px;
+      color: #999;
+      cursor: pointer;
+      padding-bottom: 10px;
+      position: relative;
+      transition: color 0.3s;
+    }
+
+    .nav-tab:hover { color: #000; }
+    .nav-tab.active { color: #000; }
+
+    .nav-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #000;
+    }
+
+    .destination-container {
+      position: relative;
+      width: 1310px;
+      margin: 0 auto 60px auto;
+      padding-bottom: 30px;
+    }
+
+    .stack-layer {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 91px;
+      border-radius: 20px;
+      z-index: 1;
+      background: rgba(111, 103, 103, 0.271);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+    }
+
+    .layer-2 { bottom: -28px; width: 1150px; opacity: 0.5; background: rgba(30, 30, 30, 0.2); }
+    .layer-1 { bottom: -14px; width: 1230px; opacity: 0.8; background: rgba(35, 35, 35, 0.18); }
+
+    .destination-card {
+      position: relative;
+      z-index: 5;
+      border-radius: 40px;
+      min-height: 700px;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 60px;
+      overflow: hidden;
+      color: #FFFFFF;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .destination-card.active { display: flex; opacity: 1; }
+
+    .flight-path-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .airplane-icon {
+      position: absolute;
+      top: 30%;
+      right: 8%;
+      transform: rotate(35deg);
+      color: var(--accent-orange);
+    }
+
+    .map-silhouette {
+      position: absolute;
+      left: 60px;
+      top: 60px;
+      width: 100px;
+      opacity: 0.9;
+      filter: brightness(0) invert(1);
+    }
+
+    .top-right-info {
+      position: absolute;
+      top: 60px;
+      right: 60px;
+      text-align: right;
+      max-width: 440px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .bottom-layout {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    .dest-title {
+      font-size: 82px;
+      font-weight: 400;
+      margin: 0;
+      line-height: 1;
+    }
+
+    .dest-price {
+      font-size: 20px;
+      margin: 15px 0 25px 0;
+      font-weight: 300;
+    }
+
+    .dest-price .new {
+      color: var(--accent-orange);
+      font-weight: 600;
+      font-size: 24px;
+    }
+
+    .btn-learn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--accent-orange);
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 100px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .gallery-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 20px;
+    }
+
+    .nav-arrows {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .arrow {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .mini-gallery {
+      display: flex;
+      gap: 15px;
+      align-items: flex-end;
+    }
+
+    .gallery-item {
+      width: 130px;
+      height: 130px;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .gallery-item.active {
+      width: 180px;
+      height: 180px;
+      border: 2px solid var(--accent-orange);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ================= STATISTICS SECTION ================= */
+    .stats-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 2500px;
+      margin: 80px auto 40px;
+      padding: 0 20px;
+    }
+
+    .stat-item {
+      text-align: center;
+      flex: 1;
+    }
+
+    .stat-icon {
+      margin-bottom: 15px;
+      height: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .stat-icon img {
+      height: 100%;
+      width: auto;
+      opacity: 0.8;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1A1A1A;
+      margin: 0;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #666666;
+      margin-top: 5px;
+      font-weight: 400;
+    }
+
+    .stat-divider {
+      width: 4px;
+      height: 60px;
+      background-color: #f8f4f4;
+      margin: 0 10px;
+    }
+
+    /* ================= TESTIMONIALS ================= */
+    .testimonials-section {
+      padding: 100px 80px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .testimonial-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 60px;
+    }
+
+    .testimonial-title {
+      font-size: 48px;
+      font-weight: 300;
+      color: #000;
+      margin: 0;
+    }
+
+    .testimonial-title i { font-style: italic; }
+
+    .testimonial-subtitle {
+      max-width: 550px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #555;
+      text-align: right;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .testimonial-card {
+      background: #D9D9D9;
+      border-radius: 35px;
+      padding: 40px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .quote-icon {
+      color: #DB902B;
+      font-size: 60px;
+      line-height: 1;
+      margin-bottom: 15px;
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+    }
+
+    .testimonial-text {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #333;
+      margin-bottom: 30px;
+      font-style: italic;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      border-top: 1px solid rgba(0,0,0,0.1);
+      padding-top: 20px;
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #DB902B;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    .user-details { flex: 1; }
+
+    .user-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 5px 0;
+      color: #000;
+    }
+
+    .user-handle {
+      font-size: 13px;
+      color: #000;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Georgia', serif;
+      font-style: italic;
+      font-weight: 500;
+    }
+
+    .user-handle i {
+      color: #000;
+      font-size: 13px;
+    }
+
+    .rating-stars {
+      color: #DB902B;
+      margin-top: 8px;
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+
+    /* ================= FOOTER ================= */
+    .main-footer {
+      background-color: #000000;
+      color: #FFFFFF;
+      padding: 80px 100px 40px 100px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .footer-cta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 80px;
+    }
+
+    .cta-text h2 { font-size: 32px; font-weight: 400; margin-bottom: 10px; }
+    .cta-text p { font-size: 14px; color: #999; }
+
+    .subscribe-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: #1A1A1A;
+      border-radius: 100px;
+      padding: 5px 5px 5px 25px;
+      width: 450px;
+    }
+
+    .subscribe-box input {
+      background: transparent;
+      border: none;
+      color: white;
+      width: 100%;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .subscribe-btn {
+      background-color: #DB902B;
+      color: black;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 100px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 60px;
+      padding-top: 60px;
+      border-top: 1px solid #333;
+    }
+
+    .footer-brand .logo {
+      width: 120px;
+      margin-bottom: 25px;
+    }
+
+    .brand-desc {
+      font-size: 13px;
+      line-height: 1.8;
+      color: #888;
+      margin-bottom: 25px;
+    }
+
+    .social-links { display: flex; gap: 15px; }
+    .social-circle img { width: 40px; height: 40px; }
+
+    .footer-col h4 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 25px;
+      color: #FFFFFF;
+    }
+
+    .footer-col ul { list-style: none; padding: 0; }
+    .footer-col ul li { margin-bottom: 15px; }
+
+    .footer-col ul li a {
+      text-decoration: none;
+      color: #888;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .footer-col ul li a:hover { color: #DB902B; }
+
+    .copyright {
+      text-align: center;
+      padding-top: 80px;
+      font-size: 12px;
+      color: #555;
+    }
+
+    @media (max-width: 992px) {
+      nav { padding: 30px 20px; }
+
+      .side-tabs { left: 20px; }
+
+      .bottom-container{
+        right: 20px;
+        left: 20px;
+        justify-content: center;
+      }
+
+      .gallery-card{
+        width: 90px;
+        height: 180px;
+      }
+
+      .gallery-card:hover,
+      .gallery-card.active{
+        width: 130px;
+        height: 220px;
+      }
+
+      .card-description{
+        width: 130px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .progress-bar {
+        right: 20px;
+        width: 300px;
+      }
+
+      .stats-grid {
+        flex-wrap: wrap;
+        gap: 30px;
+      }
+
+      .stat-divider { display: none; }
+      .stat-item { flex: 1 1 30%; }
+
+      .footer-cta {
+        flex-direction: column;
+        text-align: center;
+        gap: 30px;
+      }
+
+      .subscribe-box { width: 100%; }
+      .footer-content { grid-template-columns: 1fr 1fr; }
+      .testimonials-section { padding: 60px 20px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="hero-section">
+    <nav>
+      <img src="{% static 'images/logo.png' %}" class="logo-img" alt="Whyte House">
+
+      <div class="nav-center">
+        <a href="{% url 'user_panel:index' %}" class="active">Home</a>
+        <a href="{% url 'user_panel:about' %}">About</a>
+        <a href="{% url 'user_panel:blog_list' %}">Blog</a>
+        <a href="{% url 'user_panel:international_packages' %}">Packages</a>
+        <a href="{% url 'user_panel:contact' %}">Contact Us</a>
+      </div>
+
+      <div class="nav-right">
+        <a href="{% url 'user_panel:domestic' %}" style="text-decoration: none; color: white;">Domestic</a>
+        | <span style="color:#000; font-weight:600;">International</span>
+      </div>
+    </nav>
+
+    <div class="hero-text">
+      <h1>Escape the city<br>Find your <span class="italic-peace">peace.</span></h1>
+    </div>
+
+    <div class="side-tabs">
+      {% for dest in side_tab_destinations %}
+      <a href="{% url 'user_panel:international_packages' %}?dest={{ dest.id }}" 
+         class="tab" 
+         style="text-decoration: none; color: inherit;">
+        <div class="tab-left">
+          <img src="{% if dest.image %}{{ dest.image.url }}{% else %}{% static 'images/vietnam.png' %}{% endif %}" alt="{{ dest.name }}">
+          <span>{{ dest.name }}</span>
+        </div>
+        <svg class="flight-icon" viewBox="0 0 24 24"><path d="M21,16L21,14L13,9L13,3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5V9L2,14V16L10,13.5V19L8,20.5V22L11.5,21L15,22V20.5L13,19V13.5L21,16Z"/></svg>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="bottom-container">
+      <div class="gallery-strip">
+        {% if featured_packages %}
+          {% for package in featured_packages|slice:":4" %}
+            <div class="gallery-item-wrap {% if forloop.first %}active{% endif %}">
+              <div class="gallery-card {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}">
+                <img src="{% if package.image %}{{ package.image.url }}{% else %}{% static 'images/i1.png' %}{% endif %}" alt="{{ package.name }}">
+                <div class="mini-label">{{ package.name|truncatechars:14 }}</div>
+                <a href="{% url 'user_panel:package_detail' package.id %}" class="mini-book-btn">Book Now ↗</a>
+              </div>
+              <div class="card-description">
+                {{ package.description|default:"No description available."|striptags|truncatechars:180 }}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="gallery-item-wrap active">
+            <div class="gallery-card active" data-index="0">
+              <img src="{% static 'images/i2.png' %}" alt="thumb">
+              <div class="mini-label">Vietnam</div>
+              <a href="#" class="mini-book-btn">Book Now ↗</a>
+            </div>
+            <div class="card-description">
+              Explore the beauty of Vietnam with curated international holiday experiences.
+            </div>
+          </div>
+
+          <div class="gallery-item-wrap">
+            <div class="gallery-card" data-index="1">
+              <img src="{% static 'images/i3.png' %}" alt="thumb">
+              <div class="mini-label">Thailand</div>
+              <a href="#" class="mini-book-btn">Book Now ↗</a>
+            </div>
+            <div class="card-description">
+              Discover Thailand with relaxing beaches, nightlife, and cultural experiences.
+            </div>
+          </div>
+
+          <div class="gallery-item-wrap">
+            <div class="gallery-card" data-index="2">
+              <img src="{% static 'images/i4.png' %}" alt="thumb">
+              <div class="mini-label">Malaysia</div>
+              <a href="#" class="mini-book-btn">Book Now ↗</a>
+            </div>
+            <div class="card-description">
+              Enjoy Malaysia with city lights, island escapes, and unforgettable moments.
+            </div>
+          </div>
+
+          <div class="gallery-item-wrap">
+            <div class="gallery-card" data-index="3">
+              <img src="{% static 'images/i1.png' %}" alt="thumb">
+              <div class="mini-label">Maldives</div>
+              <a href="#" class="mini-book-btn">Book Now ↗</a>
+            </div>
+            <div class="card-description">
+              Experience the Maldives with luxury stays and crystal-clear waters.
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+  </div>
+
+  <div class="unified-wavy-bg">
+    <div class="wavy-bg">
+      <section class="about-section">
+        <div class="section-tag">Why Choose Us <span>✕</span></div>
+
+        <div class="about-header">
+          <h1><span class="highlight">Elevate</span> <div class="pill-divider"></div> your well-being <br> with our <i>professional team.</i></h1>
+        </div>
+
+        <div class="about-grid">
+          <div class="about-left">
+            <h2><span class="why-underline">Why</span> Whyte House Holidays</h2>
+            <p class="about-desc">With over 10 years of experience in the travel and hospitality industry, Whyte House Holidays is a name trusted by travelers and property owners alike.</p>
+            <div class="team-cta">
+              <div class="avatar-stack">
+                <img src="{% static 'images/team1.png' %}" class="avatar-img" alt="team">
+                <img src="{% static 'images/team2.png' %}" class="avatar-img" alt="team">
+                <img src="{% static 'images/team3.png' %}" class="avatar-img" alt="team">
+                <img src="{% static 'images/team4.png' %}" class="avatar-img" alt="team">
+              </div>
+              <span style="font-weight:600;">Meet our Professional Team</span>
+              <a href="#" class="cta-arrow">↗</a>
+            </div>
+          </div>
+
+          <div class="about-gallery">
+            <img src="{% static 'images/i5.png' %}" class="gallery-main" alt="gallery">
+            <div class="gallery-stack">
+              <img src="{% static 'images/i6.png' %}" class="stack-img-top" alt="gallery">
+              <img src="{% static 'images/i2.png' %}" class="stack-img-bot" alt="gallery">
+            </div>
+          </div>
+        </div>
+
+        <div class="features-container">
+          <div class="feature-row row-1"><h4>A Decade of Trust</h4><p>10+ years of proven expertise in the travelindustry, trusted by travels and
+property owners alike.</p></div>
+          <div class="feature-row row-2"><h4>Curated Quality</h4><p>Over 200 handpicked properties, we personally inspect and experience 
+every stay before listing it.</p></div>
+          <div class="feature-row row-3"><h4>Dedicated Support</h4><p>Dedicated support team ensuring quick, clear communication before, 
+during, and after your trip.</p></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-icon"><img src="{% static 'images/r1.png' %}" alt="Icon"></div>
+            <h3 class="stat-number">10+</h3>
+            <p class="stat-label">Years of Excellence</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon"><img src="{% static 'images/r2.png' %}" alt="Icon"></div>
+            <h3 class="stat-number">50+</h3>
+            <p class="stat-label">Years of Excellence</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon"><img src="{% static 'images/r3.png' %}" alt="Icon"></div>
+            <h3 class="stat-number">200+</h3>
+            <p class="stat-label">Managed Properties</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon"><img src="{% static 'images/r4.png' %}" alt="Icon"></div>
+            <h3 class="stat-number">5000+</h3>
+            <p class="stat-label">Happy Travelers</p>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <div class="stat-icon"><img src="{% static 'images/r5.png' %}" alt="Icon"></div>
+            <h3 class="stat-number">4.9/5</h3>
+            <p class="stat-label">Client Satisfaction</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="packages-section">
+      <h2 class="section-title-main">Choose <i>where</i> are we looking for?</h2>
+
+      <div class="package-nav">
+        {% for dest in filter_destinations %}
+        <div class="nav-tab {% if forloop.first %}active{% endif %}" data-dest="{{ dest.name|lower }}" style="cursor: pointer;">{{ dest.name }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="destination-container">
+        <div class="stack-layer layer-2"></div>
+        <div class="stack-layer layer-1"></div>
+
+        {% for data in destination_data %}
+        <div class="destination-card dest-{{ data.destination.name|lower }}"
+             style="background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)),
+             url('{% if data.destination.image %}{{ data.destination.image.url }}{% else %}{% static "images/bg.png" %}{% endif %}') center/cover;">
+          <div class="flight-path-container">
+            <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="none" fill="none">
+              <path d="M40 540 Q 250 540, 380 500 T 550 540 T 750 520 T 920 220"
+                    stroke="white" stroke-opacity="0.4" stroke-width="1.5" stroke-dasharray="6 6"/>
+            </svg>
+            <div class="airplane-icon">
+              <svg width="35" height="35" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M21,16L21,14L13,9L13,3.5A1.5,1.5 0 0,0 11.5,2A1.5,1.5 0 0,0 10,3.5L10,9L2,14L2,16L10,13.5L10,19L8,20.5L8,22L11.5,21L15,22L15,20.5L13,19L13,13.5L21,16Z" />
+              </svg>
+            </div>
+          </div>
+
+          {% if data.destination.map_image %}
+          <img src="{{ data.destination.map_image.url }}" class="map-silhouette" alt="map">
+          {% endif %}
+          {% if data.destination.description %}
+          <div class="top-right-info">{{ data.destination.description }}</div>
+          {% endif %}
+
+          <div class="bottom-layout">
+            <div class="dest-info-box">
+              <h2 class="dest-title">{{ data.destination.name }}</h2>
+              {% if data.destination.packages_start_from %}
+                <p class="dest-price" style="margin: 20px 0;">From <span class="new">₹ {{ data.destination.packages_start_from|floatformat:0 }}</span></p>
+              {% endif %}
+              <a href="{% url 'user_panel:international_packages' %}?dest={{ data.destination.id }}" class="btn-learn">Learn More <span style="font-size: 18px; margin-left: 5px;">↗</span></a>
+            </div>
+
+            <div class="gallery-wrapper">
+              <div class="nav-arrows">
+                <div class="arrow arrow-prev">←</div>
+                <div class="arrow arrow-next">→</div>
+              </div>
+
+              <div class="mini-gallery">
+                {% if data.packages %}
+                  {% for package in data.packages|slice:":4" %}
+                    <div class="gallery-item {% if forloop.first %}active{% endif %}">
+                      <img src="{% if package.image %}{{ package.image.url }}{% else %}{% static 'images/i1.png' %}{% endif %}" alt="{{ package.name }}">
+                    </div>
+                  {% endfor %}
+                  {% if data.packages.count < 4 %}
+                    {% for i in "1234"|slice:data.packages.count %}
+                      <div class="gallery-item"><img src="{% static 'images/i1.png' %}" alt=""></div>
+                    {% endfor %}
+                  {% endif %}
+                {% else %}
+                  <div class="gallery-item active"><img src="{% static 'images/i1.png' %}" alt=""></div>
+                  <div class="gallery-item"><img src="{% static 'images/i7.png' %}" alt=""></div>
+                  <div class="gallery-item"><img src="{% static 'images/i3.png' %}" alt=""></div>
+                  <div class="gallery-item"><img src="{% static 'images/i6.png' %}" alt=""></div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+      </div>
+    </section>
+
+    <section class="testimonials-section">
+      <div class="testimonial-header">
+        <h2 class="testimonial-title">Hear <i>from them</i></h2>
+        <p class="testimonial-subtitle">
+          Unmatched elegance and world-class service. Experience luxury redefined through every detail. Trusted by discerning clients worldwide.
+        </p>
+      </div>
+
+      <div class="testimonials-grid">
+        {% if featured_feedbacks %}
+          {% for fb in featured_feedbacks %}
+          <div class="testimonial-card">
+            <div class="quote-icon">“</div>
+            <p class="testimonial-text">{{ fb.feedback }}</p>
+            <div class="user-info">
+              <div class="avatar">{{ fb.name|make_list|first }}</div>
+              <div class="user-details">
+                <h4 class="user-name">{{ fb.name }}</h4>
+                <p class="user-handle"><i>Verified Traveler</i></p>
+                <div class="rating-stars">
+                  {% for i in "12345" %}
+                    {% if forloop.counter <= fb.rating %}★{% else %}☆{% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <footer class="main-footer">
+    <div class="footer-cta">
+      <div class="cta-text">
+        <h2>Book Your Tour Today</h2>
+        <p>Join us for an unforgettable getaway and adventures</p>
+      </div>
+      <div class="subscribe-box">
+        <input type="email" placeholder="Enter your email">
+        <button class="subscribe-btn">Subscribe</button>
+      </div>
+    </div>
+
+    <div class="footer-content">
+      <div class="footer-brand">
+        <img src="{% static 'images/logo.png' %}" class="logo" alt="Whyte House">
+        <p class="brand-desc">Whether you're booking a holiday or managing a property, our promise remains the same.</p>
+        <div class="social-links">
+          <a href="#" class="social-circle" title="Facebook"><img src="{% static 'images/facebook.png' %}" alt="Facebook"></a>
+          <a href="#" class="social-circle" title="Instagram"><img src="{% static 'images/instagram.png' %}" alt="Instagram"></a>
+          <a href="#" class="social-circle" title="YouTube"><img src="{% static 'images/youtube.png' %}" alt="YouTube"></a>
+          <a href="#" class="social-circle" title="WhatsApp"><img src="{% static 'images/whatsapp.png' %}" alt="WhatsApp"></a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4>Location</h4>
+        <ul>
+          <li><a href="#">Kozhikode, Kerala</a></li>
+          <li><a href="#">Kakkanchery 673321</a></li>
+          <li><a href="#">Since 2015</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="#">+91 78 523 521 45</a></li>
+          <li><a href="#">hi@whytehouseholidays.com</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Company & Legals</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Frequently ask question</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">License</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="copyright">© 2025 Whyte House Holidays. All Rights Reserved</p>
+  </footer>
+
+  {% include 'user/enquire_popup.html' %}
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const cards = document.querySelectorAll('.gallery-strip .gallery-card');
+      const wraps = document.querySelectorAll('.gallery-strip .gallery-item-wrap');
+      const progressFill = document.querySelector('.progress-fill');
+
+      if (cards.length === 0) return;
+
+      let currentIndex = 0;
+      const total = cards.length;
+      let autoSlide;
+
+      function setActiveCard(index) {
+        cards.forEach((card, i) => {
+          card.classList.toggle('active', i === index);
+        });
+
+        wraps.forEach((wrap, i) => {
+          wrap.classList.toggle('active', i === index);
+        });
+
+        if (progressFill) {
+          progressFill.style.width = `${((index + 1) / total) * 100}%`;
+        }
+      }
+
+      function goTo(index) {
+        currentIndex = index;
+        setActiveCard(index);
+      }
+
+      function startAutoSlide() {
+        stopAutoSlide();
+        autoSlide = setInterval(() => {
+          goTo((currentIndex + 1) % total);
+        }, 5000);
+      }
+
+      function stopAutoSlide() {
+        if (autoSlide) clearInterval(autoSlide);
+      }
+
+      cards.forEach((card, index) => {
+        card.addEventListener('mouseenter', () => {
+          goTo(index);
+          stopAutoSlide();
+        });
+
+        card.addEventListener('mouseleave', () => {
+          startAutoSlide();
+        });
+
+        card.addEventListener('click', (e) => {
+          if (!e.target.closest('.mini-book-btn')) {
+            goTo(index);
+          }
+        });
+      });
+
+      goTo(0);
+      startAutoSlide();
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const tabs = document.querySelectorAll('.package-nav .nav-tab');
+      const cards = document.querySelectorAll('.destination-card');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const destination = this.getAttribute('data-dest');
+
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+
+          cards.forEach(card => {
+            card.classList.remove('active');
+            if (card.classList.contains('dest-' + destination)) {
+              card.classList.add('active');
+            }
+          });
+        });
+      });
+
+      if (cards.length > 0) {
+        cards[0].classList.add('active');
+      }
+
+      cards.forEach(card => {
+        const prevArrow = card.querySelector('.arrow-prev');
+        const nextArrow = card.querySelector('.arrow-next');
+        const galleryItems = card.querySelectorAll('.gallery-item');
+
+        if (!prevArrow || !nextArrow || galleryItems.length === 0) return;
+
+        let currentIndex = 0;
+
+        function updateGallery() {
+          galleryItems.forEach((item, index) => {
+            item.classList.remove('active');
+            if (index === currentIndex) item.classList.add('active');
+          });
+        }
+
+        prevArrow.addEventListener('click', function(e) {
+          e.preventDefault();
+          currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+          updateGallery();
+        });
+
+        nextArrow.addEventListener('click', function(e) {
+          e.preventDefault();
+          currentIndex = (currentIndex + 1) % galleryItems.length;
+          updateGallery();
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>

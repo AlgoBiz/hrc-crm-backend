@@ -1,0 +1,220 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --border:#ececf2;
+      --text:#111318;
+      --muted:#7a7f8c;
+      --input:#f3f4f6;
+      --shadow:0 10px 24px rgba(17,19,24,.06);
+      --accent:#d4a42f;
+      --danger:#e11d48;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Poppins",sans-serif}
+    body{background:var(--bg);color:var(--text)}
+
+    /* main offset for sidebar */
+    .main{ /* match sidebar width */
+      padding:34px 40px 60px;
+    }
+
+    /* Headings */
+    .page-title{
+      font-size:40px;
+      font-weight:600;
+      margin-bottom:6px;
+    }
+    .page-sub{
+      color:var(--muted);
+      font-size:16px;
+      margin-bottom:22px;
+    }
+
+    /* Card */
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+
+    /* Header row */
+    .card-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:6px 6px 16px;
+    }
+    .card-head h3{
+      font-size:20px;
+      font-weight:600;
+    }
+
+    .tools{
+      display:flex;
+      align-items:center;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    /* Form styles */
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+      gap:22px;
+      margin-top:22px;
+    }
+    .form-group{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .form-group label{
+      font-size:15px;
+      font-weight:500;
+    }
+    .form-group input, .form-group select, .form-group textarea{
+      padding:14px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:var(--input);
+      font-size:15px;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus{
+      outline:none;
+      border-color:var(--accent);
+      background:#fff;
+    }
+    .form-group textarea{
+      min-height:100px;
+      resize:vertical;
+    }
+
+    /* Submit button */
+    .btn-submit{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:var(--accent);
+      color:#111;
+      border:none;
+      border-radius:14px;
+      padding:14px 22px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 10px 18px rgba(212,164,47,.22);
+      white-space:nowrap;
+      margin-top:10px;
+    }
+    .btn-submit svg{width:18px;height:18px}
+
+    /* Back button */
+    .btn-back{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:var(--muted);
+      color:#fff;
+      border:none;
+      border-radius:14px;
+      padding:12px 18px;
+      font-weight:600;
+      cursor:pointer;
+      text-decoration:none;
+    }
+
+    .btn-back svg{width:18px;height:18px}
+
+    @media (max-width: 900px){
+      .page-title{font-size:34px}
+      .form-grid{grid-template-columns:1fr}
+    }
+    @media (max-width: 720px){
+      .main{margin-left:0}
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Edit Resort</h1>
+    <p class="page-sub">Update resort information</p>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>Edit Resort: {{ resort.name }}</h3>
+
+        <div class="tools">
+          <a href="{% url 'sales:resort_list' %}" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M19 12H5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 19L5 12L12 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Cancel
+          </a>
+        </div>
+      </div>
+
+      {% if error %}
+      <div style="background:#f8d7da; border:1px solid #f5c6cb; border-radius:12px; padding:20px; margin:20px; color:#721c24; font-weight:500; font-size:16px; text-align:center;">
+        <strong>✗ Error:</strong> {{ error }}
+      </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="resort_name">Resort Name *</label>
+            <input type="text" id="resort_name" name="resort_name" value="{{ resort.resort_name }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="resort_place">Location *</label>
+            <input type="text" id="resort_place" name="resort_place" value="{{ resort.location }}" required>
+          </div>
+
+          <div class="form-group">
+            <label for="contact_person">Contact Person</label>
+            <input type="text" id="contact_person" name="contact_person" value="{{ resort.contact_person }}">
+          </div>
+
+          <div class="form-group">
+            <label for="contact_number">Contact Number</label>
+            <input type="tel" id="contact_number" name="contact_number" value="{{ resort.contact_number }}">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="{{ resort.email }}">
+          </div>
+
+          <div class="form-group">
+            <label for="address">Address</label>
+            <textarea id="address" name="address">{{ resort.address }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="active" {% if resort.status == 'Active' %}selected{% endif %}>Active</option>
+              <option value="inactive" {% if resort.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Update Resort
+        </button>
+      </form>
+    </section>
+{% endblock %}

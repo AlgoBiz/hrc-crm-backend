@@ -1,0 +1,150 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.page-title{font-size:32px;font-weight:600;margin-bottom:8px;color:#111}
+.page-sub{color:#666;font-size:15px;margin-bottom:24px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.card-head h3{font-size:18px;font-weight:600;color:#111}
+.tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.search{position:relative;min-width:280px;flex:1;max-width:400px}
+.search input{width:100%;border:1px solid #e5e7eb;background:#f9fafb;border-radius:10px;padding:10px 12px 10px 40px;outline:none;font-size:14px}
+.search input:focus{border-color:#d4a017;background:#fff}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;opacity:0.5}
+.btn-add{display:inline-flex;align-items:center;gap:8px;background:#d4a017;color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn-add svg{width:16px;height:16px}
+.table-wrap{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;font-size:13px;font-weight:600;padding:14px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb;color:#374151}
+tbody td{padding:14px 16px;font-size:14px;border-bottom:1px solid #f3f4f6;color:#111}
+tbody tr:last-child td{border-bottom:none}
+.sl{width:80px}
+.actions{display:flex;gap:8px}
+.icon-btn{width:36px;height:36px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.icon-btn svg{width:16px;height:16px}
+.icon-btn.delete svg{stroke:#ef4444}
+.msg{max-width:980px;margin:0 0 16px 0}
+.msg .alert{border-radius:12px;padding:12px 14px;border:1px solid #e5e7eb;background:#fff}
+.msg .alert.error{background:#fff1f2;border-color:#fecaca;color:#b91c1c}
+.msg .alert.success{background:#ecfdf5;border-color:#bbf7d0;color:#166534}
+</style>
+{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Blog Management</h1>
+    <p class="page-sub">Manage blog posts and articles</p>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>Blog Posts</h3>
+
+        <div class="tools">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M21 21L16.6 16.6" stroke="#111" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M10.8 18.2C14.887 18.2 18.2 14.887 18.2 10.8C18.2 6.713 14.887 3.4 10.8 3.4C6.713 3.4 3.4 6.713 3.4 10.8C3.4 14.887 6.713 18.2 10.8 18.2Z" stroke="#111" stroke-width="2.2"/>
+            </svg>
+            <input type="text" placeholder="Search blogs..." />
+          </div>
+          
+          <a href="{% url 'blog:add_blog' %}" class="btn-add">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+            Add Blog
+          </a>
+          <a href="{% url 'blog:add_category' %}" class="btn-add">
+    <svg viewBox="0 0 24 24" fill="none">
+      <path d="M12 5V19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M5 12H19" stroke="#111" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    Add Category
+  </a>
+          
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="sl">Sl No</th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th style="min-width:160px;">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if blogs %}
+              {% for blog in blogs %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ blog.title }}</td>
+                <td>{{ blog.author_name }}</td>
+                <td>{{ blog.publish_date|date:"M d, Y" }}</td>
+                <td>
+                  <span style="display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;
+                    {% if blog.status == 'published' %}background:#d1fae5;color:#065f46;
+                    {% elif blog.status == 'draft' %}background:#fef3c7;color:#92400e;
+                    {% endif %}">
+                    {{ blog.get_status_display }}
+                  </span>
+                </td>
+                <td>
+                  <div class="actions">
+                    <a href="{% url 'blog:view_blog' blog.slug %}" class="icon-btn" title="View">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#111" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="3" stroke="#111" stroke-width="2"/>
+                      </svg>
+                    </a>
+                    <a href="{% url 'blog:edit_blog' blog.id %}" class="icon-btn" title="Edit">
+                      <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </a>
+                    <form method="POST" action="{% url 'blog:toggle_blog_status' blog.id %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button type="submit" class="icon-btn" title="{% if blog.status == 'published' %}Unpublish{% else %}Publish{% endif %}" style="{% if blog.status == 'published' %}background:#d1fae5;border-color:#065f46;{% else %}background:#fef3c7;border-color:#92400e;{% endif %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                          {% if blog.status == 'published' %}
+                            <path d="M9 12l2 2 4-4" stroke="#065f46" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="12" cy="12" r="10" stroke="#065f46"/>
+                          {% else %}
+                            <circle cx="12" cy="12" r="10" stroke="#92400e"/>
+                            <path d="M12 6v6l4 2" stroke="#92400e" stroke-linecap="round"/>
+                          {% endif %}
+                        </svg>
+                      </button>
+                    </form>
+                    <form method="POST" action="{% url 'blog:delete_blog' blog.id %}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this blog?');">
+                      {% csrf_token %}
+                      <button type="submit" class="icon-btn delete" title="Delete">
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 40px;">
+                No blogs found. <a href="{% url 'blog:add_blog' %}" style="color: #d4a017; text-decoration: none;">Add your first blog</a>.
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+{% endblock %}

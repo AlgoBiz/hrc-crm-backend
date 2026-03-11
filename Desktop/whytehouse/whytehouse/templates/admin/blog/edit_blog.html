@@ -1,0 +1,445 @@
+{% extends "admin/sidebar.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --line:#e9eef6;
+    --input:#f3f4f6;
+    --btn:#d7aa3c;
+    --btnHover:#c99722;
+    --radius:18px;
+  }
+
+  .page-title{font-size:28px;font-weight:700;margin-bottom:6px;color:var(--text)}
+  .page-sub{color:var(--muted);margin-bottom:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:13px;color:var(--muted);font-weight:600}
+  input, textarea, select{
+    width:100%;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:var(--input);
+    outline:none;
+  }
+  textarea{min-height:160px;resize:vertical;background:#fff}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px}
+  .btn{padding:10px 16px;border-radius:12px;border:0;cursor:pointer;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+  .btn-primary{background:var(--btn);color:#000}
+  .btn-primary:hover{background:var(--btnHover)}
+  .btn-secondary{background:#fff;border:1px solid var(--line);color:var(--text)}
+  @media (max-width: 900px){
+    .grid{grid-template-columns:1fr}
+  }
+
+  /* Content Image Preview Cards */
+  .upload-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+  }
+  .image-preview-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+    gap:12px;
+    margin-top:14px;
+  }
+  .image-card {
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .image-card img {
+    width:100%;
+    height:120px;
+    object-fit:cover;
+    display:block;
+  }
+  .image-card-footer {
+    padding:8px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+  }
+  .image-tag {
+    background:#f1f5f9;
+    padding:4px 8px;
+    border-radius:6px;
+    font-size:11px;
+    font-weight:600;
+    color:#475569;
+    font-family:monospace;
+    cursor:pointer;
+    user-select:all;
+  }
+  .image-tag:hover {
+    background:#e2e8f0;
+  }
+  .remove-image-btn {
+    background:#fee2e2;
+    border:none;
+    color:#dc2626;
+    width:24px;
+    height:24px;
+    border-radius:6px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+    padding:0;
+  }
+  .remove-image-btn:hover {
+    background:#fecaca;
+  }
+  
+  /* Category tags */
+  .tag-display {
+    display:inline-flex;
+    align-items:center;
+    background:#f1f5f9;
+    border-radius:20px;
+    padding:6px 12px;
+    font-size:13px;
+    gap:6px;
+  }
+  .tag-display span {
+    color:#475569;
+    font-weight:500;
+  }
+  .remove-tag-btn {
+    background:none;
+    border:none;
+    color:#94a3b8;
+    cursor:pointer;
+    font-size:14px;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+  }
+  .remove-tag-btn:hover {
+    background:#e2e8f0;
+    color:#64748b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+  <div class="page">
+    <div class="card">
+      <div class="page-title">Edit Blog</div>
+      <div class="page-sub">Update blog details and save changes.</div>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="grid">
+          <div class="field">
+            <label>Title</label>
+            <input type="text" name="title" value="{{ blog.title }}" required>
+          </div>
+
+          <div class="field">
+            <label>Status</label>
+            <select name="status">
+              <option value="draft" {% if blog.status == "draft" %}selected{% endif %}>Draft</option>
+              <option value="published" {% if blog.status == "published" %}selected{% endif %}>Published</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Category</label>
+            <select name="category">
+              <option value="">Select Category</option>
+              {% for cat in categories %}
+                <option value="{{ cat.slug }}" {% if blog.category == cat.slug %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Author Name</label>
+            <input type="text" name="author_name" value="{{ blog.author_name }}">
+          </div>
+
+          <div class="field">
+            <label>Publish Date</label>
+            <input type="date" name="publish_date" value="{{ blog.publish_date|date:'Y-m-d' }}">
+          </div>
+
+          <div class="field">
+            <label>Reading Time (minutes)</label>
+            <input type="number" name="reading_time" min="1" value="{{ blog.reading_time }}">
+          </div>
+
+          <div class="field">
+            <label>Featured Image</label>
+            <input type="file" id="featured-image-input" name="featured_image" accept="image/*">
+            {% if blog.featured_image %}
+            <div style="margin-top:8px;">
+              <img id="featured-image-preview" src="{{ blog.featured_image.url }}" alt="Featured image" style="max-width:200px; border-radius:8px;" />
+            </div>
+            {% else %}
+            <img id="featured-image-preview" src="" alt="Featured image preview" style="display:none; max-width:200px; border-radius:8px; margin-top:8px;" />
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:14px">
+          <label>Excerpt</label>
+          <textarea name="excerpt">{{ blog.excerpt }}</textarea>
+        </div>
+
+        <div class="field" style="margin-top:14px">
+          <label>Author Summary</label>
+          <textarea name="author_summary">{{ blog.author_summary }}</textarea>
+        </div>
+
+        <!-- Content Images Section -->
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div>
+              <div style="font-size:16px;font-weight:600;color:var(--text)">Content Images</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Upload images to use in your blog content. Reference them using <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">{{image1}}</code>, <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px">{{image2}}</code>, etc.</div>
+            </div>
+            <label class="upload-btn">
+              + Add Images
+              <input type="file" id="content-images-input" name="content_images" accept="image/*" multiple hidden>
+            </label>
+          </div>
+
+          <!-- Existing Images -->
+          {% if blog.content_images.all %}
+          <div class="image-preview-grid" id="existing-images">
+            {% for img in blog.content_images.all %}
+            <div class="image-card" data-image-id="{{ img.id }}">
+              <img src="{{ img.image.url }}" alt="Content image {{ forloop.counter }}">
+              <div class="image-card-footer">
+                <span class="image-tag" onclick="copyToClipboard('{{ img.tag }}')" title="Click to copy">{{ img.tag }}</span>
+                <button type="button" class="remove-image-btn" onclick="removeExistingImage({{ img.id }})" title="Remove image">✕</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- New Images Preview -->
+          <div class="image-preview-grid" id="new-images-preview" style="display:none;margin-top:12px"></div>
+          
+          <!-- Hidden field to track deleted images -->
+          <input type="hidden" id="deleted-images" name="deleted_images" value="">
+        </div>
+
+        <div class="field" style="margin-top:14px">
+          <label>Content</label>
+          <textarea name="content" required>{{ blog.content }}</textarea>
+        </div>
+
+        <div class="row">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <a href="{% url 'blog:blog_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+{% verbatim %}
+// Content Images functionality
+let newImagesArray = [];
+let deletedImageIds = [];
+let existingImagesCount = document.querySelectorAll('#existing-images .image-card').length;
+
+document.getElementById('content-images-input').addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    
+    files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            newImagesArray.push({
+                file: file,
+                dataUrl: e.target.result,
+                name: file.name
+            });
+            updateNewImagesPreview();
+        }
+        reader.readAsDataURL(file);
+    });
+});
+
+function updateNewImagesPreview() {
+    const previewContainer = document.getElementById('new-images-preview');
+    
+    if (newImagesArray.length === 0) {
+        previewContainer.style.display = 'none';
+        return;
+    }
+    
+    previewContainer.style.display = 'grid';
+    previewContainer.innerHTML = '';
+    
+    newImagesArray.forEach((img, index) => {
+        const imageNumber = existingImagesCount + index + 1;
+        const card = document.createElement('div');
+        card.className = 'image-card';
+        const imageTag = '{{image' + imageNumber + '}}';
+        card.innerHTML = `
+            <img src="${img.dataUrl}" alt="${img.name}">
+            <div class="image-card-footer">
+                <span class="image-tag" onclick="copyToClipboard('${imageTag}')" title="Click to copy">${imageTag}</span>
+                <button type="button" class="remove-image-btn" onclick="removeNewImage(${index})" title="Remove image">✕</button>
+            </div>
+        `;
+        previewContainer.appendChild(card);
+    });
+}
+
+function removeNewImage(index) {
+    newImagesArray.splice(index, 1);
+    updateNewImagesPreview();
+    
+    // Update the file input with remaining files
+    const input = document.getElementById('content-images-input');
+    const dt = new DataTransfer();
+    newImagesArray.forEach(img => dt.items.add(img.file));
+    input.files = dt.files;
+}
+
+// Before form submission, ensure all files are in the input
+document.querySelector('form').addEventListener('submit', function(e) {
+    const input = document.getElementById('content-images-input');
+    const dt = new DataTransfer();
+    newImagesArray.forEach(img => dt.items.add(img.file));
+    input.files = dt.files;
+});
+
+function removeExistingImage(imageId) {
+    if (confirm('Are you sure you want to remove this image?')) {
+        // Add to deleted list
+        deletedImageIds.push(imageId);
+        document.getElementById('deleted-images').value = deletedImageIds.join(',');
+        
+        // Remove from UI
+        const card = document.querySelector(`[data-image-id="${imageId}"]`);
+        if (card) {
+            card.remove();
+        }
+        
+        // Update existing count
+        existingImagesCount = document.querySelectorAll('#existing-images .image-card').length;
+        
+        // Update new images preview to reflect new numbering
+        updateNewImagesPreview();
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#dcfce7';
+        btn.style.color = '#166534';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 1500);
+    });
+}
+{% endverbatim %}
+  
+<script>
+    // featured image preview
+    const featuredInput = document.getElementById('featured-image-input');
+    const featuredPreview = document.getElementById('featured-image-preview');
+    featuredInput.addEventListener('change', function(e) {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          featuredPreview.src = ev.target.result;
+          featuredPreview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Category functionality
+    let categories = [];
+    
+    window.addEventListener('DOMContentLoaded', function() {
+        const categoryInput = document.getElementById('category-input');
+        if (categoryInput.value) {
+            categories = categoryInput.value.split(',').map(c => c.trim()).filter(c => c);
+            updateCategoriesDisplay();
+        }
+    });
+    
+    function addCategory() {
+        const input = document.getElementById('category-input');
+        const cat = input.value.trim();
+        
+        if (cat && !categories.includes(cat)) {
+            categories.push(cat);
+            updateCategoriesDisplay();
+            updateCategoryInput();
+        }
+    }
+    
+    function removeCategory(index) {
+        categories.splice(index, 1);
+        updateCategoriesDisplay();
+        updateCategoryInput();
+    }
+    
+    function updateCategoriesDisplay() {
+        const container = document.getElementById('categories-display');
+        container.innerHTML = '';
+        
+        categories.forEach((cat, index) => {
+            const catElement = document.createElement('div');
+            catElement.className = 'tag-display';
+            catElement.innerHTML = `
+                <span>${cat}</span>
+                <button type="button" onclick="removeCategory(${index})" class="remove-tag-btn">✕</button>
+            `;
+            container.appendChild(catElement);
+        });
+    }
+    
+    function updateCategoryInput() {
+        const input = document.getElementById('category-input');
+        input.value = categories.join(', ');
+    }
+    
+    document.getElementById('category-input').addEventListener('blur', function() {
+        const val = this.value.trim();
+        if (val && !categories.includes(val)) {
+            addCategory();
+        }
+    });
+</script>
+{% endblock %}

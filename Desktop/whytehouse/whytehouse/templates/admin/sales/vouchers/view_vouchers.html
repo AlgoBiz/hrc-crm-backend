@@ -1,0 +1,428 @@
+{% extends 'admin/sidebar.html' %}
+{% load static %}
+
+{% block extra_css %}
+  <style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",sans-serif}
+body{background:#f5f7fb;color:#111}
+
+/* MAIN */
+.main{padding:30px 40px}
+
+/* HEADER */
+.top-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:22px;
+}
+.left-head{
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+}
+.back-btn{
+  width:46px;height:46px;border-radius:12px;
+  border:1px solid #e5e7eb;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;color:#111;font-size:20px;font-weight:600;
+}
+.hgroup .title{font-size:34px;font-weight:650;line-height:1.05}
+.hgroup .sub{margin-top:10px;color:#6b7280;font-size:20px}
+
+/* ACTIONS */
+.actions{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.edit-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 18px;
+  border-radius:14px;
+  border:1px solid #e5e7eb;
+  background:#fff;
+  text-decoration:none;
+  color:#111;
+  font-weight:600;
+  min-width:120px;
+  justify-content:center;
+}
+.gold-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 18px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,0.05);
+  background:#caa03a;
+  text-decoration:none;
+  color:#111;
+  font-weight:650;
+  min-width:280px;
+  justify-content:center;
+}
+.edit-btn svg,.gold-btn svg{width:18px;height:18px}
+
+/* CARD */
+.card{
+  background:#fff;
+  border:1px solid #eef0f4;
+  border-radius:18px;
+  padding:26px;
+  margin-bottom:22px;
+}
+.card-title{
+  font-size:20px;
+  font-weight:650;
+  margin-bottom:18px;
+}
+
+/* BASIC INFO GRID */
+.basic-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:26px 70px;
+}
+.item .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.item .value{font-size:22px;font-weight:650}
+
+/* PACKAGE DETAILS */
+.resort-block{
+  padding-top:6px;
+  padding-bottom:18px;
+  border-bottom:1px solid #e5e7eb;
+}
+.resort-block .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.resort-block .value{font-size:22px;font-weight:650}
+
+.two-split{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px 60px;
+  padding:18px 0;
+  border-bottom:1px solid #e5e7eb;
+}
+.date-box .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.date-box .value{font-size:20px;font-weight:650}
+.date-box .time{margin-top:6px;color:#6b7280;font-size:16px}
+
+.stats-row{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:22px 40px;
+  padding:18px 0;
+  border-bottom:1px solid #e5e7eb;
+}
+.small .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.small .value{font-size:28px;font-weight:750;line-height:1}
+
+.bottom-row{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:22px 40px;
+  padding:18px 0 2px;
+}
+.bottom-row .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.bottom-row .value{font-size:20px;font-weight:650}
+
+/* PRICING DETAILS HEADER LINE */
+.pricing-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  padding-bottom:16px;
+  border-bottom:1px solid #e5e7eb;
+  margin-bottom:18px;
+}
+.pricing-left{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px 40px;
+  width:60%;
+}
+.pricing-left .label{color:#6b7280;font-size:14px;margin-bottom:6px}
+.pricing-left .value{font-size:18px;font-weight:650}
+
+.status-wrap{
+  text-align:left;
+}
+.status-wrap .label{color:#6b7280;font-size:14px;margin-bottom:8px}
+.status-pill{
+  display:inline-block;
+  padding:8px 14px;
+  border-radius:999px;
+  border:1.5px solid #ff7a45;
+  color:#ff7a45;
+  background:#fff;
+  font-weight:650;
+  font-size:14px;
+}
+
+/* PRICING GRID BOXES */
+.price-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-top:6px;
+}
+.pbox{
+  border-radius:16px;
+  padding:22px 22px;
+  min-height:110px;
+  border:1px solid rgba(0,0,0,0.04);
+  background:#f7f2e8;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.pbox.white{
+  background:#f3f4f6;
+}
+.pbox.green{
+  background:#ecf9ef;
+}
+.pbox.orange{
+  background:#f8efe6;
+}
+.pbox .label{
+  color:#6b7280;
+  font-size:18px;
+  margin-bottom:10px;
+}
+.pbox .val{
+  font-size:34px;
+  font-weight:800;
+  line-height:1;
+  color:#111;
+}
+.pbox .val.green{color:#16a34a}
+.pbox .val.orange{color:#ff4d00}
+.pbox .val.gold{color:#caa03a}
+
+/* THIN SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .pricing-left{width:100%}
+}
+@media(max-width:900px){
+  .main{margin-left:0;padding:18px}
+  .basic-grid,.two-split,.stats-row,.bottom-row,.pricing-left,.price-grid{
+    grid-template-columns:1fr;
+  }
+  .gold-btn{min-width:220px;width:100%}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main">
+
+  <!-- Header -->
+  <div class="top-row">
+    <div class="left-head">
+      <a class="back-btn" href="{% url 'sales:voucher_list' %}">←</a>
+      <div class="hgroup">
+        <div class="title">Voucher<br>Details</div>
+        <div class="sub">
+          Voucher<br>
+          #{{ voucher.voucher_no|default:"VCH001" }}
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="edit-btn" href="{% url 'sales:edit_voucher' voucher.id %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/>
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+        </svg>
+        Edit
+      </a>
+
+      <a class="gold-btn" href="{{ download_customer_url|default:'#' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <path d="M7 10l5 5 5-5"/>
+          <path d="M12 15V3"/>
+        </svg>
+        Download for Customer
+      </a>
+
+      <a class="gold-btn" href="{{ download_resort_url|default:'#' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <path d="M7 10l5 5 5-5"/>
+          <path d="M12 15V3"/>
+        </svg>
+        Download for Resort
+      </a>
+    </div>
+  </div>
+
+  <!-- Basic Information -->
+  <div class="card">
+    <div class="card-title">Basic Information</div>
+
+    <div class="basic-grid">
+      <div class="item">
+        <div class="label">Customer Name</div>
+        <div class="value">{{ voucher.customer_name|default:"-" }}</div>
+      </div>
+
+      <div class="item">
+        <div class="label">Voucher Number</div>
+        <div class="value">{{ voucher.voucher_no|default:"VCH001" }}</div>
+      </div>
+
+      <div class="item">
+        <div class="label">Voucher Date</div>
+        <div class="value">{{ voucher.voucher_date|date:"d F Y"|default:"-" }}</div>
+      </div>
+
+      <div class="item">
+        <div class="label">Sales Person</div>
+        <div class="value">{{ voucher.sales_person|default:"-" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Package Details -->
+  <div class="card">
+    <div class="card-title">Package Details</div>
+
+    <div class="resort-block">
+      <div class="label">Resort Name</div>
+      <div class="value">{{ voucher.resort_name|default:"-" }}</div>
+    </div>
+
+    <div class="two-split">
+      <div class="date-box">
+        <div class="label">Check-in</div>
+        <div class="value">{{ voucher.checkin_date|date:"d F Y"|default:"-" }}</div>
+        <div class="time">Time: {{ voucher.checkin_time|default:"-" }}</div>
+      </div>
+
+      <div class="date-box">
+        <div class="label">Check-out</div>
+        <div class="value">{{ voucher.checkout_date|date:"d F Y"|default:"-" }}</div>
+        <div class="time">Time: {{ voucher.checkout_time|default:"-" }}</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="small">
+        <div class="label">Adults</div>
+        <div class="value">{{ voucher.adults|default:"-" }}</div>
+      </div>
+      <div class="small">
+        <div class="label">Children</div>
+        <div class="value">{{ voucher.children|default:"-" }}</div>
+      </div>
+      <div class="small">
+        <div class="label">Nights</div>
+        <div class="value">{{ voucher.nights|default:"-" }}</div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <div>
+        <div class="label">Room Type</div>
+        <div class="value">{{ voucher.room_type|default:"N/A" }}</div>
+      </div>
+      <div>
+        <div class="label">Number of Rooms</div>
+        <div class="value">{{ voucher.no_of_rooms|default:"-" }}</div>
+      </div>
+      <div>
+        <div class="label">Meals Plan</div>
+        <div class="value">{{ voucher.meals_plan|default:"-" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Details -->
+  <div class="card">
+    <div class="card-title">Pricing Details</div>
+
+    <div class="pricing-top">
+      <div class="pricing-left">
+        <div>
+          <div class="label">Bank Account</div>
+          <div class="value">{{ voucher.bank_account|default:"-" }}</div>
+        </div>
+      </div>
+
+      <div class="status-wrap">
+        <div class="label">Payment Status</div>
+        <div class="status-pill">{{ voucher.payment_status|default:"Pending Payment" }}</div>
+      </div>
+    </div>
+
+    <div class="price-grid">
+      <div class="pbox">
+        <div class="label">Package Price</div>
+        <div class="val">₹{{ voucher.package_price|default:"0" }}</div>
+      </div>
+
+      <div class="pbox">
+        <div class="label">Total Amount</div>
+        <div class="val">₹{{ voucher.total_amount|default:"0" }}</div>
+      </div>
+
+      <div class="pbox green">
+        <div class="label">Received</div>
+        <div class="val green">₹{{ voucher.received|default:"0" }}</div>
+      </div>
+
+      <div class="pbox orange">
+        <div class="label">Pending</div>
+        <div class="val orange">₹{{ voucher.pending|default:"0" }}</div>
+      </div>
+
+      <div class="pbox">
+        <div class="label">Resort Price</div>
+        <div class="val">₹{{ voucher.resort_price|default:"0" }}</div>
+      </div>
+
+      <div class="pbox white">
+        <div class="label">Bank Account</div>
+        <div class="val" style="font-size:22px;font-weight:650;">
+          {{ voucher.bank_account|default:"-" }}
+        </div>
+      </div>
+
+      <div class="pbox white">
+        <div class="label">Package Price</div>
+        <div class="val">₹{{ voucher.package_price|default:"0" }}</div>
+      </div>
+
+      <div class="pbox white">
+        <div class="label">Resort Price</div>
+        <div class="val">₹{{ voucher.resort_price|default:"0" }}</div>
+      </div>
+
+      <div class="pbox">
+        <div class="label">Profit</div>
+        <div class="val gold">₹{{ voucher.profit|default:"0" }}</div>
+      </div>
+
+      <div class="pbox white">
+        <div class="label">From WhyteHouse</div>
+        <div class="val" style="font-size:22px;font-weight:650;">
+          ₹{{ voucher.from_whytehouse|default:"0" }}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
