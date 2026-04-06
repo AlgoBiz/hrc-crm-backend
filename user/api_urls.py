@@ -1,4 +1,6 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.routers import DefaultRouter
 
 from .api_views import (
     customer_list_create,
@@ -14,12 +16,19 @@ from .api_views import (
     SlotBookingDetailAPIView,
     invoice_list_create,
     invoice_detail,
+    UserViewSet,
 )
 
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
+
 urlpatterns = [
+    path('', include(router.urls)),
+
     path('customers/', customer_list_create),
     path('customers/<int:pk>/', customer_detail),
     path("login/", LoginAPIView.as_view(), name="login"),
+    path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
     path('plans/', plan_list_create),
     path('plans/<int:pk>/', plan_detail),

@@ -13,6 +13,8 @@ class Center(models.Model):
 
     def __str__(self):
         return self.center_name
+
+
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('super_admin', 'Super Admin'),
@@ -22,6 +24,8 @@ class User(AbstractUser):
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     def __str__(self):
         return self.username
+
+
 
 class Customer(models.Model):
     STATUS_CHOICES = [

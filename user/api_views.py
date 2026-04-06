@@ -1,18 +1,50 @@
-from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework import status, viewsets, filters
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice
+from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User
 from .serializers import (
     CustomerSerializer,
     LoginSerializer,
+    UserSerializer,
     CenterSerializer,
     SlotSerializer,
     SlotBookingSerializer,
     PlanSerializer,
     InvoiceSerializer,
 )
+
+
+# =========================================
+# USER API (ModelViewSet)
+# =========================================
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-id')
+    serializer_class = UserSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self.request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+        return qs
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        user.delete()
+        return Response({"message": "User deleted successfully"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='by-role/(?P<role>[^/.]+)')
+    def by_role(self, request, role=None):
+        users = self.get_queryset().filter(role=role)
+        serializer = self.get_serializer(users, many=True)
+        return Response(serializer.data)
 
 
 # =========================================
@@ -62,15 +94,18 @@ def customer_detail(request, pk):
 # =========================================
 
 class LoginAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-
         if serializer.is_valid():
             user = serializer.validated_data["user"]
-
+            refresh = RefreshToken.for_user(user)
             return Response(
                 {
                     "message": "Login successful",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh),
                     "user_id": user.id,
                     "username": user.username,
                     "role": user.role,
@@ -79,7 +114,6 @@ class LoginAPIView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
