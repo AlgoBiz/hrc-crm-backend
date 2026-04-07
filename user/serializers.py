@@ -69,6 +69,14 @@ class PlanSerializer(serializers.ModelSerializer):
         model = Plan
         fields = ['id', 'plan_name', 'description', 'duration_months', 'price', 'status']
 
+    def validate_plan_name(self, value):
+        qs = Plan.objects.filter(plan_name__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A plan with this name already exists.")
+        return value
+
 
 class CenterSerializer(serializers.ModelSerializer):
     class Meta:
