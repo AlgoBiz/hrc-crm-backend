@@ -3,13 +3,13 @@ from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user = User.objects.filter(username=attrs.get("username")).first()
+        user = User.objects.filter(email=attrs.get("email")).first()
         if user is None or not user.check_password(attrs.get("password")):
-            raise serializers.ValidationError("Invalid username or password")
+            raise serializers.ValidationError("Invalid email or password")
         if not user.is_active:
             raise serializers.ValidationError("User account is inactive")
         attrs["user"] = user
