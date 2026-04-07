@@ -4,13 +4,13 @@ from rest_framework.routers import DefaultRouter
 
 from .api_views import (
     wave_choices,
-    customer_list, customer_create, customer_detail, customer_update, customer_delete,
+    customer_list, customer_create, customer_detail, customer_update, customer_partial_update, customer_delete,
     LoginAPIView,
-    plan_list, plan_create, plan_detail, plan_update, plan_delete,
+    plan_list, plan_create, plan_detail, plan_update, plan_partial_update, plan_delete,
     center_list, center_create, center_detail, center_update, center_partial_update, center_delete,
     slot_list, slot_create, slot_detail, slot_update, slot_partial_update, slot_delete,
     slot_booking_list, slot_booking_create, slot_booking_detail, slot_booking_update, slot_booking_partial_update, slot_booking_delete,
-    invoice_list, invoice_create, invoice_detail, invoice_update, invoice_delete,
+    invoice_list, invoice_create, invoice_detail, invoice_update, invoice_partial_update, invoice_delete,
     UserViewSet,
 )
 
@@ -29,6 +29,7 @@ urlpatterns = [
     path('customers/create/', customer_create),
     path('customers/<int:pk>/', customer_detail),
     path('customers/<int:pk>/update/', customer_update),
+    path('customers/<int:pk>/patch/', customer_partial_update),
     path('customers/<int:pk>/delete/', customer_delete),
 
     # Plans
@@ -36,6 +37,7 @@ urlpatterns = [
     path('plans/create/', plan_create),
     path('plans/<int:pk>/', plan_detail),
     path('plans/<int:pk>/update/', plan_update),
+    path('plans/<int:pk>/patch/', plan_partial_update),
     path('plans/<int:pk>/delete/', plan_delete),
 
     # Centers
@@ -67,6 +69,7 @@ urlpatterns = [
     path('invoices/create/', invoice_create),
     path('invoices/<int:pk>/', invoice_detail),
     path('invoices/<int:pk>/update/', invoice_update),
+    path('invoices/<int:pk>/patch/', invoice_partial_update),
     path('invoices/<int:pk>/delete/', invoice_delete),
 ]
     
