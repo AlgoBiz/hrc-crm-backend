@@ -76,6 +76,11 @@ class CenterSerializer(serializers.ModelSerializer):
         fields = ['id', 'center_name', 'location', 'mobile', 'email', 'poc_name', 'poc_contact', 'status', 'created_at']
         read_only_fields = ['id', 'created_at']
 
+    def validate_status(self, value):
+        if value not in ('active', 'inactive'):
+            raise serializers.ValidationError("Status must be 'active' or 'inactive'.")
+        return value
+
 
 class SlotSerializer(serializers.ModelSerializer):
     center_name = serializers.CharField(source="center.center_name", read_only=True)
@@ -86,6 +91,11 @@ class SlotSerializer(serializers.ModelSerializer):
         fields = ['id', 'center', 'center_name', 'start_time', 'end_time', 'slot_time',
                   'booked_count', 'total_slot', 'status', 'is_enabled', 'created_at']
         read_only_fields = ['id', 'booked_count', 'created_at', 'slot_time', 'center_name']
+
+    def validate_status(self, value):
+        if value not in ('enabled', 'disabled'):
+            raise serializers.ValidationError("Status must be 'enabled' or 'disabled'.")
+        return value
 
     def get_slot_time(self, obj):
         return f"{obj.start_time.strftime('%I:%M %p')} - {obj.end_time.strftime('%I:%M %p')}"

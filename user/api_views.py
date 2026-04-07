@@ -138,88 +138,66 @@ class LoginAPIView(APIView):
 # CENTER API
 # =========================================
 
-class CenterListCreateAPIView(APIView):
-    def get(self, request):
-        centers = Center.objects.all().order_by("-id")
-        serializer = CenterSerializer(centers, many=True)
+@api_view(['GET'])
+def center_list(request):
+    centers = Center.objects.all().order_by('-id')
+    serializer = CenterSerializer(centers, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def center_create(request):
+    serializer = CenterSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def center_detail(request, pk):
+    try:
+        center = Center.objects.get(pk=pk)
+    except Center.DoesNotExist:
+        return Response({'error': 'Center not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = CenterSerializer(center)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def center_update(request, pk):
+    try:
+        center = Center.objects.get(pk=pk)
+    except Center.DoesNotExist:
+        return Response({'error': 'Center not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = CenterSerializer(center, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        many = isinstance(request.data, list)
-        serializer = CenterSerializer(data=request.data, many=many)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Center(s) created successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CenterDetailAPIView(APIView):
-    def get_object(self, pk):
-        try:
-            return Center.objects.get(pk=pk)
-        except Center.DoesNotExist:
-            return None
-
-    def get(self, request, pk):
-        center = self.get_object(pk)
-        if not center:
-            return Response({"message": "Center not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = CenterSerializer(center)
+@api_view(['PATCH'])
+def center_partial_update(request, pk):
+    try:
+        center = Center.objects.get(pk=pk)
+    except Center.DoesNotExist:
+        return Response({'error': 'Center not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = CenterSerializer(center, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, pk):
-        center = self.get_object(pk)
-        if not center:
-            return Response({"message": "Center not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = CenterSerializer(center, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Center updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request, pk):
-        center = self.get_object(pk)
-        if not center:
-            return Response({"message": "Center not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = CenterSerializer(center, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Center updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        center = self.get_object(pk)
-        if not center:
-            return Response({"message": "Center not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        center.delete()
-        return Response(
-            {"message": "Center deleted successfully"},
-            status=status.HTTP_200_OK
-        )
+@api_view(['DELETE'])
+def center_delete(request, pk):
+    try:
+        center = Center.objects.get(pk=pk)
+    except Center.DoesNotExist:
+        return Response({'error': 'Center not found'}, status=status.HTTP_404_NOT_FOUND)
+    center.delete()
+    return Response({'message': 'Center deleted successfully'}, status=status.HTTP_200_OK)
 
 
 # =========================================
@@ -280,176 +258,133 @@ def plan_delete(request, pk):
 # SLOT API
 # =========================================
 
-class SlotListCreateAPIView(APIView):
-    def get(self, request):
-        slots = Slot.objects.all().order_by("-id")
-        serializer = SlotSerializer(slots, many=True)
+@api_view(['GET'])
+def slot_list(request):
+    slots = Slot.objects.all().order_by('-id')
+    serializer = SlotSerializer(slots, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def slot_create(request):
+    serializer = SlotSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def slot_detail(request, pk):
+    try:
+        slot = Slot.objects.get(pk=pk)
+    except Slot.DoesNotExist:
+        return Response({'error': 'Slot not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotSerializer(slot)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def slot_update(request, pk):
+    try:
+        slot = Slot.objects.get(pk=pk)
+    except Slot.DoesNotExist:
+        return Response({'error': 'Slot not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotSerializer(slot, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        many = isinstance(request.data, list)
-        serializer = SlotSerializer(data=request.data, many=many)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot(s) created successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SlotDetailAPIView(APIView):
-    def get_object(self, pk):
-        try:
-            return Slot.objects.get(pk=pk)
-        except Slot.DoesNotExist:
-            return None
-
-    def get(self, request, pk):
-        slot = self.get_object(pk)
-        if not slot:
-            return Response({"message": "Slot not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = SlotSerializer(slot)
+@api_view(['PATCH'])
+def slot_partial_update(request, pk):
+    try:
+        slot = Slot.objects.get(pk=pk)
+    except Slot.DoesNotExist:
+        return Response({'error': 'Slot not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotSerializer(slot, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, pk):
-        slot = self.get_object(pk)
-        if not slot:
-            return Response({"message": "Slot not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = SlotSerializer(slot, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def patch(self, request, pk):
-        slot = self.get_object(pk)
-        if not slot:
-            return Response({"message": "Slot not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = SlotSerializer(slot, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        slot = self.get_object(pk)
-        if not slot:
-            return Response({"message": "Slot not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        slot.delete()
-        return Response(
-            {"message": "Slot deleted successfully"},
-            status=status.HTTP_200_OK
-        )
+@api_view(['DELETE'])
+def slot_delete(request, pk):
+    try:
+        slot = Slot.objects.get(pk=pk)
+    except Slot.DoesNotExist:
+        return Response({'error': 'Slot not found'}, status=status.HTTP_404_NOT_FOUND)
+    slot.delete()
+    return Response({'message': 'Slot deleted successfully'}, status=status.HTTP_200_OK)
 
 
 # =========================================
 # SLOT BOOKING API
 # =========================================
 
-class SlotBookingListCreateAPIView(APIView):
-    def get(self, request):
-        bookings = SlotBooking.objects.all().order_by("-id")
-        serializer = SlotBookingSerializer(bookings, many=True)
+@api_view(['GET'])
+def slot_booking_list(request):
+    bookings = SlotBooking.objects.all().order_by('-id')
+    serializer = SlotBookingSerializer(bookings, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def slot_booking_create(request):
+    serializer = SlotBookingSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def slot_booking_detail(request, pk):
+    try:
+        booking = SlotBooking.objects.get(pk=pk)
+    except SlotBooking.DoesNotExist:
+        return Response({'error': 'Slot booking not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotBookingSerializer(booking)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def slot_booking_update(request, pk):
+    try:
+        booking = SlotBooking.objects.get(pk=pk)
+    except SlotBooking.DoesNotExist:
+        return Response({'error': 'Slot booking not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotBookingSerializer(booking, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        many = isinstance(request.data, list)
-        serializer = SlotBookingSerializer(data=request.data, many=many)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot booking(s) created successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class SlotBookingDetailAPIView(APIView):
-    def get_object(self, pk):
-        try:
-            return SlotBooking.objects.get(pk=pk)
-        except SlotBooking.DoesNotExist:
-            return None
-
-    def get(self, request, pk):
-        booking = self.get_object(pk)
-        if not booking:
-            return Response({"message": "Slot booking not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = SlotBookingSerializer(booking)
+@api_view(['PATCH'])
+def slot_booking_partial_update(request, pk):
+    try:
+        booking = SlotBooking.objects.get(pk=pk)
+    except SlotBooking.DoesNotExist:
+        return Response({'error': 'Slot booking not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = SlotBookingSerializer(booking, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, pk):
-        booking = self.get_object(pk)
-        if not booking:
-            return Response({"message": "Slot booking not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = SlotBookingSerializer(booking, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot booking updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['DELETE'])
+def slot_booking_delete(request, pk):
+    try:
+        booking = SlotBooking.objects.get(pk=pk)
+    except SlotBooking.DoesNotExist:
+        return Response({'error': 'Slot booking not found'}, status=status.HTTP_404_NOT_FOUND)
+    booking.delete()
+    return Response({'message': 'Slot booking deleted successfully'}, status=status.HTTP_200_OK)
 
-    def patch(self, request, pk):
-        booking = self.get_object(pk)
-        if not booking:
-            return Response({"message": "Slot booking not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = SlotBookingSerializer(booking, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(
-                {
-                    "message": "Slot booking updated successfully",
-                    "data": serializer.data
-                },
-                status=status.HTTP_200_OK
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        booking = self.get_object(pk)
-        if not booking:
-            return Response({"message": "Slot booking not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        booking.delete()
-        return Response(
-            {"message": "Slot booking deleted successfully"},
-            status=status.HTTP_200_OK
-        )
 
 
 # =========================================

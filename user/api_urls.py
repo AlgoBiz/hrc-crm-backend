@@ -7,9 +7,9 @@ from .api_views import (
     customer_list, customer_create, customer_detail, customer_update, customer_delete,
     LoginAPIView,
     plan_list, plan_create, plan_detail, plan_update, plan_delete,
-    CenterListCreateAPIView, CenterDetailAPIView,
-    SlotListCreateAPIView, SlotDetailAPIView,
-    SlotBookingListCreateAPIView, SlotBookingDetailAPIView,
+    center_list, center_create, center_detail, center_update, center_partial_update, center_delete,
+    slot_list, slot_create, slot_detail, slot_update, slot_partial_update, slot_delete,
+    slot_booking_list, slot_booking_create, slot_booking_detail, slot_booking_update, slot_booking_partial_update, slot_booking_delete,
     invoice_list, invoice_create, invoice_detail, invoice_update, invoice_delete,
     UserViewSet,
 )
@@ -39,19 +39,28 @@ urlpatterns = [
     path('plans/<int:pk>/delete/', plan_delete),
 
     # Centers
-    path('centers/', CenterListCreateAPIView.as_view(), name='center_list'),
-    path('centers/create/', CenterListCreateAPIView.as_view(), name='center_create'),
-    path('centers/<int:pk>/', CenterDetailAPIView.as_view(), name='center_detail'),
+    path('centers/', center_list),
+    path('centers/create/', center_create),
+    path('centers/<int:pk>/', center_detail),
+    path('centers/<int:pk>/update/', center_update),
+    path('centers/<int:pk>/patch/', center_partial_update),
+    path('centers/<int:pk>/delete/', center_delete),
 
     # Slots
-    path('slots/', SlotListCreateAPIView.as_view(), name='slot_list'),
-    path('slots/create/', SlotListCreateAPIView.as_view(), name='slot_create'),
-    path('slots/<int:pk>/', SlotDetailAPIView.as_view(), name='slot_detail'),
+    path('slots/', slot_list),
+    path('slots/create/', slot_create),
+    path('slots/<int:pk>/', slot_detail),
+    path('slots/<int:pk>/update/', slot_update),
+    path('slots/<int:pk>/patch/', slot_partial_update),
+    path('slots/<int:pk>/delete/', slot_delete),
 
     # Slot Bookings
-    path('slot-bookings/', SlotBookingListCreateAPIView.as_view(), name='slot_booking_list'),
-    path('slot-bookings/create/', SlotBookingListCreateAPIView.as_view(), name='slot_booking_create'),
-    path('slot-bookings/<int:pk>/', SlotBookingDetailAPIView.as_view(), name='slot_booking_detail'),
+    path('slot-bookings/', slot_booking_list),
+    path('slot-bookings/create/', slot_booking_create),
+    path('slot-bookings/<int:pk>/', slot_booking_detail),
+    path('slot-bookings/<int:pk>/update/', slot_booking_update),
+    path('slot-bookings/<int:pk>/patch/', slot_booking_partial_update),
+    path('slot-bookings/<int:pk>/delete/', slot_booking_delete),
 
     # Invoices
     path('invoices/', invoice_list),

@@ -2,13 +2,17 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class Center(models.Model):
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+    )
     center_name = models.CharField(max_length=150)
     location = models.CharField(max_length=150)
     mobile = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
     poc_name = models.CharField(max_length=100, blank=True, null=True)
     poc_contact = models.CharField(max_length=20, blank=True, null=True)
-    status = models.CharField(max_length=20, default='Active')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -112,12 +116,16 @@ class Invoice(models.Model):
         return self.invoice_id
 
 class Slot(models.Model):
+    STATUS_CHOICES = (
+        ('enabled', 'Enabled'),
+        ('disabled', 'Disabled'),
+    )
     center = models.ForeignKey(Center, on_delete=models.CASCADE, related_name='slots')
     start_time = models.TimeField()
     end_time = models.TimeField()
     booked_count = models.IntegerField(default=0)
     total_slot = models.IntegerField(default=0)
-    status = models.CharField(max_length=20, default='Enabled')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enabled')
     is_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
