@@ -51,42 +51,59 @@ class UserViewSet(viewsets.ModelViewSet):
 # CUSTOMER API
 # =========================================
 
-@api_view(['GET', 'POST'])
-def customer_list_create(request):
-    if request.method == 'GET':
-        customers = Customer.objects.all().order_by('-id')
-        serializer = CustomerSerializer(customers, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'POST':
-        serializer = CustomerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def wave_choices(request):
+    choices = [{'value': k, 'label': v} for k, v in Customer.WAVE_CHOICES]
+    return Response(choices, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET'])
+def customer_list(request):
+    customers = Customer.objects.all().order_by('-id')
+    serializer = CustomerSerializer(customers, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def customer_create(request):
+    serializer = CustomerSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
 def customer_detail(request, pk):
     try:
         customer = Customer.objects.get(pk=pk)
     except Customer.DoesNotExist:
         return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = CustomerSerializer(customer)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    if request.method == 'GET':
-        serializer = CustomerSerializer(customer)
+
+@api_view(['PUT'])
+def customer_update(request, pk):
+    try:
+        customer = Customer.objects.get(pk=pk)
+    except Customer.DoesNotExist:
+        return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = CustomerSerializer(customer, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PUT':
-        serializer = CustomerSerializer(customer, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'DELETE':
-        customer.delete()
-        return Response({'message': 'Customer deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+@api_view(['DELETE'])
+def customer_delete(request, pk):
+    try:
+        customer = Customer.objects.get(pk=pk)
+    except Customer.DoesNotExist:
+        return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+    customer.delete()
+    return Response({'message': 'Customer deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # =========================================
@@ -209,43 +226,55 @@ class CenterDetailAPIView(APIView):
 # PLAN API
 # =========================================
 
-@api_view(['GET', 'POST'])
-def plan_list_create(request):
-    if request.method == 'GET':
-        plans = Plan.objects.all().order_by('-id')
-        serializer = PlanSerializer(plans, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'POST':
-        serializer = PlanSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def plan_list(request):
+    plans = Plan.objects.all().order_by('-id')
+    serializer = PlanSerializer(plans, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['POST'])
+def plan_create(request):
+    serializer = PlanSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
 def plan_detail(request, pk):
     try:
         plan = Plan.objects.get(pk=pk)
     except Plan.DoesNotExist:
         return Response({'error': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = PlanSerializer(plan)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    if request.method == 'GET':
-        serializer = PlanSerializer(plan)
+
+@api_view(['PUT'])
+def plan_update(request, pk):
+    try:
+        plan = Plan.objects.get(pk=pk)
+    except Plan.DoesNotExist:
+        return Response({'error': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = PlanSerializer(plan, data=request.data)
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PUT':
-        serializer = PlanSerializer(plan, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'DELETE':
-        plan.delete()
-        return Response({'message': 'Plan deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
+@api_view(['DELETE'])
+def plan_delete(request, pk):
+    try:
+        plan = Plan.objects.get(pk=pk)
+    except Plan.DoesNotExist:
+        return Response({'error': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
+    if Invoice.objects.filter(plan=plan).exists():
+        return Response({'error': 'Cannot delete plan. It is used in invoices.'}, status=status.HTTP_400_BAD_REQUEST)
+    plan.delete()
+    return Response({'message': 'Plan deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 # =========================================
 # SLOT API
@@ -427,39 +456,50 @@ class SlotBookingDetailAPIView(APIView):
 # INVOICE API
 # =========================================
 
-@api_view(['GET', 'POST'])
-def invoice_list_create(request):
-    if request.method == 'GET':
-        invoices = Invoice.objects.all().order_by('-id')
-        serializer = InvoiceSerializer(invoices, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'POST':
-        serializer = InvoiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def invoice_list(request):
+    invoices = Invoice.objects.all().order_by('-id')
+    serializer = InvoiceSerializer(invoices, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['POST'])
+def invoice_create(request):
+    serializer = InvoiceSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
 def invoice_detail(request, pk):
     try:
         invoice = Invoice.objects.get(pk=pk)
     except Invoice.DoesNotExist:
-        return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = InvoiceSerializer(invoice)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    if request.method == 'GET':
-        serializer = InvoiceSerializer(invoice)
+
+@api_view(['PUT'])
+def invoice_update(request, pk):
+    try:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
+        return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = InvoiceSerializer(invoice, data=request.data, partial=request.method == 'PATCH')
+    if serializer.is_valid():
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PUT':
-        serializer = InvoiceSerializer(invoice, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'DELETE':
-        invoice.delete()
-        return Response({"message": "Deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+@api_view(['DELETE'])
+def invoice_delete(request, pk):
+    try:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
+        return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+    invoice.delete()
+    return Response({'message': 'Deleted successfully'}, status=status.HTTP_204_NO_CONTENT)

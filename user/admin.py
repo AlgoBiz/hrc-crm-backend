@@ -33,9 +33,9 @@ class PlanAdmin(admin.ModelAdmin):
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ('invoice_number', 'customer', 'center', 'plan', 'amount', 'date', 'status', 'created_at')
+    list_display = ('invoice_id', 'customer', 'center', 'plan', 'amount', 'date', 'status', 'created_at')
     list_filter = ('status', 'center')
-    search_fields = ('invoice_number', 'customer__name')
+    search_fields = ('customer__name',)
     date_hierarchy = 'date'
 
 

@@ -33,12 +33,22 @@ class Customer(models.Model):
         ('expiring', 'Expiring Soon'),
         ('expired', 'Expired'),
     ]
+    WAVE_CHOICES = [
+        ('Vikas', 'Vikas'),
+        ('Amrith', 'Amrith'),
+        ('Samriddhi', 'Samriddhi'),
+        ('Zayana', 'Zayana'),
+        ('Prabhav', 'Prabhav'),
+        ('Sexellence', 'Sexellence'),
+        ('Aanandha', 'Aanandha'),
+        ('Relax', 'Relax'),
+    ]
     name = models.CharField(max_length=100)
     mobile = models.CharField(max_length=15)
     email = models.EmailField(max_length=45, blank=True, null=True)
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     plan = models.CharField(max_length=100)
-    wave = models.CharField(max_length=20)
+    wave = models.CharField(max_length=20, choices=WAVE_CHOICES)
     start_date = models.DateField()
     expiry_date = models.DateField()
     last_visit = models.DateField(blank=True, null=True)
@@ -86,18 +96,20 @@ class Invoice(models.Model):
         ('overdue', 'Overdue'),
     )
 
-    invoice_number = models.CharField(max_length=100, unique=True)
     customer = models.ForeignKey('Customer', on_delete=models.CASCADE, related_name='invoices')
     center = models.ForeignKey('Center', on_delete=models.CASCADE, related_name='invoices')
-    plan = models.ForeignKey('Plan', on_delete=models.CASCADE, related_name='invoices')
+    plan = models.ForeignKey('Plan', on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    file_path = models.FileField(upload_to='invoices/', blank=True, null=True)
     date = models.DateField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def invoice_id(self):
+        return f"INV-{self.id:03d}"
+
     def __str__(self):
-        return self.invoice_number
+        return self.invoice_id
 
 class Slot(models.Model):
     center = models.ForeignKey(Center, on_delete=models.CASCADE, related_name='slots')
