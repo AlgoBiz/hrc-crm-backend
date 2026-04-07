@@ -53,12 +53,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
-    wave_display = serializers.CharField(source='get_wave_display', read_only=True)
-
     class Meta:
         model = Customer
         fields = [
-            'id', 'name', 'mobile', 'email', 'center', 'plan', 'wave', 'wave_display',
+            'id', 'name', 'mobile', 'email', 'center', 'plan', 'wave',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
         ]

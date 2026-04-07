@@ -53,8 +53,20 @@ class UserViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 def wave_choices(request):
-    choices = [{'value': k, 'label': v} for k, v in Customer.WAVE_CHOICES]
-    return Response(choices, status=status.HTTP_200_OK)
+    import requests
+    try:
+        response = requests.get(
+            'https://www.palana.one/api/packages/list',
+            headers={'Authorization': 'Token b49a70b4829ce2ead1a08b4576139453acd43cfd'},
+            timeout=10
+        )
+        packages = response.json().get('data', [])
+        return Response(
+            [{'id': p['id'], 'name': p['name']} for p in packages],
+            status=status.HTTP_200_OK
+        )
+    except Exception:
+        return Response({'error': 'Failed to fetch wave choices'}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 @api_view(['GET'])
