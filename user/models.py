@@ -37,12 +37,22 @@ class Customer(models.Model):
         ('expiring', 'Expiring Soon'),
         ('expired', 'Expired'),
     ]
+    WAVE_CHOICES = [
+        ('Vikas', 'Vikas'),
+        ('Amrith', 'Amrith'),
+        ('Samriddhi', 'Samriddhi'),
+        ('Zayana', 'Zayana'),
+        ('Prabhav', 'Prabhav'),
+        ('Sexellence', 'Sexellence'),
+        ('Aanandha', 'Aanandha'),
+        ('Relax', 'Relax'),
+    ]
     name = models.CharField(max_length=100)
     mobile = models.CharField(max_length=15)
     email = models.EmailField(max_length=45, blank=True, null=True)
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     plan = models.CharField(max_length=100)
-    wave = models.CharField(max_length=50)
+    wave = models.CharField(max_length=20, choices=WAVE_CHOICES)
     start_date = models.DateField()
     expiry_date = models.DateField()
     last_visit = models.DateField(blank=True, null=True)

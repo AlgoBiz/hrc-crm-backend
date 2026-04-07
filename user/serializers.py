@@ -53,29 +53,15 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    wave_display = serializers.CharField(source='get_wave_display', read_only=True)
+
     class Meta:
         model = Customer
         fields = [
-            'id', 'name', 'mobile', 'email', 'center', 'plan', 'wave',
+            'id', 'name', 'mobile', 'email', 'center', 'plan', 'wave', 'wave_display',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
         ]
-
-    def validate_wave(self, value):
-        import requests
-        try:
-            response = requests.get(
-                'https://www.palana.one/api/packages/list',
-                headers={'Authorization': 'Token b49a70b4829ce2ead1a08b4576139453acd43cfd'},
-                timeout=10
-            )
-            valid_waves = [p['name'] for p in response.json().get('data', [])]
-        except Exception:
-            valid_waves = ['Vikas', 'Amrith', 'Samriddhi', 'Zayana', 'Prabhav', 'Sexellence', 'Aanandha', 'Relax']
-
-        if value not in valid_waves:
-            raise serializers.ValidationError(f"'{value}' is not a valid wave. Choose from: {', '.join(valid_waves)}")
-        return value
 
 
 class PlanSerializer(serializers.ModelSerializer):
