@@ -101,8 +101,8 @@ class SlotSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'booked_count', 'created_at', 'slot_time', 'center_name']
 
     def validate_status(self, value):
-        if value not in ('enabled', 'disabled'):
-            raise serializers.ValidationError("Status must be 'enabled' or 'disabled'.")
+        if value not in ('active', 'inactive'):
+            raise serializers.ValidationError("Status must be 'active' or 'inactive'.")
         return value
 
     def get_slot_time(self, obj):

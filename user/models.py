@@ -117,15 +117,15 @@ class Invoice(models.Model):
 
 class Slot(models.Model):
     STATUS_CHOICES = (
-        ('enabled', 'Enabled'),
-        ('disabled', 'Disabled'),
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
     )
     center = models.ForeignKey(Center, on_delete=models.CASCADE, related_name='slots')
     start_time = models.TimeField()
     end_time = models.TimeField()
     booked_count = models.IntegerField(default=0)
     total_slot = models.IntegerField(default=0)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='enabled')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     is_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
