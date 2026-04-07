@@ -104,10 +104,15 @@ class PlanSerializer(serializers.ModelSerializer):
 
 
 class CenterSerializer(serializers.ModelSerializer):
+    total_customers = serializers.SerializerMethodField()
+
     class Meta:
         model = Center
-        fields = ['id', 'center_name', 'location', 'mobile', 'email', 'poc_name', 'poc_contact', 'status', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'center_name', 'location', 'mobile', 'email', 'poc_name', 'poc_contact', 'status', 'created_at', 'total_customers']
+        read_only_fields = ['id', 'created_at', 'total_customers']
+
+    def get_total_customers(self, obj):
+        return obj.customer_set.count()
 
     def validate_status(self, value):
         if value not in ('active', 'inactive'):
