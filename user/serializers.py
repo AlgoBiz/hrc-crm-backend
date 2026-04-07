@@ -63,6 +63,31 @@ class CustomerSerializer(serializers.ModelSerializer):
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
         ]
 
+    def validate(self, attrs):
+        center = attrs.get('center')
+        mobile = attrs.get('mobile')
+        email = attrs.get('email')
+        name = attrs.get('name')
+        instance = self.instance  # None on create, existing obj on update
+
+        qs = Customer.objects.filter(center=center)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+
+        if mobile and qs.filter(mobile=mobile).exists():
+            raise serializers.ValidationError({
+                "mobile": f"A customer with this phone number already exists in this branch."
+            })
+        if email and qs.filter(email=email).exists():
+            raise serializers.ValidationError({
+                "email": f"A customer with this email already exists in this branch."
+            })
+        if name and qs.filter(name=name).exists():
+            raise serializers.ValidationError({
+                "name": f"A customer with this name already exists in this branch."
+            })
+        return attrs
+
 
 class PlanSerializer(serializers.ModelSerializer):
     class Meta:
