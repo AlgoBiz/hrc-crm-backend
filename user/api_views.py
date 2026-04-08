@@ -3,9 +3,11 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-from datetime import timedelta
-from django.db.models import Q
+from datetime import timedelta, date
+from django.db.models import Q, Sum, Count
+from django.utils import timezone
 from django.db import models
 
 from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User
@@ -16,146 +18,32 @@ from .serializers import (
 )
 
 
+# =========================================
+# HELPERS
+# =========================================
+
 def custom_response(success=True, message="", data=None, status_code=200):
-    return Response({
-        "success": success,
-        "message": message,
-        "data": data
-    }, status=status_code)
+    return Response({"success": success, "message": message, "data": data}, status=status_code)
 
 
-# =========================================
-# USER API (ModelViewSet)
-# =========================================
+class StandardPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('-id')
-    serializer_class = UserSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['username', 'email', 'first_name', 'last_name']
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        role = self.request.query_params.get('role')
-        if role:
-            qs = qs.filter(role=role)
-        return qs
-
-    def list(self, request, *args, **kwargs):
-        qs = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(qs, many=True)
-        return custom_response(True, "Users fetched successfully", serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return custom_response(True, "User fetched successfully", serializer.data)
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return custom_response(True, "User created successfully", serializer.data, status.HTTP_201_CREATED)
-        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        if serializer.is_valid():
-            serializer.save()
-            return custom_response(True, "User updated successfully", serializer.data)
-        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-    def destroy(self, request, *args, **kwargs):
-        self.get_object().delete()
-        return custom_response(True, "User deleted successfully")
-
-    @action(detail=False, methods=['get'], url_path='by-role/(?P<role>[^/.]+)')
-    def by_role(self, request, role=None):
-        users = self.get_queryset().filter(role=role)
-        serializer = self.get_serializer(users, many=True)
-        return custom_response(True, f"Users with role '{role}' fetched successfully", serializer.data)
-
-
-# =========================================
-# CUSTOMER API
-# =========================================
-
-@api_view(['GET'])
-def wave_choices(request):
-    choices = [{'value': k, 'label': v} for k, v in Customer.WAVE_CHOICES]
-    return custom_response(True, "Wave choices fetched successfully", choices)
-
-
-@api_view(['GET'])
-def customer_list(request):
-    qs = Customer.objects.all().order_by('-id')
-    search = request.query_params.get('search')
-    center = request.query_params.get('center')
-    date = request.query_params.get('date')
-    if search:
-        qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
-    if center:
-        qs = qs.filter(center_id=center)
-    if date:
-        qs = qs.filter(created_at__date=date)
-    serializer = CustomerSerializer(qs, many=True)
-    return custom_response(True, "Customers fetched successfully", serializer.data)
-
-
-@api_view(['POST'])
-def customer_create(request):
-    serializer = CustomerSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Customer created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-def customer_detail(request, pk):
-    try:
-        customer = Customer.objects.get(pk=pk)
-    except Customer.DoesNotExist:
-        return custom_response(False, "Customer not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Customer fetched successfully", CustomerSerializer(customer).data)
-
-
-@api_view(['PUT'])
-def customer_update(request, pk):
-    try:
-        customer = Customer.objects.get(pk=pk)
-    except Customer.DoesNotExist:
-        return custom_response(False, "Customer not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = CustomerSerializer(customer, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Customer updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['PATCH'])
-def customer_partial_update(request, pk):
-    try:
-        customer = Customer.objects.get(pk=pk)
-    except Customer.DoesNotExist:
-        return custom_response(False, "Customer not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = CustomerSerializer(customer, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Customer updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def customer_delete(request, pk):
-    try:
-        customer = Customer.objects.get(pk=pk)
-    except Customer.DoesNotExist:
-        return custom_response(False, "Customer not found", None, status.HTTP_404_NOT_FOUND)
-    customer.delete()
-    return custom_response(True, "Customer deleted successfully")
+    def get_paginated_response(self, data, message=""):
+        return Response({
+            "success": True,
+            "message": message,
+            "data": data,
+            "pagination": {
+                "count": self.page.paginator.count,
+                "total_pages": self.page.paginator.num_pages,
+                "current_page": self.page.number,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+            }
+        })
 
 
 # =========================================
@@ -175,7 +63,6 @@ class LoginAPIView(APIView):
 
             if is_admin and user.role != 'super_admin':
                 return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
-
             if is_branch and user.role != 'branch_user':
                 return custom_response(False, "Access denied. Not a branch user.", None, status.HTTP_403_FORBIDDEN)
 
@@ -189,6 +76,7 @@ class LoginAPIView(APIView):
                     "email": user.email,
                     "role": user.role,
                     "center": user.center.center_name if user.center else None,
+                    "center_id": user.center.id if user.center else None,
                 },
                 "redirect_to": "admin_dashboard" if user.role == "super_admin" else "branch_dashboard",
             })
@@ -196,554 +84,510 @@ class LoginAPIView(APIView):
 
 
 # =========================================
-# CENTER API
+# USER VIEWSET
 # =========================================
 
-@api_view(['GET'])
-def center_list(request):
-    qs = Center.objects.all().order_by('-id')
-    search = request.query_params.get('search')
-    if search:
-        qs = qs.filter(Q(center_name__icontains=search) | Q(location__icontains=search) | Q(mobile__icontains=search))
-    return custom_response(True, "Centers fetched successfully", CenterSerializer(qs, many=True).data)
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-id')
+    serializer_class = UserSerializer
+    pagination_class = StandardPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = self.request.query_params.get('role')
+        if role:
+            qs = qs.filter(role=role)
+        return qs
 
-@api_view(['POST'])
-def center_create(request):
-    serializer = CenterSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Center created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Users fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Users fetched successfully", serializer.data)
 
+    def retrieve(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_object())
+        return custom_response(True, "User fetched successfully", serializer.data)
 
-@api_view(['GET'])
-def center_detail(request, pk):
-    try:
-        center = Center.objects.get(pk=pk)
-    except Center.DoesNotExist:
-        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Center fetched successfully", CenterSerializer(center).data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "User created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "User updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PUT'])
-def center_update(request, pk):
-    try:
-        center = Center.objects.get(pk=pk)
-    except Center.DoesNotExist:
-        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = CenterSerializer(center, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Center updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "User deleted successfully")
 
-
-@api_view(['PATCH'])
-def center_partial_update(request, pk):
-    try:
-        center = Center.objects.get(pk=pk)
-    except Center.DoesNotExist:
-        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = CenterSerializer(center, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Center updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def center_delete(request, pk):
-    try:
-        center = Center.objects.get(pk=pk)
-    except Center.DoesNotExist:
-        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
-    center.delete()
-    return custom_response(True, "Center deleted successfully")
+    @action(detail=False, methods=['get'], url_path='by-role/(?P<role>[^/.]+)')
+    def by_role(self, request, role=None):
+        users = self.get_queryset().filter(role=role)
+        serializer = self.get_serializer(users, many=True)
+        return custom_response(True, f"Users with role '{role}' fetched successfully", serializer.data)
 
 
 # =========================================
-# PLAN API
+# CENTER VIEWSET
 # =========================================
 
-@api_view(['GET'])
-def plan_list(request):
-    qs = Plan.objects.all().order_by('-id')
-    search = request.query_params.get('search')
-    if search:
-        qs = qs.filter(plan_name__icontains=search)
-    return custom_response(True, "Plans fetched successfully", PlanSerializer(qs, many=True).data)
+class CenterViewSet(viewsets.ModelViewSet):
+    queryset = Center.objects.all().order_by('-id')
+    serializer_class = CenterSerializer
+    pagination_class = StandardPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['center_name', 'location', 'mobile']
 
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Centers fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Centers fetched successfully", serializer.data)
 
-@api_view(['POST'])
-def plan_create(request):
-    serializer = PlanSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Plan created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Center fetched successfully", self.get_serializer(self.get_object()).data)
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Center created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-def plan_detail(request, pk):
-    try:
-        plan = Plan.objects.get(pk=pk)
-    except Plan.DoesNotExist:
-        return custom_response(False, "Plan not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Plan fetched successfully", PlanSerializer(plan).data)
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Center updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['PUT'])
-def plan_update(request, pk):
-    try:
-        plan = Plan.objects.get(pk=pk)
-    except Plan.DoesNotExist:
-        return custom_response(False, "Plan not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = PlanSerializer(plan, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Plan updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['PATCH'])
-def plan_partial_update(request, pk):
-    try:
-        plan = Plan.objects.get(pk=pk)
-    except Plan.DoesNotExist:
-        return custom_response(False, "Plan not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = PlanSerializer(plan, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Plan updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def plan_delete(request, pk):
-    try:
-        plan = Plan.objects.get(pk=pk)
-    except Plan.DoesNotExist:
-        return custom_response(False, "Plan not found", None, status.HTTP_404_NOT_FOUND)
-    if Invoice.objects.filter(plan=plan).exists():
-        return custom_response(False, "Cannot delete plan. It is used in invoices.", None, status.HTTP_400_BAD_REQUEST)
-    plan.delete()
-    return custom_response(True, "Plan deleted successfully")
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "Center deleted successfully")
 
 
 # =========================================
-# SLOT API
+# PLAN VIEWSET
 # =========================================
 
-@api_view(['GET'])
-def slot_list(request):
-    slots = Slot.objects.all().order_by('-id')
-    return custom_response(True, "Slots fetched successfully", SlotSerializer(slots, many=True).data)
+class PlanViewSet(viewsets.ModelViewSet):
+    queryset = Plan.objects.all().order_by('-id')
+    serializer_class = PlanSerializer
+    pagination_class = StandardPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['plan_name']
 
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Plans fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Plans fetched successfully", serializer.data)
 
-@api_view(['POST'])
-def slot_create(request):
-    serializer = SlotSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Plan fetched successfully", self.get_serializer(self.get_object()).data)
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Plan created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET'])
-def slot_detail(request, pk):
-    try:
-        slot = Slot.objects.get(pk=pk)
-    except Slot.DoesNotExist:
-        return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Slot fetched successfully", SlotSerializer(slot).data)
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Plan updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['PUT'])
-def slot_update(request, pk):
-    try:
-        slot = Slot.objects.get(pk=pk)
-    except Slot.DoesNotExist:
-        return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = SlotSerializer(slot, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['PATCH'])
-def slot_partial_update(request, pk):
-    try:
-        slot = Slot.objects.get(pk=pk)
-    except Slot.DoesNotExist:
-        return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = SlotSerializer(slot, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def slot_delete(request, pk):
-    try:
-        slot = Slot.objects.get(pk=pk)
-    except Slot.DoesNotExist:
-        return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
-    slot.delete()
-    return custom_response(True, "Slot deleted successfully")
+    def destroy(self, request, *args, **kwargs):
+        plan = self.get_object()
+        if Invoice.objects.filter(plan=plan).exists():
+            return custom_response(False, "Cannot delete plan. It is used in invoices.", None, status.HTTP_400_BAD_REQUEST)
+        plan.delete()
+        return custom_response(True, "Plan deleted successfully")
 
 
 # =========================================
-# SLOT BOOKING API
+# CUSTOMER VIEWSET
 # =========================================
 
-@api_view(['GET'])
-def slot_booking_list(request):
-    bookings = SlotBooking.objects.all().order_by('-id')
-    return custom_response(True, "Slot bookings fetched successfully", SlotBookingSerializer(bookings, many=True).data)
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all().order_by('-id')
+    serializer_class = CustomerSerializer
+    pagination_class = StandardPagination
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get('search')
+        center = self.request.query_params.get('center')
+        date_param = self.request.query_params.get('date')
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
+        if center:
+            qs = qs.filter(center_id=center)
+        if date_param:
+            qs = qs.filter(created_at__date=date_param)
+        return qs
 
-@api_view(['POST'])
-def slot_booking_create(request):
-    serializer = SlotBookingSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot booking created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Customers fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Customers fetched successfully", serializer.data)
 
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Customer fetched successfully", self.get_serializer(self.get_object()).data)
 
-@api_view(['GET'])
-def slot_booking_detail(request, pk):
-    try:
-        booking = SlotBooking.objects.get(pk=pk)
-    except SlotBooking.DoesNotExist:
-        return custom_response(False, "Slot booking not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Slot booking fetched successfully", SlotBookingSerializer(booking).data)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Customer created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Customer updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-@api_view(['PUT'])
-def slot_booking_update(request, pk):
-    try:
-        booking = SlotBooking.objects.get(pk=pk)
-    except SlotBooking.DoesNotExist:
-        return custom_response(False, "Slot booking not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = SlotBookingSerializer(booking, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot booking updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "Customer deleted successfully")
 
-
-@api_view(['PATCH'])
-def slot_booking_partial_update(request, pk):
-    try:
-        booking = SlotBooking.objects.get(pk=pk)
-    except SlotBooking.DoesNotExist:
-        return custom_response(False, "Slot booking not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = SlotBookingSerializer(booking, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Slot booking updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def slot_booking_delete(request, pk):
-    try:
-        booking = SlotBooking.objects.get(pk=pk)
-    except SlotBooking.DoesNotExist:
-        return custom_response(False, "Slot booking not found", None, status.HTTP_404_NOT_FOUND)
-    booking.delete()
-    return custom_response(True, "Slot booking deleted successfully")
+    @action(detail=False, methods=['get'], url_path='wave-choices')
+    def wave_choices(self, request):
+        choices = [{'value': k, 'label': v} for k, v in Customer.WAVE_CHOICES]
+        return custom_response(True, "Wave choices fetched successfully", choices)
 
 
 # =========================================
-# DASHBOARD API
+# SLOT VIEWSET
 # =========================================
 
-@api_view(['GET'])
-def dashboard_summary(request):
-    from django.db.models import Sum, Count
-    from django.utils import timezone
-    from datetime import date
+class SlotViewSet(viewsets.ModelViewSet):
+    queryset = Slot.objects.all().order_by('-id')
+    serializer_class = SlotSerializer
+    pagination_class = StandardPagination
 
-    today = date.today()
-    this_month_start = today.replace(day=1)
-    last_month_end = this_month_start - timedelta(days=1)
-    last_month_start = last_month_end.replace(day=1)
+    def get_queryset(self):
+        qs = super().get_queryset()
+        center = self.request.query_params.get('center')
+        if center:
+            qs = qs.filter(center_id=center)
+        return qs
 
-    # Totals
-    total_customers = Customer.objects.count()
-    total_invoice_amount = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
-    total_sessions = Slot.objects.count()
-    total_booked = Slot.objects.aggregate(total=Sum('booked_count'))['total'] or 0
-    total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
-    booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
-    booking_rate = min(booking_rate, 100)
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Slots fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Slots fetched successfully", serializer.data)
 
-    # This month
-    customers_this_month = Customer.objects.filter(created_at__date__gte=this_month_start).count()
-    invoice_this_month = Invoice.objects.filter(date__gte=this_month_start).aggregate(total=Sum('amount'))['total'] or 0
-    sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
-    booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
-    capacity_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).aggregate(total=Sum('total_slot'))['total'] or 0
-    booking_rate_this_month = round((booked_this_month / capacity_this_month * 100), 2) if capacity_this_month > 0 else 0
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Slot fetched successfully", self.get_serializer(self.get_object()).data)
 
-    # Last month
-    customers_last_month = Customer.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
-    invoice_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
-    sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
-    booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
-    capacity_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).aggregate(total=Sum('total_slot'))['total'] or 0
-    booking_rate_last_month = round((booked_last_month / capacity_last_month * 100), 2) if capacity_last_month > 0 else 0
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Slot created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    def growth(current, previous):
-        if previous == 0:
-            return 100.0 if current > 0 else 0.0
-        return round((current - previous) / previous * 100, 2)
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Slot updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    return Response({
-        'total_customers': total_customers,
-        'total_invoice_amount': total_invoice_amount,
-        'total_sessions': total_sessions,
-        'booking_rate': booking_rate,
-        'customer_growth': growth(customers_this_month, customers_last_month),
-        'invoice_growth': growth(float(invoice_this_month), float(invoice_last_month)),
-        'session_growth': growth(sessions_this_month, sessions_last_month),
-        'booking_rate_growth': growth(booking_rate_this_month, booking_rate_last_month),
-    }, status=status.HTTP_200_OK)
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "Slot deleted successfully")
 
 
-@api_view(['GET'])
-def dashboard_centerwise_performance(request):
-    from django.db.models import Sum, Count
+# =========================================
+# SLOT BOOKING VIEWSET
+# =========================================
 
-    centers = Center.objects.all()
-    result = []
+class SlotBookingViewSet(viewsets.ModelViewSet):
+    queryset = SlotBooking.objects.all().order_by('-id')
+    serializer_class = SlotBookingSerializer
+    pagination_class = StandardPagination
 
-    for center in centers:
-        customer_count = Customer.objects.filter(center=center).count()
-        revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
-        slots = Slot.objects.filter(center=center)
-        total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        total_booked = slots.aggregate(total=Sum('booked_count'))['total'] or 0
-        booking_rate = round((total_booked / total_slots * 100), 2) if total_slots > 0 else 0
-        booking_rate = min(booking_rate, 100)
+    def get_queryset(self):
+        qs = super().get_queryset()
+        center = self.request.query_params.get('center')
+        date_param = self.request.query_params.get('date')
+        if center:
+            qs = qs.filter(slot__center_id=center)
+        if date_param:
+            qs = qs.filter(booking_date=date_param)
+        return qs
 
-        result.append({
-            'center_id': center.id,
-            'center_name': center.center_name,
-            'customers': customer_count,
-            'booking_rate': booking_rate,
-            'revenue': float(revenue),
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Slot bookings fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Slot bookings fetched successfully", serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Slot booking fetched successfully", self.get_serializer(self.get_object()).data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Slot booking created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Slot booking updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "Slot booking deleted successfully")
+
+
+# =========================================
+# INVOICE VIEWSET
+# =========================================
+
+class InvoiceViewSet(viewsets.ModelViewSet):
+    queryset = Invoice.objects.all().order_by('-id')
+    serializer_class = InvoiceSerializer
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get('search')
+        center = self.request.query_params.get('center')
+        date_param = self.request.query_params.get('date')
+        plan = self.request.query_params.get('plan')
+        if search:
+            qs = qs.filter(Q(customer__name__icontains=search) | Q(invoice_number__icontains=search))
+        if center:
+            qs = qs.filter(center_id=center)
+        if date_param:
+            qs = qs.filter(date=date_param)
+        if plan:
+            qs = qs.filter(plan_id=plan)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.pagination_class().get_paginated_response(serializer.data, "Invoices fetched successfully")
+        serializer = self.get_serializer(qs, many=True)
+        return custom_response(True, "Invoices fetched successfully", serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        return custom_response(True, "Invoice fetched successfully", self.get_serializer(self.get_object()).data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Invoice created successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(self.get_object(), data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Invoice updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return custom_response(True, "Invoice deleted successfully")
+
+
+# =========================================
+# ADMIN DASHBOARD API
+# =========================================
+
+class AdminDashboardView(APIView):
+
+    def get(self, request):
+        today = date.today()
+        this_month_start = today.replace(day=1)
+        last_month_end = this_month_start - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+
+        total_customers = Customer.objects.count()
+        total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+        total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
+        total_booked = Slot.objects.aggregate(total=Sum('booked_count'))['total'] or 0
+        booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
+
+        customers_this_month = Customer.objects.filter(created_at__date__gte=this_month_start).count()
+        customers_last_month = Customer.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+        revenue_this_month = Invoice.objects.filter(date__gte=this_month_start).aggregate(total=Sum('amount'))['total'] or 0
+        revenue_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
+
+        def growth(cur, prev):
+            if prev == 0:
+                return 100.0 if cur > 0 else 0.0
+            return round((cur - prev) / prev * 100, 2)
+
+        # Center-wise performance
+        centers_data = []
+        for center in Center.objects.all():
+            c_customers = Customer.objects.filter(center=center).count()
+            c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
+            c_slots = Slot.objects.filter(center=center)
+            c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
+            c_booked = c_slots.aggregate(total=Sum('booked_count'))['total'] or 0
+            c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
+            centers_data.append({
+                'center_id': center.id,
+                'center_name': center.center_name,
+                'customers': c_customers,
+                'revenue': float(c_revenue),
+                'booking_rate': c_rate,
+            })
+
+        # Revenue last 7 months
+        revenue_labels, revenue_values = [], []
+        for i in range(6, -1, -1):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            rev = Invoice.objects.filter(date__year=year, date__month=month).aggregate(total=Sum('amount'))['total'] or 0
+            revenue_labels.append(date(year, month, 1).strftime('%b'))
+            revenue_values.append(float(rev))
+
+        # Membership by plan
+        membership_data = [
+            {'plan_name': p.plan_name, 'customer_count': Customer.objects.filter(plan=p).count()}
+            for p in Plan.objects.all()
+        ]
+
+        return custom_response(True, "Admin dashboard fetched successfully", {
+            "summary": {
+                "total_customers": total_customers,
+                "total_revenue": float(total_revenue),
+                "booking_rate": booking_rate,
+                "total_centers": Center.objects.count(),
+                "customer_growth": growth(customers_this_month, customers_last_month),
+                "revenue_growth": growth(float(revenue_this_month), float(revenue_last_month)),
+            },
+            "centerwise_performance": centers_data,
+            "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
+            "membership_status": membership_data,
         })
-
-    return Response(result, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def dashboard_revenue_overview(request):
-    from django.db.models import Sum
-    from datetime import date
-
-    today = date.today()
-    labels = []
-    values = []
-
-    for i in range(6, -1, -1):
-        # calculate month going back i months from current
-        month = today.month - i
-        year = today.year
-        while month <= 0:
-            month += 12
-            year -= 1
-
-        revenue = Invoice.objects.filter(
-            date__year=year,
-            date__month=month
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        labels.append(date(year, month, 1).strftime('%b'))
-        values.append(float(revenue))
-
-    return Response({'labels': labels, 'values': values}, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def dashboard_membership_status(request):
-    from django.db.models import Count
-
-    plans = Plan.objects.all()
-    result = []
-    for plan in plans:
-        customer_count = Customer.objects.filter(plan=plan).count()
-        result.append({
-            'plan_name': plan.plan_name,
-            'customer_count': customer_count,
-        })
-
-    return Response(result, status=status.HTTP_200_OK)
-
-
-# =========================================
-# INVOICE API
-# =========================================
-
-@api_view(['GET'])
-def invoice_list(request):
-    qs = Invoice.objects.all().order_by('-id')
-    search = request.query_params.get('search')
-    center = request.query_params.get('center')
-    date = request.query_params.get('date')
-    plan = request.query_params.get('plan')
-    if search:
-        qs = qs.filter(Q(customer__name__icontains=search) | Q(invoice_number__icontains=search))
-    if center:
-        qs = qs.filter(center_id=center)
-    if date:
-        qs = qs.filter(date=date)
-    if plan:
-        qs = qs.filter(plan_id=plan)
-    return custom_response(True, "Invoices fetched successfully", InvoiceSerializer(qs, many=True).data)
-
-
-@api_view(['POST'])
-def invoice_create(request):
-    serializer = InvoiceSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Invoice created successfully", serializer.data, status.HTTP_201_CREATED)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET'])
-def invoice_detail(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return custom_response(False, "Invoice not found", None, status.HTTP_404_NOT_FOUND)
-    return custom_response(True, "Invoice fetched successfully", InvoiceSerializer(invoice).data)
-
-
-@api_view(['PUT'])
-def invoice_update(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return custom_response(False, "Invoice not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = InvoiceSerializer(invoice, data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Invoice updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['PATCH'])
-def invoice_partial_update(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return custom_response(False, "Invoice not found", None, status.HTTP_404_NOT_FOUND)
-    serializer = InvoiceSerializer(invoice, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return custom_response(True, "Invoice updated successfully", serializer.data)
-    return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['DELETE'])
-def invoice_delete(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return custom_response(False, "Invoice not found", None, status.HTTP_404_NOT_FOUND)
-    invoice.delete()
-    return custom_response(True, "Invoice deleted successfully")
 
 
 # =========================================
 # BRANCH DASHBOARD API
 # =========================================
 
-@api_view(['GET'])
-def branch_dashboard(request):
-    from django.utils import timezone
-    from django.db.models import Count
+class BranchDashboardView(APIView):
 
-    today = timezone.now().date()
+    def get(self, request):
+        today = timezone.now().date()
+        center_id = request.query_params.get('center_id')
+        if not center_id and hasattr(request.user, 'center') and request.user.center:
+            center_id = request.user.center.id
 
-    # Get center_id from query param or from logged-in user
-    center_id = request.query_params.get('center_id')
-    if not center_id and hasattr(request.user, 'center') and request.user.center:
-        center_id = request.user.center.id
+        if not center_id:
+            return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
 
-    if not center_id:
-        return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
+        try:
+            center = Center.objects.get(pk=center_id)
+        except Center.DoesNotExist:
+            return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
-    try:
-        center = Center.objects.get(pk=center_id)
-    except Center.DoesNotExist:
-        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
+        slots = Slot.objects.filter(center=center)
+        total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
+        booked_today = SlotBooking.objects.filter(slot__center=center, booking_date=today).count()
+        free_slots = total_slots - booked_today
+        booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
 
-    # Today's slots for this center
-    slots = Slot.objects.filter(center=center)
-    total_slots = slots.aggregate(total=models.Sum('total_slot'))['total'] or 0
-    booked_today = SlotBooking.objects.filter(slot__center=center, booking_date=today).count()
-    free_slots = total_slots - booked_today
-    booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
+        most_purchased = (
+            Invoice.objects.filter(center=center)
+            .values('plan__plan_name')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+            .first()
+        )
 
-    # Most purchased plan
-    most_purchased = (
-        Invoice.objects.filter(center=center)
-        .values('plan__plan_name')
-        .annotate(count=Count('id'))
-        .order_by('-count')
-        .first()
-    )
-    most_purchased_plan = most_purchased['plan__plan_name'] if most_purchased else None
+        today_slots = []
+        for slot in slots.order_by('start_time'):
+            booking = SlotBooking.objects.filter(slot=slot, booking_date=today).select_related('customer').first()
+            today_slots.append({
+                "id": slot.id,
+                "start_time": slot.start_time.strftime('%I:%M %p'),
+                "end_time": slot.end_time.strftime('%I:%M %p'),
+                "status": "booked" if booking else "available",
+                "customer_name": booking.customer.name if booking else None,
+            })
 
-    # Today's slots detail
-    today_slots = []
-    for slot in slots.order_by('start_time'):
-        booking = SlotBooking.objects.filter(slot=slot, booking_date=today).select_related('customer').first()
-        today_slots.append({
-            "id": slot.id,
-            "start_time": slot.start_time.strftime('%I:%M %p'),
-            "end_time": slot.end_time.strftime('%I:%M %p'),
-            "status": "booked" if booking else "available",
-            "customer_name": booking.customer.name if booking else None,
+        recent_customers_data = []
+        for c in Customer.objects.filter(center=center).order_by('-created_at')[:10]:
+            diff = (today - c.created_at.date()).days
+            joined = "Today" if diff == 0 else "Yesterday" if diff == 1 else c.created_at.strftime('%d %b %Y')
+            recent_customers_data.append({
+                "id": c.id,
+                "name": c.name,
+                "plan": c.plan.plan_name if c.plan else None,
+                "joined": joined,
+            })
+
+        return custom_response(True, "Branch dashboard fetched successfully", {
+            "center_name": center.center_name,
+            "center_email": center.email,
+            "stats": {
+                "slots_booked_today": booked_today,
+                "total_slots": total_slots,
+                "free_slots": free_slots,
+                "booking_rate": f"{booking_rate}%",
+                "most_purchased_plan": most_purchased['plan__plan_name'] if most_purchased else None,
+            },
+            "today_slots": today_slots,
+            "recent_customers": recent_customers_data,
         })
-
-    # Recent customers
-    recent_customers = Customer.objects.filter(center=center).order_by('-created_at')[:10]
-    recent_customers_data = []
-    for c in recent_customers:
-        diff = (today - c.created_at.date()).days
-        if diff == 0:
-            joined = "Today"
-        elif diff == 1:
-            joined = "Yesterday"
-        else:
-            joined = c.created_at.strftime('%d %b %Y')
-        recent_customers_data.append({
-            "id": c.id,
-            "name": c.name,
-            "plan": c.plan,
-            "joined": joined,
-        })
-
-    return custom_response(True, "Branch dashboard fetched successfully", {
-        "center_name": center.center_name,
-        "center_email": center.email,
-        "stats": {
-            "slots_booked_today": booked_today,
-            "total_slots": total_slots,
-            "free_slots": free_slots,
-            "booking_rate": f"{booking_rate}%",
-            "most_purchased_plan": most_purchased_plan,
-        },
-        "today_slots": today_slots,
-        "recent_customers": recent_customers_data,
-    })
