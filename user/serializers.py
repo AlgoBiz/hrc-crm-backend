@@ -84,8 +84,35 @@ class CustomerSerializer(serializers.ModelSerializer):
             })
         return attrs
 
+    def create(self, validated_data):
+        customer = Customer.objects.create(**validated_data)
+        plan = customer.plan
+        center = customer.center
+        if plan and center:
+            Invoice.objects.create(
+                customer=customer,
+                center=center,
+                plan=plan,
+                amount=plan.price,
+                date=customer.start_date,
+                status='pending',
+            )
+        return customer
+
+
+class StrictBooleanField(serializers.Field):
+    def to_representation(self, value):
+        return value
+
+    def to_internal_value(self, data):
+        if data is True or data is False:
+            return data
+        raise serializers.ValidationError("gst must be true or false only.")
+
 
 class PlanSerializer(serializers.ModelSerializer):
+    gst = StrictBooleanField()
+
     class Meta:
         model = Plan
         fields = ['id', 'plan_name', 'description', 'duration_months', 'price', 'gst', 'status']
