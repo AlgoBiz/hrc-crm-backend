@@ -102,6 +102,14 @@ class PlanSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A plan with this name already exists.")
         return value
 
+    def validate_plan_name(self, value):
+        qs = Plan.objects.filter(plan_name__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A plan with this name already exists.")
+        return value
+
 
 class CenterSerializer(serializers.ModelSerializer):
     total_customers = serializers.SerializerMethodField()
@@ -113,6 +121,14 @@ class CenterSerializer(serializers.ModelSerializer):
 
     def get_total_customers(self, obj):
         return obj.customer_set.count()
+
+    def validate_center_name(self, value):
+        qs = Center.objects.filter(center_name__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A center with this name already exists.")
+        return value
 
     def validate_status(self, value):
         if value not in ('active', 'inactive'):
