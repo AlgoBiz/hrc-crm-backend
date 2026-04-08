@@ -174,6 +174,7 @@ class LoginAPIView(APIView):
                 "user": {
                     "id": user.id,
                     "username": user.username,
+                    "email": user.email,
                     "role": user.role,
                     "center": user.center.center_name if user.center else None,
                 },
