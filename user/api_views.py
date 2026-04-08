@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import timedelta
 from django.db.models import Q
 
 from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User
@@ -444,6 +445,118 @@ def slot_booking_delete(request, pk):
         return custom_response(False, "Slot booking not found", None, status.HTTP_404_NOT_FOUND)
     booking.delete()
     return custom_response(True, "Slot booking deleted successfully")
+
+
+# =========================================
+# DASHBOARD API
+# =========================================
+
+@api_view(['GET'])
+def dashboard_summary(request):
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+    from datetime import date
+
+    today = date.today()
+    this_month_start = today.replace(day=1)
+    last_month_end = this_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    # Totals
+    total_customers = Customer.objects.count()
+    total_invoice_amount = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+    total_sessions = Slot.objects.count()
+    total_booked = Slot.objects.aggregate(total=Sum('booked_count'))['total'] or 0
+    total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
+    booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
+    booking_rate = min(booking_rate, 100)
+
+    # This month
+    customers_this_month = Customer.objects.filter(created_at__date__gte=this_month_start).count()
+    invoice_this_month = Invoice.objects.filter(date__gte=this_month_start).aggregate(total=Sum('amount'))['total'] or 0
+    sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
+    booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
+    capacity_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).aggregate(total=Sum('total_slot'))['total'] or 0
+    booking_rate_this_month = round((booked_this_month / capacity_this_month * 100), 2) if capacity_this_month > 0 else 0
+
+    # Last month
+    customers_last_month = Customer.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+    invoice_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
+    sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+    booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
+    capacity_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).aggregate(total=Sum('total_slot'))['total'] or 0
+    booking_rate_last_month = round((booked_last_month / capacity_last_month * 100), 2) if capacity_last_month > 0 else 0
+
+    def growth(current, previous):
+        if previous == 0:
+            return 100.0 if current > 0 else 0.0
+        return round((current - previous) / previous * 100, 2)
+
+    return Response({
+        'total_customers': total_customers,
+        'total_invoice_amount': total_invoice_amount,
+        'total_sessions': total_sessions,
+        'booking_rate': booking_rate,
+        'customer_growth': growth(customers_this_month, customers_last_month),
+        'invoice_growth': growth(float(invoice_this_month), float(invoice_last_month)),
+        'session_growth': growth(sessions_this_month, sessions_last_month),
+        'booking_rate_growth': growth(booking_rate_this_month, booking_rate_last_month),
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def dashboard_centerwise_performance(request):
+    from django.db.models import Sum, Count
+
+    centers = Center.objects.all()
+    result = []
+
+    for center in centers:
+        customer_count = Customer.objects.filter(center=center).count()
+        revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
+        slots = Slot.objects.filter(center=center)
+        total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
+        total_booked = slots.aggregate(total=Sum('booked_count'))['total'] or 0
+        booking_rate = round((total_booked / total_slots * 100), 2) if total_slots > 0 else 0
+        booking_rate = min(booking_rate, 100)
+
+        result.append({
+            'center_id': center.id,
+            'center_name': center.center_name,
+            'customers': customer_count,
+            'booking_rate': booking_rate,
+            'revenue': float(revenue),
+        })
+
+    return Response(result, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def dashboard_revenue_overview(request):
+    from django.db.models import Sum
+    from datetime import date
+
+    today = date.today()
+    labels = []
+    values = []
+
+    for i in range(6, -1, -1):
+        # calculate month going back i months from current
+        month = today.month - i
+        year = today.year
+        while month <= 0:
+            month += 12
+            year -= 1
+
+        revenue = Invoice.objects.filter(
+            date__year=year,
+            date__month=month
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+        labels.append(date(year, month, 1).strftime('%b'))
+        values.append(float(revenue))
+
+    return Response({'labels': labels, 'values': values}, status=status.HTTP_200_OK)
 
 
 # =========================================
