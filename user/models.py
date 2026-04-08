@@ -51,7 +51,7 @@ class Customer(models.Model):
     mobile = models.CharField(max_length=15)
     email = models.EmailField(max_length=45, blank=True, null=True)
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
-    plan = models.CharField(max_length=100)
+    plan = models.ForeignKey('Plan', on_delete=models.SET_NULL, null=True, blank=True)
     wave = models.CharField(max_length=20, choices=WAVE_CHOICES)
     start_date = models.DateField()
     expiry_date = models.DateField()
@@ -82,7 +82,7 @@ class Plan(models.Model):
     description = models.TextField(blank=True, null=True)
     duration_months = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-
+    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=18.00)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

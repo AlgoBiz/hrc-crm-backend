@@ -6,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import timedelta
 from django.db.models import Q
+from django.db import models
 
 from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User
 from .serializers import (
@@ -165,9 +166,19 @@ class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        is_admin = request.query_params.get('is_admin') == 'true'
+        is_branch = request.query_params.get('is_branch') == 'true'
+
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
+
+            if is_admin and user.role != 'super_admin':
+                return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
+
+            if is_branch and user.role != 'branch_user':
+                return custom_response(False, "Access denied. Not a branch user.", None, status.HTTP_403_FORBIDDEN)
+
             refresh = RefreshToken.for_user(user)
             return custom_response(True, "Login successful", {
                 "access": str(refresh.access_token),
@@ -567,7 +578,7 @@ def dashboard_membership_status(request):
     plans = Plan.objects.all()
     result = []
     for plan in plans:
-        customer_count = Customer.objects.filter(plan=plan.plan_name).count()
+        customer_count = Customer.objects.filter(plan=plan).count()
         result.append({
             'plan_name': plan.plan_name,
             'customer_count': customer_count,
@@ -650,3 +661,89 @@ def invoice_delete(request, pk):
         return custom_response(False, "Invoice not found", None, status.HTTP_404_NOT_FOUND)
     invoice.delete()
     return custom_response(True, "Invoice deleted successfully")
+
+
+# =========================================
+# BRANCH DASHBOARD API
+# =========================================
+
+@api_view(['GET'])
+def branch_dashboard(request):
+    from django.utils import timezone
+    from django.db.models import Count
+
+    today = timezone.now().date()
+
+    # Get center_id from query param or from logged-in user
+    center_id = request.query_params.get('center_id')
+    if not center_id and hasattr(request.user, 'center') and request.user.center:
+        center_id = request.user.center.id
+
+    if not center_id:
+        return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
+
+    try:
+        center = Center.objects.get(pk=center_id)
+    except Center.DoesNotExist:
+        return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
+
+    # Today's slots for this center
+    slots = Slot.objects.filter(center=center)
+    total_slots = slots.aggregate(total=models.Sum('total_slot'))['total'] or 0
+    booked_today = SlotBooking.objects.filter(slot__center=center, booking_date=today).count()
+    free_slots = total_slots - booked_today
+    booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
+
+    # Most purchased plan
+    most_purchased = (
+        Invoice.objects.filter(center=center)
+        .values('plan__plan_name')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+        .first()
+    )
+    most_purchased_plan = most_purchased['plan__plan_name'] if most_purchased else None
+
+    # Today's slots detail
+    today_slots = []
+    for slot in slots.order_by('start_time'):
+        booking = SlotBooking.objects.filter(slot=slot, booking_date=today).select_related('customer').first()
+        today_slots.append({
+            "id": slot.id,
+            "start_time": slot.start_time.strftime('%I:%M %p'),
+            "end_time": slot.end_time.strftime('%I:%M %p'),
+            "status": "booked" if booking else "available",
+            "customer_name": booking.customer.name if booking else None,
+        })
+
+    # Recent customers
+    recent_customers = Customer.objects.filter(center=center).order_by('-created_at')[:10]
+    recent_customers_data = []
+    for c in recent_customers:
+        diff = (today - c.created_at.date()).days
+        if diff == 0:
+            joined = "Today"
+        elif diff == 1:
+            joined = "Yesterday"
+        else:
+            joined = c.created_at.strftime('%d %b %Y')
+        recent_customers_data.append({
+            "id": c.id,
+            "name": c.name,
+            "plan": c.plan,
+            "joined": joined,
+        })
+
+    return custom_response(True, "Branch dashboard fetched successfully", {
+        "center_name": center.center_name,
+        "center_email": center.email,
+        "stats": {
+            "slots_booked_today": booked_today,
+            "total_slots": total_slots,
+            "free_slots": free_slots,
+            "booking_rate": f"{booking_rate}%",
+            "most_purchased_plan": most_purchased_plan,
+        },
+        "today_slots": today_slots,
+        "recent_customers": recent_customers_data,
+    })

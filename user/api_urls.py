@@ -79,7 +79,3 @@ urlpatterns = [
     path('dashboard/revenue-overview/', dashboard_revenue_overview),
     path('dashboard/membership-status/', dashboard_membership_status),
 ]
-    
-
-
-
