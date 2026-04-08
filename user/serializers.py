@@ -203,10 +203,17 @@ class CenterSerializer(serializers.ModelSerializer):
         return center
 
     def update(self, instance, validated_data):
-        validated_data.pop('password', None)
+        password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        # Update branch user password if provided
+        if password:
+            from .models import User
+            branch_user = User.objects.filter(center=instance, role='branch_user').first()
+            if branch_user:
+                branch_user.set_password(password)
+                branch_user.save()
         return instance
 
 
