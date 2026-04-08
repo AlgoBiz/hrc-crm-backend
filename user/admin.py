@@ -41,8 +41,8 @@ class InvoiceAdmin(admin.ModelAdmin):
 
 @admin.register(Slot)
 class SlotAdmin(admin.ModelAdmin):
-    list_display = ('center', 'start_time', 'end_time', 'booked_count', 'total_slot', 'status', 'is_enabled')
-    list_filter = ('status', 'is_enabled', 'center')
+    list_display = ('start_time', 'end_time', 'booked_count', 'total_slot', 'is_enabled')
+    list_filter = ('is_enabled',)
 
 
 @admin.register(SlotBooking)

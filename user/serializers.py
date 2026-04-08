@@ -299,27 +299,37 @@ class CenterMinimalSerializer(serializers.ModelSerializer):
 
 
 class SlotSerializer(serializers.ModelSerializer):
-    center_name = serializers.CharField(source="center.center_name", read_only=True)
     slot_time = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Slot
-        fields = ['id', 'center', 'center_name', 'start_time', 'end_time', 'slot_time',
-                  'booked_count', 'total_slot', 'status', 'is_enabled', 'created_at']
-        read_only_fields = ['id', 'booked_count', 'created_at', 'slot_time', 'center_name']
-
-    def validate_status(self, value):
-        if value not in ('active', 'inactive'):
-            raise serializers.ValidationError("Status must be 'active' or 'inactive'.")
-        return value
+        fields = ['id', 'start_time', 'end_time', 'slot_time', 'booked_count', 'total_slot', 'status', 'created_at']
+        read_only_fields = ['id', 'booked_count', 'created_at', 'slot_time', 'status']
 
     def get_slot_time(self, obj):
         return f"{obj.start_time.strftime('%I:%M %p')} - {obj.end_time.strftime('%I:%M %p')}"
+
+    def get_status(self, obj):
+        return 'enabled' if obj.is_enabled else 'disabled'
 
     def validate(self, attrs):
         if attrs.get("start_time") and attrs.get("end_time") and attrs["start_time"] >= attrs["end_time"]:
             raise serializers.ValidationError("End time must be greater than start time.")
         return attrs
+
+    def create(self, validated_data):
+        # Handle is_enabled from request if provided
+        is_enabled = self.context.get('request').data.get('is_enabled', True)
+        validated_data['is_enabled'] = is_enabled
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        # Handle is_enabled from request if provided
+        request_data = self.context.get('request').data
+        if 'is_enabled' in request_data:
+            instance.is_enabled = request_data['is_enabled']
+        return super().update(instance, validated_data)
 
 
 class SlotBookingSerializer(serializers.ModelSerializer):
