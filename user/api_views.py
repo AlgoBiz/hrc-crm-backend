@@ -741,7 +741,7 @@ class BranchDashboardView(APIView):
 
         if not center_id:
             return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
-
+ 
         try:
             center = Center.objects.get(pk=center_id)
         except Center.DoesNotExist:

@@ -348,3 +348,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'date', 'status', 'created_at'
         ]
         read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name']
+
+    def validate(self, attrs):
+        customer = attrs.get('customer')
+        center = attrs.get('center')
+        if customer and center and customer.center and customer.center != center:
+            raise serializers.ValidationError({
+                'center': f"Center must match the customer's center (ID: {customer.center.id} - {customer.center.center_name})."
+            })
+        return attrs
