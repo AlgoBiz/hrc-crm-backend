@@ -86,14 +86,9 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
 class PlanSerializer(serializers.ModelSerializer):
-    gst = serializers.SerializerMethodField()
-
     class Meta:
         model = Plan
         fields = ['id', 'plan_name', 'description', 'duration_months', 'price', 'gst', 'status']
-
-    def get_gst(self, obj):
-        return 'Yes' if obj.gst_percentage and obj.gst_percentage > 0 else 'No'
 
     def validate_plan_name(self, value):
         qs = Plan.objects.filter(plan_name__iexact=value)
@@ -226,8 +221,28 @@ class SlotBookingSerializer(serializers.ModelSerializer):
 
 class InvoiceSerializer(serializers.ModelSerializer):
     invoice_id = serializers.CharField(read_only=True)
+    customer_name = serializers.CharField(source='customer.name', read_only=True)
+    center_name = serializers.CharField(source='center.center_name', read_only=True)
+    plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
+    gst_amount = serializers.SerializerMethodField()
+    total_amount = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
-        fields = ['id', 'invoice_id', 'center', 'customer', 'plan', 'amount', 'date', 'status', 'created_at']
-        read_only_fields = ['id', 'invoice_id', 'created_at']
+        fields = [
+            'id', 'invoice_id',
+            'customer', 'customer_name',
+            'center', 'center_name',
+            'plan', 'plan_name',
+            'amount', 'gst_amount', 'total_amount',
+            'date', 'status', 'created_at'
+        ]
+        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'gst_amount', 'total_amount']
+
+    def get_gst_amount(self, obj):
+        if obj.plan and obj.plan.gst:
+            return round(float(obj.amount) * 18 / 100, 2)
+        return 0.0
+
+    def get_total_amount(self, obj):
+        return round(float(obj.amount) + self.get_gst_amount(obj), 2)

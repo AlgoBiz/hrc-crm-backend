@@ -82,7 +82,7 @@ class Plan(models.Model):
     description = models.TextField(blank=True, null=True)
     duration_months = models.IntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    gst_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=18.00)
+    gst = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
