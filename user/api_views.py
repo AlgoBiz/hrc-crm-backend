@@ -686,3 +686,146 @@ class BranchDashboardView(APIView):
             "today_slots": today_slots,
             "recent_customers": recent_customers_data,
         })
+
+# =========================================
+# REPORTS API
+# =========================================
+
+class CustomerReportView(APIView):
+
+    def get(self, request):
+        search = request.query_params.get('search')
+        center = request.query_params.get('center')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        export = request.query_params.get('export') == 'true'
+
+        qs = Customer.objects.select_related('center', 'plan').order_by('-created_at')
+
+        if search:
+            qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search) | Q(email__icontains=search))
+        if center:
+            qs = qs.filter(center_id=center)
+        if start_date:
+            qs = qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            qs = qs.filter(created_at__date__lte=end_date)
+
+        if export:
+            return self._export_excel(qs)
+
+        data = [
+            {
+                "id": c.id,
+                "name": c.name,
+                "mobile": c.mobile,
+                "email": c.email,
+                "center": c.center.center_name if c.center else None,
+                "plan": c.plan.plan_name if c.plan else None,
+                "start_date": str(c.start_date),
+                "expiry_date": str(c.expiry_date),
+                "status": c.status,
+                "joined": str(c.created_at.date()),
+            }
+            for c in qs
+        ]
+        return custom_response(True, "Customer report fetched successfully", data)
+
+    def _export_excel(self, qs):
+        import openpyxl
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Customer Report"
+
+        headers = ["ID", "Name", "Mobile", "Email", "Center", "Plan", "Start Date", "Expiry Date", "Status", "Joined"]
+        ws.append(headers)
+
+        for c in qs:
+            ws.append([
+                c.id, c.name, c.mobile, c.email or "",
+                c.center.center_name if c.center else "",
+                c.plan.plan_name if c.plan else "",
+                str(c.start_date), str(c.expiry_date),
+                c.status, str(c.created_at.date()),
+            ])
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="customer_report.xlsx"'
+        wb.save(response)
+        return response
+
+
+class SlotBookingReportView(APIView):
+
+    def get(self, request):
+        search = request.query_params.get('search')
+        center = request.query_params.get('center')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        export = request.query_params.get('export') == 'true'
+
+        qs = Slot.objects.select_related('center').filter(center__isnull=False)
+
+        if center:
+            qs = qs.filter(center_id=center)
+        if search:
+            qs = qs.filter(Q(center__center_name__icontains=search))
+
+        booking_qs = SlotBooking.objects.select_related('slot__center', 'customer')
+        if start_date:
+            booking_qs = booking_qs.filter(booking_date__gte=start_date)
+        if end_date:
+            booking_qs = booking_qs.filter(booking_date__lte=end_date)
+        if center:
+            booking_qs = booking_qs.filter(slot__center_id=center)
+
+        slot_data = []
+        for slot in qs:
+            total_booked = booking_qs.filter(slot=slot).count()
+            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+            if utilization >= 90:
+                util_status = "full" if utilization == 100 else "high"
+            elif utilization >= 70:
+                util_status = "medium"
+            else:
+                util_status = "low"
+
+            slot_data.append({
+                "slot_id": slot.id,
+                "slot_time": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                "center": slot.center.center_name,
+                "total_booked": total_booked,
+                "total_capacity": slot.total_slot,
+                "utilization": f"{utilization}%",
+                "status": util_status,
+            })
+
+        if export:
+            return self._export_excel(slot_data)
+
+        return custom_response(True, "Slot booking report fetched successfully", slot_data)
+
+    def _export_excel(self, slot_data):
+        import openpyxl
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Slot Booking Report"
+
+        headers = ["Slot", "Center", "Total Booked", "Total Capacity", "Utilization", "Status"]
+        ws.append(headers)
+
+        for row in slot_data:
+            ws.append([
+                row["slot_time"], row["center"],
+                row["total_booked"], row["total_capacity"],
+                row["utilization"], row["status"],
+            ])
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="slot_booking_report.xlsx"'
+        wb.save(response)
+        return response

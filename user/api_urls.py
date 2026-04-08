@@ -13,6 +13,8 @@ from .api_views import (
     InvoiceViewSet,
     AdminDashboardView,
     BranchDashboardView,
+    CustomerReportView,
+    SlotBookingReportView,
 )
 
 router = DefaultRouter()
@@ -30,4 +32,6 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/branch/', BranchDashboardView.as_view(), name='branch_dashboard'),
+    path('reports/customers/', CustomerReportView.as_view(), name='customer_report'),
+    path('reports/slot-bookings/', SlotBookingReportView.as_view(), name='slot_booking_report'),
 ]

@@ -143,7 +143,7 @@ class CenterSerializer(serializers.ModelSerializer):
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise serializers.ValidationError("A center with this email already exists.")
-        if User.objects.filter(email__iexact=value).exists():
+        if not self.instance and User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("This email is already used by another user.")
         return value
 
