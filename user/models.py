@@ -44,7 +44,7 @@ class Customer(models.Model):
         ('Zayana', 'Zayana'),
         ('Prabhav', 'Prabhav'),
         ('Sexellence', 'Sexellence'),
-        ('Aanandha', 'Aanandha'),
+        ('g', 'Aanandha'),
         ('Relax', 'Relax'),
     ]
     name = models.CharField(max_length=100)

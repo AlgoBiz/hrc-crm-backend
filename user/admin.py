@@ -26,7 +26,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
-    list_display = ('plan_name', 'duration_months', 'price', 'status')
+    list_display = ('plan_name', 'duration_months', 'price', 'gst', 'status')
     list_filter = ('status',)
     search_fields = ('plan_name',)
 
