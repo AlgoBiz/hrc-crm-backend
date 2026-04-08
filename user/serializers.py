@@ -109,7 +109,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
             'plan', 'plan_id', 'wave',
-            'expiry_date', 'last_visit', 'status',
+            'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
