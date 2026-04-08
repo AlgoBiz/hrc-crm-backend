@@ -16,6 +16,7 @@ from .api_views import (
     CustomerReportView,
     SlotBookingReportView,
     InvoiceExcelDownloadView,
+    CustomerExcelDownloadView,
 )
 
 router = DefaultRouter()
@@ -28,7 +29,6 @@ router.register(r'slot-bookings', SlotBookingViewSet, basename='slot-booking')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
 
 urlpatterns = [
-    path('', include(router.urls)),
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
@@ -37,4 +37,7 @@ urlpatterns = [
     path('reports/slot-bookings/', SlotBookingReportView.as_view(), name='slot_booking_report'),
     path('invoices/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download'),
     path('invoices/<int:pk>/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download_single'),
+    path('customers/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download'),
+    path('customers/<int:pk>/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download_single'),
+    path('', include(router.urls)),
 ]

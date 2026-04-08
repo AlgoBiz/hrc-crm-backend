@@ -52,16 +52,49 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class CustomerSerializer(serializers.ModelSerializer):
-    wave_display = serializers.CharField(source='get_wave_display', read_only=True)
+class CustomerPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plan
+        fields = ['id', 'plan_name']
+
+
+class CustomerInvoiceSerializer(serializers.ModelSerializer):
+    invoice_id = serializers.CharField(read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
+
+    class Meta:
+        model = Invoice
+        fields = ['invoice_id', 'date', 'plan_name', 'amount', 'status']
+
+
+class CustomerSessionSerializer(serializers.ModelSerializer):
+    slot_time = serializers.SerializerMethodField()
+    center = serializers.CharField(source='slot.center.center_name', read_only=True)
+
+    class Meta:
+        model = SlotBooking
+        fields = ['booking_date', 'slot_time', 'center', 'status']
+
+    def get_slot_time(self, obj):
+        return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    plan = CustomerPlanSerializer(read_only=True)
+    plan_id = serializers.PrimaryKeyRelatedField(
+        queryset=Plan.objects.all(), source='plan', write_only=True
+    )
+    invoices = CustomerInvoiceSerializer(many=True, read_only=True)
+    sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
 
     class Meta:
         model = Customer
         fields = [
-            'id', 'name', 'mobile', 'email', 'center', 'plan', 'plan_name', 'wave', 'wave_display',
-            'start_date', 'expiry_date', 'last_visit', 'status',
+            'id', 'name', 'mobile', 'email', 'center',
+            'plan', 'plan_id', 'wave',
+            'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
+            'invoices', 'sessions',
         ]
 
     def validate(self, attrs):

@@ -458,6 +458,7 @@ class AdminDashboardView(APIView):
 
         total_customers = Customer.objects.count()
         total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+        total_sessions = Slot.objects.count()
         total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
         total_booked = Slot.objects.aggregate(total=Sum('booked_count'))['total'] or 0
         booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
@@ -466,6 +467,14 @@ class AdminDashboardView(APIView):
         customers_last_month = Customer.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
         revenue_this_month = Invoice.objects.filter(date__gte=this_month_start).aggregate(total=Sum('amount'))['total'] or 0
         revenue_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
+        sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
+        sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+        booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
+        booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
+        capacity_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).aggregate(total=Sum('total_slot'))['total'] or 0
+        capacity_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).aggregate(total=Sum('total_slot'))['total'] or 0
+        booking_rate_this_month = round((booked_this_month / capacity_this_month * 100), 2) if capacity_this_month > 0 else 0
+        booking_rate_last_month = round((booked_last_month / capacity_last_month * 100), 2) if capacity_last_month > 0 else 0
 
         def growth(cur, prev):
             if prev == 0:
@@ -535,10 +544,12 @@ class AdminDashboardView(APIView):
             "summary": {
                 "total_customers": total_customers,
                 "total_revenue": float(total_revenue),
+                "total_sessions": total_sessions,
                 "booking_rate": booking_rate,
-                "total_centers": Center.objects.count(),
                 "customer_growth": growth(customers_this_month, customers_last_month),
                 "revenue_growth": growth(float(revenue_this_month), float(revenue_last_month)),
+                "session_growth": growth(sessions_this_month, sessions_last_month),
+                "booking_rate_growth": growth(booking_rate_this_month, booking_rate_last_month),
             },
             "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
@@ -600,6 +611,64 @@ class SlotBookingsDashboardView(APIView):
             'booked': booked_list,
             'free': free_list,
         })
+
+
+# =========================================
+# CUSTOMER EXCEL DOWNLOAD
+# =========================================
+
+class CustomerExcelDownloadView(APIView):
+
+    def get(self, request, pk=None):
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Customers'
+
+        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Expiry Date', 'Status']
+        header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF')
+
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        if pk:
+            try:
+                customers = [Customer.objects.select_related('center', 'plan').get(pk=pk)]
+            except Customer.DoesNotExist:
+                return custom_response(False, 'Customer not found', None, status.HTTP_404_NOT_FOUND)
+            filename = f'customer_{pk}.xlsx'
+        else:
+            customers = Customer.objects.select_related('center', 'plan').all().order_by('-id')
+            filename = 'customers.xlsx'
+
+        for row, c in enumerate(customers, 2):
+            ws.cell(row=row, column=1, value=c.id)
+            ws.cell(row=row, column=2, value=c.name)
+            ws.cell(row=row, column=3, value=c.mobile)
+            ws.cell(row=row, column=4, value=c.email or '')
+            ws.cell(row=row, column=5, value=c.center.center_name if c.center else '')
+            ws.cell(row=row, column=6, value=c.plan.plan_name if c.plan else '')
+            ws.cell(row=row, column=7, value=c.wave)
+            ws.cell(row=row, column=8, value=str(c.expiry_date))
+            ws.cell(row=row, column=9, value=c.status)
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        wb.save(response)
+        return response
 
 
 # =========================================
