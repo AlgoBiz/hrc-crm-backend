@@ -243,12 +243,18 @@ class CustomerViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search')
         center = self.request.query_params.get('center')
         date_param = self.request.query_params.get('date')
+        recent = self.request.query_params.get('recent')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
             qs = qs.filter(created_at__date=date_param)
+        if recent:
+            try:
+                qs = qs[:int(recent)]
+            except ValueError:
+                pass
         return qs
 
     def list(self, request, *args, **kwargs):
@@ -403,7 +409,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         date_param = self.request.query_params.get('date')
         plan = self.request.query_params.get('plan')
         if search:
-            qs = qs.filter(Q(customer__name__icontains=search) | Q(invoice_number__icontains=search))
+            qs = qs.filter(Q(customer__name__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
@@ -472,7 +478,6 @@ class AdminDashboardView(APIView):
                 return 100.0 if cur > 0 else 0.0
             return round((cur - prev) / prev * 100, 2)
 
-        # Center-wise performance
         centers_data = []
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
@@ -489,7 +494,6 @@ class AdminDashboardView(APIView):
                 'booking_rate': c_rate,
             })
 
-        # Revenue last 7 months
         revenue_labels, revenue_values = [], []
         for i in range(6, -1, -1):
             month = today.month - i
@@ -501,7 +505,6 @@ class AdminDashboardView(APIView):
             revenue_labels.append(date(year, month, 1).strftime('%b'))
             revenue_values.append(float(rev))
 
-        # Membership by plan
         membership_data = [
             {'plan_name': p.plan_name, 'customer_count': Customer.objects.filter(plan=p).count()}
             for p in Plan.objects.all()
