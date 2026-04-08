@@ -52,6 +52,12 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CustomerCenterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Center
+        fields = ['id', 'center_name']
+
+
 class CustomerPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
@@ -61,10 +67,16 @@ class CustomerPlanSerializer(serializers.ModelSerializer):
 class CustomerInvoiceSerializer(serializers.ModelSerializer):
     invoice_id = serializers.CharField(read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
+    download_invoice_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
-        fields = ['invoice_id', 'date', 'plan_name', 'amount', 'status']
+        fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'status', 'download_invoice_url']
+
+    def get_download_invoice_url(self, obj):
+        if obj.status == 'paid':
+            return f'/api/invoices/{obj.id}/download/excel/'
+        return None
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
@@ -84,17 +96,22 @@ class CustomerSerializer(serializers.ModelSerializer):
     plan_id = serializers.PrimaryKeyRelatedField(
         queryset=Plan.objects.all(), source='plan', write_only=True
     )
-    invoices = CustomerInvoiceSerializer(many=True, read_only=True)
+    center = CustomerCenterSerializer(read_only=True)
+    center_id = serializers.PrimaryKeyRelatedField(
+        queryset=Center.objects.all(), source='center', write_only=True
+    )
+    billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
 
     class Meta:
         model = Customer
         fields = [
-            'id', 'name', 'mobile', 'email', 'center',
+            'id', 'name', 'mobile', 'email',
+            'center', 'center_id',
             'plan', 'plan_id', 'wave',
             'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
-            'invoices', 'sessions',
+            'billing_history', 'sessions',
         ]
 
     def validate(self, attrs):
