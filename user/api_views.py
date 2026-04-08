@@ -106,7 +106,7 @@ class UserViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Users fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Users fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Users fetched successfully", serializer.data)
 
@@ -156,7 +156,7 @@ class CenterViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Centers fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Centers fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Centers fetched successfully", serializer.data)
 
@@ -199,7 +199,7 @@ class PlanViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Plans fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Plans fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Plans fetched successfully", serializer.data)
 
@@ -256,7 +256,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Customers fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Customers fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Customers fetched successfully", serializer.data)
 
@@ -309,7 +309,7 @@ class SlotViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Slots fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Slots fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Slots fetched successfully", serializer.data)
 
@@ -360,7 +360,7 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Slot bookings fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Slot bookings fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Slot bookings fetched successfully", serializer.data)
 
@@ -417,7 +417,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.pagination_class().get_paginated_response(serializer.data, "Invoices fetched successfully")
+            return self.paginator.get_paginated_response(serializer.data, "Invoices fetched successfully")
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Invoices fetched successfully", serializer.data)
 
