@@ -1,4 +1,4 @@
-from rest_framework import status, viewsets, filters
+﻿from rest_framework import status, viewsets, filters
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -507,39 +507,29 @@ class AdminDashboardView(APIView):
             for p in Plan.objects.all()
         ]
 
-        # Slot bookings last 7 months
-        from django.db.models.functions import ExtractYear, ExtractMonth
-        months = []
-        for i in range(6, -1, -1):
-            m = today.month - i
-            y = today.year
-            while m <= 0:
-                m += 12
-                y -= 1
-            months.append((y, m))
+        # Recent customers
+        recent_customers = [
+            {
+                "id": c.id, "name": c.name, "mobile": c.mobile,
+                "center": c.center.center_name if c.center else None,
+                "plan": c.plan.plan_name if c.plan else None,
+                "status": c.status, "joined": str(c.created_at.date()),
+            }
+            for c in Customer.objects.select_related("center", "plan").order_by("-created_at")
+        ]
 
-        slot_map = {
-            (s['year'], s['month']): s['total']
-            for s in Slot.objects.annotate(year=ExtractYear('created_at'), month=ExtractMonth('created_at'))
-            .values('year', 'month').annotate(total=Count('id'))
-        }
-        booking_map = {
-            (b['year'], b['month']): b['total']
-            for b in SlotBooking.objects.filter(status__iexact='booked')
-            .annotate(year=ExtractYear('booking_date'), month=ExtractMonth('booking_date'))
-            .values('year', 'month').annotate(total=Count('id'))
-        }
+        page = int(request.query_params.get("page", 1))
+        page_size = 10
 
-        slot_booking_data, sb_labels, sb_booked, sb_free = [], [], [], []
-        for y, m in months:
-            label = date(y, m, 1).strftime('%b')
-            total_slots = slot_map.get((y, m), 0)
-            booked = booking_map.get((y, m), 0)
-            free = max(total_slots - booked, 0)
-            slot_booking_data.append({'month': label, 'year': y, 'booked': booked, 'free': free})
-            sb_labels.append(label)
-            sb_booked.append(booked)
-            sb_free.append(free)
+        def paginate(data):
+            start = (page - 1) * page_size
+            total = len(data)
+            return {
+                "results": data[start:start + page_size],
+                "count": total,
+                "total_pages": max(1, (total + page_size - 1) // page_size),
+                "current_page": page,
+            }
 
         return custom_response(True, "Admin dashboard fetched successfully", {
             "summary": {
@@ -550,15 +540,10 @@ class AdminDashboardView(APIView):
                 "customer_growth": growth(customers_this_month, customers_last_month),
                 "revenue_growth": growth(float(revenue_this_month), float(revenue_last_month)),
             },
-            "centerwise_performance": centers_data,
+            "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
-            "membership_status": membership_data,
-            "slot_bookings_overview": {
-                "data": slot_booking_data,
-                "labels": sb_labels,
-                "booked": sb_booked,
-                "free": sb_free,
-            },
+            "membership_status": paginate(membership_data),
+            "recent_customers": paginate(recent_customers),
         })
 
 
@@ -829,3 +814,6 @@ class SlotBookingReportView(APIView):
         response['Content-Disposition'] = 'attachment; filename="slot_booking_report.xlsx"'
         wb.save(response)
         return response
+
+
+
