@@ -118,10 +118,12 @@ class PlanSerializer(serializers.ModelSerializer):
 
 class CenterSerializer(serializers.ModelSerializer):
     total_customers = serializers.SerializerMethodField()
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = Center
-        fields = ['id', 'center_name', 'location', 'mobile', 'email', 'poc_name', 'poc_contact', 'status', 'created_at', 'total_customers']
+        fields = ['id', 'center_name', 'location', 'mobile', 'email', 'password', 'poc_name', 'poc_contact', 'status', 'created_at', 'total_customers']
         read_only_fields = ['id', 'created_at', 'total_customers']
 
     def get_total_customers(self, obj):
@@ -135,10 +137,47 @@ class CenterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A center with this name already exists.")
         return value
 
+    def validate_email(self, value):
+        qs = Center.objects.filter(email__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A center with this email already exists.")
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("This email is already used by another user.")
+        return value
+
     def validate_status(self, value):
         if value not in ('active', 'inactive'):
             raise serializers.ValidationError("Status must be 'active' or 'inactive'.")
         return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        center = Center.objects.create(**validated_data)
+        # Auto-create branch user
+        username = validated_data['email'].split('@')[0]
+        base_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        User.objects.create_user(
+            username=username,
+            email=validated_data['email'],
+            password=password,
+            role='branch_user',
+            center=center,
+            is_active=True,
+        )
+        return center
+
+    def update(self, instance, validated_data):
+        validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class SlotSerializer(serializers.ModelSerializer):
