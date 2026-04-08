@@ -243,18 +243,12 @@ class CustomerViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search')
         center = self.request.query_params.get('center')
         date_param = self.request.query_params.get('date')
-        recent = self.request.query_params.get('recent')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
             qs = qs.filter(created_at__date=date_param)
-        if recent:
-            try:
-                qs = qs[:int(recent)]
-            except ValueError:
-                pass
         return qs
 
     def list(self, request, *args, **kwargs):
@@ -409,7 +403,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         date_param = self.request.query_params.get('date')
         plan = self.request.query_params.get('plan')
         if search:
-            qs = qs.filter(Q(customer__name__icontains=search))
+            qs = qs.filter(Q(customer__name__icontains=search) | Q(invoice_number__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
@@ -478,6 +472,7 @@ class AdminDashboardView(APIView):
                 return 100.0 if cur > 0 else 0.0
             return round((cur - prev) / prev * 100, 2)
 
+        # Center-wise performance
         centers_data = []
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
@@ -494,6 +489,7 @@ class AdminDashboardView(APIView):
                 'booking_rate': c_rate,
             })
 
+        # Revenue last 7 months
         revenue_labels, revenue_values = [], []
         for i in range(6, -1, -1):
             month = today.month - i
@@ -505,10 +501,45 @@ class AdminDashboardView(APIView):
             revenue_labels.append(date(year, month, 1).strftime('%b'))
             revenue_values.append(float(rev))
 
+        # Membership by plan
         membership_data = [
             {'plan_name': p.plan_name, 'customer_count': Customer.objects.filter(plan=p).count()}
             for p in Plan.objects.all()
         ]
+
+        # Slot bookings last 7 months
+        from django.db.models.functions import ExtractYear, ExtractMonth
+        months = []
+        for i in range(6, -1, -1):
+            m = today.month - i
+            y = today.year
+            while m <= 0:
+                m += 12
+                y -= 1
+            months.append((y, m))
+
+        slot_map = {
+            (s['year'], s['month']): s['total']
+            for s in Slot.objects.annotate(year=ExtractYear('created_at'), month=ExtractMonth('created_at'))
+            .values('year', 'month').annotate(total=Count('id'))
+        }
+        booking_map = {
+            (b['year'], b['month']): b['total']
+            for b in SlotBooking.objects.filter(status__iexact='booked')
+            .annotate(year=ExtractYear('booking_date'), month=ExtractMonth('booking_date'))
+            .values('year', 'month').annotate(total=Count('id'))
+        }
+
+        slot_booking_data, sb_labels, sb_booked, sb_free = [], [], [], []
+        for y, m in months:
+            label = date(y, m, 1).strftime('%b')
+            total_slots = slot_map.get((y, m), 0)
+            booked = booking_map.get((y, m), 0)
+            free = max(total_slots - booked, 0)
+            slot_booking_data.append({'month': label, 'year': y, 'booked': booked, 'free': free})
+            sb_labels.append(label)
+            sb_booked.append(booked)
+            sb_free.append(free)
 
         return custom_response(True, "Admin dashboard fetched successfully", {
             "summary": {
@@ -522,6 +553,67 @@ class AdminDashboardView(APIView):
             "centerwise_performance": centers_data,
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
             "membership_status": membership_data,
+            "slot_bookings_overview": {
+                "data": slot_booking_data,
+                "labels": sb_labels,
+                "booked": sb_booked,
+                "free": sb_free,
+            },
+        })
+
+
+# =========================================
+# SLOT BOOKINGS DASHBOARD API
+# =========================================
+
+class SlotBookingsDashboardView(APIView):
+
+    def get(self, request):
+        from django.db.models.functions import ExtractYear, ExtractMonth
+
+        today = date.today()
+        months = []
+        for i in range(6, -1, -1):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            months.append((year, month))
+
+        slot_counts = (
+            Slot.objects.annotate(year=ExtractYear('created_at'), month=ExtractMonth('created_at'))
+            .values('year', 'month')
+            .annotate(total=Count('id'))
+        )
+        slot_map = {(s['year'], s['month']): s['total'] for s in slot_counts}
+
+        booking_counts = (
+            SlotBooking.objects.filter(status__iexact='booked')
+            .annotate(year=ExtractYear('booking_date'), month=ExtractMonth('booking_date'))
+            .values('year', 'month')
+            .annotate(total=Count('id'))
+        )
+        booking_map = {(b['year'], b['month']): b['total'] for b in booking_counts}
+
+        data, labels, booked_list, free_list = [], [], [], []
+
+        for year, month in months:
+            label = date(year, month, 1).strftime('%b')
+            total_slots = slot_map.get((year, month), 0)
+            booked = booking_map.get((year, month), 0)
+            free = max(total_slots - booked, 0)
+
+            data.append({'month': label, 'year': year, 'booked': booked, 'free': free})
+            labels.append(label)
+            booked_list.append(booked)
+            free_list.append(free)
+
+        return custom_response(True, "Slot bookings overview fetched successfully", {
+            'data': data,
+            'labels': labels,
+            'booked': booked_list,
+            'free': free_list,
         })
 
 
