@@ -560,6 +560,22 @@ def dashboard_revenue_overview(request):
     return Response({'labels': labels, 'values': values}, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+def dashboard_membership_status(request):
+    from django.db.models import Count
+
+    plans = Plan.objects.all()
+    result = []
+    for plan in plans:
+        customer_count = Customer.objects.filter(plan=plan.plan_name).count()
+        result.append({
+            'plan_name': plan.plan_name,
+            'customer_count': customer_count,
+        })
+
+    return Response(result, status=status.HTTP_200_OK)
+
+
 # =========================================
 # INVOICE API
 # =========================================

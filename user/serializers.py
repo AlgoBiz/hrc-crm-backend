@@ -90,9 +90,18 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
 class PlanSerializer(serializers.ModelSerializer):
+    gst_amount = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
+
     class Meta:
         model = Plan
-        fields = ['id', 'plan_name', 'description', 'duration_months', 'price', 'status']
+        fields = ['id', 'plan_name', 'description', 'duration_months', 'price', 'gst_percentage', 'gst_amount', 'total_price', 'status']
+
+    def get_gst_amount(self, obj):
+        return round(float(obj.price) * float(obj.gst_percentage) / 100, 2)
+
+    def get_total_price(self, obj):
+        return round(float(obj.price) + self.get_gst_amount(obj), 2)
 
     def validate_plan_name(self, value):
         qs = Plan.objects.filter(plan_name__iexact=value)
