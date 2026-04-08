@@ -603,6 +603,62 @@ class SlotBookingsDashboardView(APIView):
 
 
 # =========================================
+# INVOICE EXCEL DOWNLOAD
+# =========================================
+
+class InvoiceExcelDownloadView(APIView):
+
+    def get(self, request, pk=None):
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Invoices'
+
+        headers = ['Invoice ID', 'Customer', 'Center', 'Plan', 'Amount', 'Date', 'Status']
+        header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF')
+
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        if pk:
+            try:
+                invoices = [Invoice.objects.select_related('customer', 'center', 'plan').get(pk=pk)]
+            except Invoice.DoesNotExist:
+                return custom_response(False, 'Invoice not found', None, status.HTTP_404_NOT_FOUND)
+            filename = f'invoice_{pk}.xlsx'
+        else:
+            invoices = Invoice.objects.select_related('customer', 'center', 'plan').all().order_by('-id')
+            filename = 'invoices.xlsx'
+
+        for row, inv in enumerate(invoices, 2):
+            ws.cell(row=row, column=1, value=f'INV-{inv.id:03d}')
+            ws.cell(row=row, column=2, value=inv.customer.name if inv.customer else '')
+            ws.cell(row=row, column=3, value=inv.center.center_name if inv.center else '')
+            ws.cell(row=row, column=4, value=inv.plan.plan_name if inv.plan else '')
+            ws.cell(row=row, column=5, value=float(inv.amount))
+            ws.cell(row=row, column=6, value=str(inv.date))
+            ws.cell(row=row, column=7, value=inv.status)
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        wb.save(response)
+        return response
+
+
+# =========================================
 # BRANCH DASHBOARD API
 # =========================================
 

@@ -15,6 +15,7 @@ from .api_views import (
     BranchDashboardView,
     CustomerReportView,
     SlotBookingReportView,
+    InvoiceExcelDownloadView,
 )
 
 router = DefaultRouter()
@@ -34,4 +35,6 @@ urlpatterns = [
     path('dashboard/branch/', BranchDashboardView.as_view(), name='branch_dashboard'),
     path('reports/customers/', CustomerReportView.as_view(), name='customer_report'),
     path('reports/slot-bookings/', SlotBookingReportView.as_view(), name='slot_booking_report'),
+    path('invoices/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download'),
+    path('invoices/<int:pk>/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download_single'),
 ]
