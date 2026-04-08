@@ -119,7 +119,7 @@ class PlanSerializer(serializers.ModelSerializer):
 class CenterSerializer(serializers.ModelSerializer):
     total_customers = serializers.SerializerMethodField()
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, required=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = Center
@@ -146,6 +146,11 @@ class CenterSerializer(serializers.ModelSerializer):
         if not self.instance and User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("This email is already used by another user.")
         return value
+
+    def validate(self, attrs):
+        if not self.instance and not attrs.get('password'):
+            raise serializers.ValidationError({"password": "Password is required when creating a center."})
+        return attrs
 
     def validate_status(self, value):
         if value not in ('active', 'inactive'):
