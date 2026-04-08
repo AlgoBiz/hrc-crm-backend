@@ -12,6 +12,7 @@ from .api_views import (
     slot_booking_list, slot_booking_create, slot_booking_detail, slot_booking_update, slot_booking_partial_update, slot_booking_delete,
     invoice_list, invoice_create, invoice_detail, invoice_update, invoice_partial_update, invoice_delete,
     dashboard_summary, dashboard_centerwise_performance, dashboard_revenue_overview,
+    branch_dashboard,
     UserViewSet,
 )
 
@@ -77,6 +78,7 @@ urlpatterns = [
     path('dashboard/summary/', dashboard_summary),
     path('dashboard/centerwise-performance/', dashboard_centerwise_performance),
     path('dashboard/revenue-overview/', dashboard_revenue_overview),
+    path('dashboard/branch/', branch_dashboard),
 ]
     
 
