@@ -165,9 +165,19 @@ class LoginAPIView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        is_admin = request.query_params.get('is_admin') == 'true'
+        is_branch = request.query_params.get('is_branch') == 'true'
+
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data["user"]
+
+            if is_admin and user.role != 'super_admin':
+                return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
+
+            if is_branch and user.role != 'branch_user':
+                return custom_response(False, "Access denied. Not a branch user.", None, status.HTTP_403_FORBIDDEN)
+
             refresh = RefreshToken.for_user(user)
             return custom_response(True, "Login successful", {
                 "access": str(refresh.access_token),
