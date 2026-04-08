@@ -11,7 +11,7 @@ from .api_views import (
     slot_list, slot_create, slot_detail, slot_update, slot_partial_update, slot_delete,
     slot_booking_list, slot_booking_create, slot_booking_detail, slot_booking_update, slot_booking_partial_update, slot_booking_delete,
     invoice_list, invoice_create, invoice_detail, invoice_update, invoice_partial_update, invoice_delete,
-    dashboard_summary, dashboard_centerwise_performance, dashboard_revenue_overview, dashboard_membership_status,
+    dashboard_summary, dashboard_centerwise_performance, dashboard_revenue_overview, dashboard_membership_status, dashboard_slot_bookings,
     UserViewSet,
 )
 
@@ -78,4 +78,5 @@ urlpatterns = [
     path('dashboard/centerwise-performance/', dashboard_centerwise_performance),
     path('dashboard/revenue-overview/', dashboard_revenue_overview),
     path('dashboard/membership-status/', dashboard_membership_status),
+    path('dashboard/slot-bookings/', dashboard_slot_bookings),
 ]

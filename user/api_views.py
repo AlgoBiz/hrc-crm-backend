@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from datetime import timedelta
+from datetime import timedelta, date
 from django.db.models import Q
 from django.db import models
 
@@ -93,13 +93,19 @@ def customer_list(request):
     qs = Customer.objects.all().order_by('-id')
     search = request.query_params.get('search')
     center = request.query_params.get('center')
-    date = request.query_params.get('date')
+    date_filter = request.query_params.get('date')
+    recent = request.query_params.get('recent')
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
     if center:
         qs = qs.filter(center_id=center)
-    if date:
-        qs = qs.filter(created_at__date=date)
+    if date_filter:
+        qs = qs.filter(created_at__date=date_filter)
+    if recent:
+        try:
+            qs = qs[:int(recent)]
+        except ValueError:
+            pass
     serializer = CustomerSerializer(qs, many=True)
     return custom_response(True, "Customers fetched successfully", serializer.data)
 
@@ -463,11 +469,21 @@ def slot_booking_delete(request, pk):
 # DASHBOARD API
 # =========================================
 
+def get_last_7_months():
+    today = date.today()
+    months = []
+    for i in range(6, -1, -1):
+        month = today.month - i
+        year = today.year
+        while month <= 0:
+            month += 12
+            year -= 1
+        months.append((year, month))
+    return months
+
 @api_view(['GET'])
 def dashboard_summary(request):
     from django.db.models import Sum, Count
-    from django.utils import timezone
-    from datetime import date
 
     today = date.today()
     this_month_start = today.replace(day=1)
@@ -585,6 +601,53 @@ def dashboard_membership_status(request):
         })
 
     return Response(result, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def dashboard_slot_bookings(request):
+    from django.db.models import Count, Q
+
+    months = get_last_7_months()
+
+    # Fetch all slot counts grouped by year+month in one query
+    from django.db.models.functions import ExtractYear, ExtractMonth
+
+    slot_counts = (
+        Slot.objects.annotate(year=ExtractYear('created_at'), month=ExtractMonth('created_at'))
+        .values('year', 'month')
+        .annotate(total=Count('id'))
+    )
+    slot_map = {(s['year'], s['month']): s['total'] for s in slot_counts}
+
+    # Fetch booked slot bookings grouped by year+month in one query
+    booking_counts = (
+        SlotBooking.objects.filter(status__iexact='booked')
+        .annotate(year=ExtractYear('booking_date'), month=ExtractMonth('booking_date'))
+        .values('year', 'month')
+        .annotate(total=Count('id'))
+    )
+    booking_map = {(b['year'], b['month']): b['total'] for b in booking_counts}
+
+    data = []
+    labels, booked_list, free_list = [], [], []
+
+    for year, month in months:
+        label = date(year, month, 1).strftime('%b')
+        total_slots = slot_map.get((year, month), 0)
+        booked = booking_map.get((year, month), 0)
+        free = max(total_slots - booked, 0)
+
+        data.append({'month': label, 'year': year, 'booked': booked, 'free': free})
+        labels.append(label)
+        booked_list.append(booked)
+        free_list.append(free)
+
+    return Response({
+        'data': data,
+        'labels': labels,
+        'booked': booked_list,
+        'free': free_list,
+    }, status=status.HTTP_200_OK)
 
 
 # =========================================
