@@ -6,6 +6,7 @@ from .api_views import (
     LoginAPIView,
     UserViewSet,
     CenterViewSet,
+    CenterMinimalView,
     PlanViewSet,
     CustomerViewSet,
     SlotViewSet,
@@ -31,6 +32,7 @@ router.register(r'invoices', InvoiceViewSet, basename='invoice')
 urlpatterns = [
     path('login/', LoginAPIView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('centers/minimal/', CenterMinimalView.as_view(), name='center_minimal'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/branch/', BranchDashboardView.as_view(), name='branch_dashboard'),
     path('reports/customers/', CustomerReportView.as_view(), name='customer_report'),

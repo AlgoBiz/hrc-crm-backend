@@ -1,4 +1,4 @@
-﻿from rest_framework import status, viewsets, filters
+from rest_framework import status, viewsets, filters
 from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -361,6 +361,18 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.paginator.get_paginated_response(serializer.data, "Slot bookings fetched successfully")
+
+# =========================================
+# CENTER MINIMAL API
+# =========================================
+
+class CenterMinimalView(APIView):
+    def get(self, request):
+        from .serializers import CenterMinimalSerializer
+        centers = Center.objects.all()
+        serializer = CenterMinimalSerializer(centers, many=True)
+        return custom_response(True, "Centers fetched successfully", serializer.data)
+
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Slot bookings fetched successfully", serializer.data)
 

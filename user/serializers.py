@@ -275,6 +275,12 @@ class CenterSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CenterMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Center
+        fields = ['id', 'center_name']
+
+
 class SlotSerializer(serializers.ModelSerializer):
     center_name = serializers.CharField(source="center.center_name", read_only=True)
     slot_time = serializers.SerializerMethodField()
