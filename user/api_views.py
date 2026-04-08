@@ -243,12 +243,18 @@ class CustomerViewSet(viewsets.ModelViewSet):
         search = self.request.query_params.get('search')
         center = self.request.query_params.get('center')
         date_param = self.request.query_params.get('date')
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
             qs = qs.filter(created_at__date=date_param)
+        if start_date:
+            qs = qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            qs = qs.filter(created_at__date__lte=end_date)
         return qs
 
     def list(self, request, *args, **kwargs):
