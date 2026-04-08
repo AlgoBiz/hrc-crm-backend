@@ -236,10 +236,42 @@ class CenterSerializer(serializers.ModelSerializer):
         return center
 
     def update(self, instance, validated_data):
-        validated_data.pop('password', None)
+        password = validated_data.pop('password', None)
+        email_changed = 'email' in validated_data and validated_data['email'] != instance.email
+        
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Get or create branch user
+        from .models import User
+        branch_user = User.objects.filter(center=instance, role='branch_user').first()
+        
+        if not branch_user:
+            # Create branch user if it doesn't exist
+            username = instance.email.split('@')[0]
+            base_username = username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
+            branch_user = User.objects.create_user(
+                username=username,
+                email=instance.email,
+                password=password or 'center123',  # Default password if not provided
+                role='branch_user',
+                center=instance,
+                is_active=True,
+            )
+        else:
+            # Update existing branch user
+            if email_changed:
+                branch_user.email = instance.email
+            if password:
+                branch_user.set_password(password)
+            if email_changed or password:
+                branch_user.save()
+        
         return instance
 
 
