@@ -886,20 +886,20 @@ class CustomerReportView(APIView):
 class SlotBookingReportView(APIView):
 
     def get(self, request):
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        export = request.query_params.get('export') == 'true'
+        center = request.query_params.get(center)
+        start_date = request.query_params.get(start_date)
+        end_date = request.query_params.get(end_date)
+        export = request.query_params.get(export) == true
+        page = int(request.query_params.get(page, 1))
+        page_size = int(request.query_params.get(page_size, 10))
 
-        booking_qs = SlotBooking.objects.select_related('slot', 'customer')
+        booking_qs = SlotBooking.objects.select_related(slot, customer, center)
+        if center:
+            booking_qs = booking_qs.filter(center_id=center)
         if start_date:
             booking_qs = booking_qs.filter(booking_date__gte=start_date)
         if end_date:
             booking_qs = booking_qs.filter(booking_date__lte=end_date)
-
-        slot_data = []
-        for slot in Slot.objects.all():
-            total_booked = booking_qs.filter(slot=slot).count()
-            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
             if utilization == 100:
                 util_status = 'full'
             elif utilization >= 90:
