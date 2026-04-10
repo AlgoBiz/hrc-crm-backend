@@ -368,9 +368,16 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+<<<<<<< HEAD
         date_param = self.request.query_params.get('date')
+=======
+    def get_queryset(self):
+        qs = super().get_queryset()
+        date_param = self.request.query_params.get(date)
+>>>>>>> d71352d94a40e1cc7893891a102abea9f49ae78f
         if date_param:
             qs = qs.filter(booking_date=date_param)
+        return qs
         return qs
 
     def list(self, request, *args, **kwargs):
@@ -516,16 +523,18 @@ class AdminDashboardView(APIView):
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
+<<<<<<< HEAD
             c_slots = Slot.objects.all()
             c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
             c_booked = c_slots.aggregate(total=Sum('booked_count'))['total'] or 0
             c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
+=======
+>>>>>>> d71352d94a40e1cc7893891a102abea9f49ae78f
             centers_data.append({
                 'center_id': center.id,
                 'center_name': center.center_name,
                 'customers': c_customers,
                 'revenue': float(c_revenue),
-                'booking_rate': c_rate,
             })
 
         # Revenue last 7 months
@@ -785,7 +794,6 @@ class BranchDashboardView(APIView):
 
         most_purchased = (
             Invoice.objects.filter(center=center)
-            .values('plan__plan_name')
             .annotate(count=Count('id'))
             .order_by('-count')
             .first()
@@ -900,25 +908,25 @@ class CustomerReportView(APIView):
 class SlotBookingReportView(APIView):
 
     def get(self, request):
-        search = request.query_params.get('search')
-        center = request.query_params.get('center')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        export = request.query_params.get('export') == 'true'
+        start_date = request.query_params.get(start_date)
+        end_date = request.query_params.get(end_date)
+        export = request.query_params.get(export) == true
 
-        qs = Slot.objects.select_related('center').filter(center__isnull=False)
+        qs = Slot.objects.all()
 
-        if center:
-            qs = qs.filter(center_id=center)
-        if search:
-            qs = qs.filter(Q(center__center_name__icontains=search))
-
-        booking_qs = SlotBooking.objects.select_related('slot__center', 'customer')
+        booking_qs = SlotBooking.objects.select_related(slot, customer)
         if start_date:
             booking_qs = booking_qs.filter(booking_date__gte=start_date)
         if end_date:
             booking_qs = booking_qs.filter(booking_date__lte=end_date)
-        if center:
+
+            booking_qs = booking_qs.filter(booking_date__lte=end_date)
+
+        if start_date:
+            booking_qs = booking_qs.filter(booking_date__gte=start_date)
+        if end_date:
+            booking_qs = booking_qs.filter(booking_date__lte=end_date)
+
             booking_qs = booking_qs.filter(slot__center_id=center)
 
         slot_data = []
@@ -935,7 +943,7 @@ class SlotBookingReportView(APIView):
             slot_data.append({
                 "slot_id": slot.id,
                 "slot_time": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                "center": slot.center.center_name,
+                "slot_time": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                 "total_booked": total_booked,
                 "total_capacity": slot.total_slot,
                 "utilization": f"{utilization}%",
