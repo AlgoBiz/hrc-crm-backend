@@ -255,6 +255,7 @@ class CenterSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         email_changed = 'email' in validated_data and validated_data['email'] != instance.email
+        old_email = instance.email
         
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -284,6 +285,14 @@ class CenterSerializer(serializers.ModelSerializer):
             # Update existing branch user
             if email_changed:
                 branch_user.email = instance.email
+                # Also update username to match new email
+                new_username = instance.email.split('@')[0]
+                base_username = new_username
+                counter = 1
+                while User.objects.filter(username=new_username).exclude(pk=branch_user.pk).exists():
+                    new_username = f"{base_username}{counter}"
+                    counter += 1
+                branch_user.username = new_username
             if password:
                 branch_user.set_password(password)
             if email_changed or password:
