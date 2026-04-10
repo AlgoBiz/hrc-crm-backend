@@ -81,11 +81,10 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
     slot_time = serializers.SerializerMethodField()
-    center = serializers.CharField(source='slot.center.center_name', read_only=True)
 
     class Meta:
         model = SlotBooking
-        fields = ['booking_date', 'slot_time', 'center', 'status']
+        fields = ['booking_date', 'slot_time', 'status']
 
     def get_slot_time(self, obj):
         return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"

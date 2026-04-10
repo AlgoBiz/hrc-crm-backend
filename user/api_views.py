@@ -293,6 +293,25 @@ class CustomerViewSet(viewsets.ModelViewSet):
         choices = [{'value': k, 'label': v} for k, v in Customer.WAVE_CHOICES]
         return custom_response(True, "Wave choices fetched successfully", choices)
 
+    @action(detail=False, methods=['get'], url_path='minimal')
+    def minimal(self, request):
+        qs = Customer.objects.select_related('center', 'plan').all().order_by('-id')
+        center = request.query_params.get('center')
+        if center:
+            qs = qs.filter(center_id=center)
+        data = [
+            {
+                'id': c.id,
+                'name': c.name,
+                'mobile': c.mobile,
+                'center': c.center.center_name if c.center else None,
+                'plan': c.plan.plan_name if c.plan else None,
+                'status': c.status,
+            }
+            for c in qs
+        ]
+        return custom_response(True, "Customers fetched successfully", data)
+
 
 # =========================================
 # SLOT VIEWSET
@@ -304,11 +323,7 @@ class SlotViewSet(viewsets.ModelViewSet):
     pagination_class = StandardPagination
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        center = self.request.query_params.get('center')
-        if center:
-            qs = qs.filter(center_id=center)
-        return qs
+        return super().get_queryset()
 
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
@@ -353,10 +368,7 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        center = self.request.query_params.get('center')
         date_param = self.request.query_params.get('date')
-        if center:
-            qs = qs.filter(slot__center_id=center)
         if date_param:
             qs = qs.filter(booking_date=date_param)
         return qs
@@ -504,7 +516,7 @@ class AdminDashboardView(APIView):
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
-            c_slots = Slot.objects.filter(center=center)
+            c_slots = Slot.objects.all()
             c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
             c_booked = c_slots.aggregate(total=Sum('booked_count'))['total'] or 0
             c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
@@ -765,9 +777,9 @@ class BranchDashboardView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
-        slots = Slot.objects.filter(center=center)
+        slots = Slot.objects.all()
         total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        booked_today = SlotBooking.objects.filter(slot__center=center, booking_date=today).count()
+        booked_today = SlotBooking.objects.filter(booking_date=today).count()
         free_slots = total_slots - booked_today
         booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
 
