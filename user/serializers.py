@@ -97,7 +97,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     )
     center = CustomerCenterSerializer(read_only=True)
     center_id = serializers.PrimaryKeyRelatedField(
-        queryset=Center.objects.all(), source='center', write_only=True
+        queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
