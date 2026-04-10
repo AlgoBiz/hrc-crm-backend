@@ -343,11 +343,12 @@ class SlotSerializer(serializers.ModelSerializer):
 class SlotBookingSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.name", read_only=True)
     slot_time = serializers.SerializerMethodField()
+    center_name = serializers.CharField(source="center.center_name", read_only=True)
 
     class Meta:
         model = SlotBooking
-        fields = ['id', 'customer', 'customer_name', 'slot', 'slot_time', 'booking_date', 'status', 'created_at']
-        read_only_fields = ['id', 'created_at', 'customer_name', 'slot_time']
+        fields = ['id', 'customer', 'customer_name', 'slot', 'slot_time', 'center', 'center_name', 'booking_date', 'status', 'created_at']
+        read_only_fields = ['id', 'created_at', 'customer_name', 'slot_time', 'center_name']
 
     def get_slot_time(self, obj):
         return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"
