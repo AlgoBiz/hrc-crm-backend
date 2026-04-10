@@ -183,6 +183,14 @@ class CenterViewSet(viewsets.ModelViewSet):
         return custom_response(True, "Center deleted successfully")
 
 
+class CenterMinimalView(APIView):
+    def get(self, request):
+        from .serializers import CenterMinimalSerializer
+        centers = Center.objects.all().order_by('center_name')
+        serializer = CenterMinimalSerializer(centers, many=True)
+        return custom_response(True, "Centers fetched successfully", serializer.data)
+
+
 # =========================================
 # PLAN VIEWSET
 # =========================================
@@ -295,21 +303,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
-        qs = Customer.objects.select_related('center', 'plan').all().order_by('-id')
-        center = request.query_params.get('center')
-        if center:
-            qs = qs.filter(center_id=center)
-        data = [
-            {
-                'id': c.id,
-                'name': c.name,
-                'mobile': c.mobile,
-                'center': c.center.center_name if c.center else None,
-                'plan': c.plan.plan_name if c.plan else None,
-                'status': c.status,
-            }
-            for c in qs
-        ]
+        qs = Customer.objects.only('id', 'name').order_by('-id')
+        data = [{'id': c.id, 'name': c.name} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
 
 
@@ -372,7 +367,6 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
         if date_param:
             qs = qs.filter(booking_date=date_param)
         return qs
-        return qs
 
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
@@ -380,18 +374,6 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.paginator.get_paginated_response(serializer.data, "Slot bookings fetched successfully")
-
-# =========================================
-# CENTER MINIMAL API
-# =========================================
-
-class CenterMinimalView(APIView):
-    def get(self, request):
-        from .serializers import CenterMinimalSerializer
-        centers = Center.objects.all()
-        serializer = CenterMinimalSerializer(centers, many=True)
-        return custom_response(True, "Centers fetched successfully", serializer.data)
-
         serializer = self.get_serializer(qs, many=True)
         return custom_response(True, "Slot bookings fetched successfully", serializer.data)
 
@@ -434,7 +416,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         date_param = self.request.query_params.get('date')
         plan = self.request.query_params.get('plan')
         if search:
-            qs = qs.filter(Q(customer__name__icontains=search) | Q(invoice_number__icontains=search))
+            qs = qs.filter(Q(customer__name__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
@@ -778,9 +760,7 @@ class BranchDashboardView(APIView):
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
         slots = Slot.objects.all()
-        slots = Slot.objects.all()
         total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        booked_today = SlotBooking.objects.filter(booking_date=today).count()
         booked_today = SlotBooking.objects.filter(booking_date=today).count()
         free_slots = total_slots - booked_today
         booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
@@ -901,46 +881,36 @@ class CustomerReportView(APIView):
 class SlotBookingReportView(APIView):
 
     def get(self, request):
-        start_date = request.query_params.get(start_date)
-        end_date = request.query_params.get(end_date)
-        export = request.query_params.get(export) == true
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        export = request.query_params.get('export') == 'true'
 
-        qs = Slot.objects.all()
-
-        booking_qs = SlotBooking.objects.select_related(slot, customer)
+        booking_qs = SlotBooking.objects.select_related('slot', 'customer')
         if start_date:
             booking_qs = booking_qs.filter(booking_date__gte=start_date)
         if end_date:
             booking_qs = booking_qs.filter(booking_date__lte=end_date)
-
-            booking_qs = booking_qs.filter(booking_date__lte=end_date)
-
-        if start_date:
-            booking_qs = booking_qs.filter(booking_date__gte=start_date)
-        if end_date:
-            booking_qs = booking_qs.filter(booking_date__lte=end_date)
-
-            booking_qs = booking_qs.filter(slot__center_id=center)
 
         slot_data = []
-        for slot in qs:
+        for slot in Slot.objects.all():
             total_booked = booking_qs.filter(slot=slot).count()
             utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
-            if utilization >= 90:
-                util_status = "full" if utilization == 100 else "high"
+            if utilization == 100:
+                util_status = 'full'
+            elif utilization >= 90:
+                util_status = 'high'
             elif utilization >= 70:
-                util_status = "medium"
+                util_status = 'medium'
             else:
-                util_status = "low"
+                util_status = 'low'
 
             slot_data.append({
-                "slot_id": slot.id,
-                "slot_time": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                "slot_time": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                "total_booked": total_booked,
-                "total_capacity": slot.total_slot,
-                "utilization": f"{utilization}%",
-                "status": util_status,
+                'slot_id': slot.id,
+                'slot_time': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                'total_booked': total_booked,
+                'total_capacity': slot.total_slot,
+                'utilization': f"{utilization}%",
+                'status': util_status,
             })
 
         if export:
@@ -955,16 +925,9 @@ class SlotBookingReportView(APIView):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Slot Booking Report"
-
-        headers = ["Slot", "Center", "Total Booked", "Total Capacity", "Utilization", "Status"]
-        ws.append(headers)
-
+        ws.append(['Slot', 'Total Booked', 'Total Capacity', 'Utilization', 'Status'])
         for row in slot_data:
-            ws.append([
-                row["slot_time"], row["center"],
-                row["total_booked"], row["total_capacity"],
-                row["utilization"], row["status"],
-            ])
+            ws.append([row['slot_time'], row['total_booked'], row['total_capacity'], row['utilization'], row['status']])
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="slot_booking_report.xlsx"'
