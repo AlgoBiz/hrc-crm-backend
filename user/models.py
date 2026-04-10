@@ -130,6 +130,7 @@ class Slot(models.Model):
 class SlotBooking(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='slot_bookings')
     slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='slot_bookings')
+    center = models.ForeignKey(Center, on_delete=models.CASCADE, related_name='slot_bookings', null=True, blank=True)
     booking_date = models.DateField()
     status = models.CharField(max_length=20, default='Booked')
     created_at = models.DateTimeField(auto_now_add=True)
