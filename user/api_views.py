@@ -545,11 +545,16 @@ class AdminDashboardView(APIView):
         def paginate(data):
             start = (page - 1) * page_size
             total = len(data)
+            total_pages = max(1, (total + page_size - 1) // page_size)
+            has_next = page < total_pages
+            has_previous = page > 1
             return {
                 "results": data[start:start + page_size],
                 "count": total,
-                "total_pages": max(1, (total + page_size - 1) // page_size),
+                "total_pages": total_pages,
                 "current_page": page,
+                "next": page + 1 if has_next else None,
+                "previous": page - 1 if has_previous else None,
             }
 
         return custom_response(True, "Admin dashboard fetched successfully", {
@@ -566,7 +571,7 @@ class AdminDashboardView(APIView):
             "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
             "membership_status": paginate(membership_data),
-            "recent_customers": paginate(recent_customers),
+            "recent_customers": recent_customers,
         })
 
 
