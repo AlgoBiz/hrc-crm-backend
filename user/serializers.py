@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from datetime import date
 from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice
 
 
@@ -145,7 +146,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                 center=center,
                 plan=plan,
                 amount=total_amount,
-                date=customer.start_date,
+                date=customer.start_date or date.today(),
                 status='pending',
             )
         return customer

@@ -53,8 +53,8 @@ class Customer(models.Model):
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     plan = models.ForeignKey('Plan', on_delete=models.SET_NULL, null=True, blank=True)
     wave = models.CharField(max_length=20, choices=WAVE_CHOICES)
-    start_date = models.DateField()
-    expiry_date = models.DateField()
+    start_date = models.DateField(blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
     last_visit = models.DateField(blank=True, null=True)
     status = models.CharField(
         max_length=20,
