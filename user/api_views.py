@@ -278,7 +278,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return custom_response(True, "Customer fetched successfully", self.get_serializer(self.get_object()).data)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = request.data.copy()
+        if not data.get('center_id') and hasattr(request.user, 'center') and request.user.center:
+            data['center_id'] = request.user.center.id
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return custom_response(True, "Customer created successfully", serializer.data, status.HTTP_201_CREATED)
