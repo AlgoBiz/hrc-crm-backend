@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from datetime import date
+from dateutil.relativedelta import relativedelta
 from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice
 
 
@@ -135,8 +136,12 @@ class CustomerSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        plan = validated_data.get('plan')
+        if plan:
+            start = date.today()
+            validated_data['start_date'] = start
+            validated_data['expiry_date'] = start + relativedelta(months=plan.duration_months)
         customer = Customer.objects.create(**validated_data)
-        plan = customer.plan
         center = customer.center
         if plan and center:
             gst_amount = round(float(plan.price) * 18 / 100, 2) if plan.gst else 0.0
@@ -146,7 +151,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                 center=center,
                 plan=plan,
                 amount=total_amount,
-                date=customer.start_date or date.today(),
+                date=customer.start_date,
                 status='pending',
             )
         return customer
