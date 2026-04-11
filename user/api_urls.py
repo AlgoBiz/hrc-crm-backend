@@ -14,10 +14,12 @@ from .api_views import (
     InvoiceViewSet,
     AdminDashboardView,
     BranchDashboardView,
-    CustomerReportView,
-    SlotBookingReportView,
     InvoiceExcelDownloadView,
     CustomerExcelDownloadView,
+    AdminCustomerReportView,
+    AdminSlotBookingReportView,
+    BranchCustomerReportView,
+    BranchSlotBookingReportView,
 )
 
 router = DefaultRouter()
@@ -35,8 +37,10 @@ urlpatterns = [
     path('centers/minimal/', CenterMinimalView.as_view(), name='center_minimal'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/branch/', BranchDashboardView.as_view(), name='branch_dashboard'),
-    path('reports/customers/', CustomerReportView.as_view(), name='customer_report'),
-    path('reports/slot-bookings/', SlotBookingReportView.as_view(), name='slot_booking_report'),
+    path('reports/admin/customers/', AdminCustomerReportView.as_view(), name='admin_customer_report'),
+    path('reports/admin/slot-bookings/', AdminSlotBookingReportView.as_view(), name='admin_slot_booking_report'),
+    path('reports/branch/customers/', BranchCustomerReportView.as_view(), name='branch_customer_report'),
+    path('reports/branch/slot-bookings/', BranchSlotBookingReportView.as_view(), name='branch_slot_booking_report'),
     path('invoices/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download'),
     path('invoices/<int:pk>/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download_single'),
     path('customers/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download'),
