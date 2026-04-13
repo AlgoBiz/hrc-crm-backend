@@ -388,21 +388,33 @@ class SlotViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
         booking_date = request.query_params.get('date')
-        qs = Slot.objects.filter(is_enabled=True)
-        if booking_date:
-            booked_slot_ids = SlotBooking.objects.filter(
-                booking_date=booking_date
-            ).values_list('slot_id', flat=True)
-            qs = qs.exclude(id__in=booked_slot_ids)
-        data = [
-            {
-                'id': s.id,
-                'start_time': s.start_time.strftime('%I:%M %p'),
-                'end_time': s.end_time.strftime('%I:%M %p'),
-            }
-            for s in qs
-        ]
-        return custom_response(True, "Available slots fetched successfully", data)
+        
+        if not booking_date:
+            return custom_response(False, "date parameter is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Get all enabled slots
+        slots = Slot.objects.filter(is_enabled=True).order_by('start_time')
+        
+        available_slots = []
+        for slot in slots:
+            # Count bookings for this slot on the given date
+            booked_count = SlotBooking.objects.filter(slot=slot, booking_date=booking_date).count()
+            
+            # Calculate balance (remaining capacity)
+            balance = slot.total_slot - booked_count
+            
+            # Only include slots that have available capacity
+            if balance > 0:
+                available_slots.append({
+                    'id': slot.id,
+                    'start_time': slot.start_time.strftime('%I:%M %p'),
+                    'end_time': slot.end_time.strftime('%I:%M %p'),
+                    'total_slot': slot.total_slot,
+                    'booked_slot': booked_count,
+                    'balance_slot': balance,
+                })
+        
+        return custom_response(True, "Available slots fetched successfully", available_slots)
 
 
 # =========================================
