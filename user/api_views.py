@@ -1342,3 +1342,4 @@ class AdminSlotBookingReportView(APIView):
         response['Content-Disposition'] = 'attachment; filename="admin_slot_bookings_all_branches.xlsx"'
         wb.save(response)
         return response
+
