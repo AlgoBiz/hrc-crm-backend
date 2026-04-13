@@ -70,13 +70,28 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     invoice_id = serializers.CharField(read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
     download_invoice_url = serializers.SerializerMethodField()
+    gst_applied = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
-        fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'status', 'download_invoice_url']
+        fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'gst_applied', 'gst_amount', 'subtotal', 'status', 'download_invoice_url']
 
     def get_download_invoice_url(self, obj):
         return f'/api/invoices/{obj.id}/download/excel/'
+
+    def get_gst_applied(self, obj):
+        return obj.plan.gst if obj.plan else False
+
+    def get_gst_amount(self, obj):
+        if obj.plan and obj.plan.gst:
+            return round(float(obj.amount) * 18 / 100, 2)
+        return 0.0
+
+    def get_subtotal(self, obj):
+        gst_amount = self.get_gst_amount(obj)
+        return round(float(obj.amount) + gst_amount, 2)
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
@@ -410,6 +425,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
     download_invoice_url = serializers.SerializerMethodField()
     gst_applied = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -418,10 +435,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'customer', 'customer_name',
             'center', 'center_name',
             'plan', 'plan_name',
-            'amount',
-            'date', 'status', 'created_at', 'download_invoice_url', 'gst_applied'
+            'amount', 'gst_applied', 'gst_amount', 'subtotal',
+            'date', 'status', 'created_at', 'download_invoice_url'
         ]
-        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url', 'gst_applied']
+        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url', 'gst_applied', 'gst_amount', 'subtotal']
 
     def get_download_invoice_url(self, obj):
         return f'/api/invoices/{obj.id}/download/excel/'
@@ -429,11 +446,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_gst_applied(self, obj):
         return obj.plan.gst if obj.plan else False
 
-    def get_download_invoice_url(self, obj):
-        return f'/api/invoices/{obj.id}/download/excel/'
+    def get_gst_amount(self, obj):
+        if obj.plan and obj.plan.gst:
+            return round(float(obj.amount) * 18 / 100, 2)
+        return 0.0
 
-    def get_gst_applied(self, obj):
-        return obj.plan.gst if obj.plan else False
+    def get_subtotal(self, obj):
+        gst_amount = self.get_gst_amount(obj)
+        return round(float(obj.amount) + gst_amount, 2)
 
     def validate(self, attrs):
         customer = attrs.get('customer')
