@@ -101,6 +101,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     )
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
+    last_visit = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -112,6 +113,10 @@ class CustomerSerializer(serializers.ModelSerializer):
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
+
+    def get_last_visit(self, obj):
+        latest_booking = obj.slot_bookings.order_by('-booking_date').first()
+        return latest_booking.booking_date if latest_booking else None
 
     def validate(self, attrs):
         center = attrs.get('center')
@@ -404,6 +409,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     center_name = serializers.CharField(source='center.center_name', read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
     download_invoice_url = serializers.SerializerMethodField()
+    gst_applied = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -413,12 +419,21 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'center', 'center_name',
             'plan', 'plan_name',
             'amount',
-            'date', 'status', 'created_at', 'download_invoice_url'
+            'date', 'status', 'created_at', 'download_invoice_url', 'gst_applied'
         ]
-        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url']
+        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url', 'gst_applied']
 
     def get_download_invoice_url(self, obj):
         return f'/api/invoices/{obj.id}/download/excel/'
+
+    def get_gst_applied(self, obj):
+        return obj.plan.gst if obj.plan else False
+
+    def get_download_invoice_url(self, obj):
+        return f'/api/invoices/{obj.id}/download/excel/'
+
+    def get_gst_applied(self, obj):
+        return obj.plan.gst if obj.plan else False
 
     def validate(self, attrs):
         customer = attrs.get('customer')
