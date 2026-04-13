@@ -346,37 +346,53 @@ class SlotSerializer(serializers.ModelSerializer):
 class SlotBookingSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.name", read_only=True)
     slot_time = serializers.SerializerMethodField()
-    center_name = serializers.CharField(source="center.center_name", read_only=True)
+    customer_id = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.all(), source='customer', write_only=True, required=False
+    )
+    slot_id = serializers.PrimaryKeyRelatedField(
+        queryset=Slot.objects.all(), source='slot', write_only=True, required=False
+    )
+    center_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = SlotBooking
-        fields = ['id', 'customer', 'customer_name', 'slot', 'slot_time', 'center', 'center_name', 'booking_date', 'status', 'created_at']
-        read_only_fields = ['id', 'created_at', 'customer_name', 'slot_time', 'center_name']
+        fields = ['id', 'customer', 'customer_id', 'customer_name', 'slot', 'slot_id', 'slot_time', 'center_id', 'booking_date', 'status', 'created_at']
+        read_only_fields = ['id', 'created_at', 'customer_name', 'slot_time']
+        extra_kwargs = {
+            'customer': {'required': False},
+            'slot': {'required': False},
+        }
 
     def get_slot_time(self, obj):
         return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"
 
     def validate(self, attrs):
-        slot = attrs.get("slot")
-        booking_date = attrs.get("booking_date")
-        customer = attrs.get("customer")
+        slot = attrs.get('slot')
+        booking_date = attrs.get('booking_date')
+        customer = attrs.get('customer')
+
+        if not slot:
+            raise serializers.ValidationError({'slot': 'This field is required.'})
+        if not customer:
+            raise serializers.ValidationError({'customer': 'This field is required.'})
 
         if not slot.is_enabled:
-            raise serializers.ValidationError({"slot": "This slot is disabled."})
+            raise serializers.ValidationError({'slot': 'This slot is disabled.'})
 
         booked_count_for_date = SlotBooking.objects.filter(
             slot=slot, booking_date=booking_date
         ).count()
         if booked_count_for_date >= slot.total_slot:
-            raise serializers.ValidationError({"slot": "This slot is already full for the selected date."})
+            raise serializers.ValidationError({'slot': 'This slot is already full for the selected date.'})
 
         if SlotBooking.objects.filter(
             customer=customer, slot=slot, booking_date=booking_date
         ).exists():
-            raise serializers.ValidationError({"non_field_errors": "This customer already booked this slot for this date."})
+            raise serializers.ValidationError({'non_field_errors': 'This customer already booked this slot for this date.'})
         return attrs
 
     def create(self, validated_data):
+        validated_data.pop('center_id', None)
         booking = SlotBooking.objects.create(**validated_data)
         return booking
 

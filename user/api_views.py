@@ -759,6 +759,56 @@ class InvoiceExcelDownloadView(APIView):
 
 
 # =========================================
+# CHANGE PASSWORD API
+# =========================================
+
+class ChangePasswordView(APIView):
+
+    def post(self, request):
+        current_password = request.data.get('current_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not all([current_password, new_password, confirm_password]):
+            return custom_response(False, "All fields are required.", None, status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(current_password):
+            return custom_response(False, "Current password is incorrect.", None, status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return custom_response(False, "New password and confirm password do not match.", None, status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save()
+        return custom_response(True, "Password updated successfully.")
+
+
+# =========================================
+# BRANCH SETTINGS API
+# =========================================
+
+class BranchChangePasswordView(APIView):
+
+    def post(self, request):
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not all([old_password, new_password, confirm_password]):
+            return custom_response(False, "All fields are required.", None, status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(old_password):
+            return custom_response(False, "Old password is incorrect.", None, status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return custom_response(False, "New password and confirm password do not match.", None, status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save()
+        return custom_response(True, "Password updated successfully.")
+
+
+# =========================================
 # BRANCH DASHBOARD API
 # =========================================
 
