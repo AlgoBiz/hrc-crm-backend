@@ -648,7 +648,7 @@ class CustomerExcelDownloadView(APIView):
         ws = wb.active
         ws.title = 'Customers'
 
-        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Expiry Date', 'Status']
+        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status']
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
@@ -665,7 +665,17 @@ class CustomerExcelDownloadView(APIView):
                 return custom_response(False, 'Customer not found', None, status.HTTP_404_NOT_FOUND)
             filename = f'customer_{pk}.xlsx'
         else:
-            customers = Customer.objects.select_related('center', 'plan').all().order_by('-id')
+            center = request.query_params.get('center')
+            start_date = request.query_params.get('start_date')
+            end_date = request.query_params.get('end_date')
+            qs = Customer.objects.select_related('center', 'plan').all().order_by('-id')
+            if center:
+                qs = qs.filter(center_id=center)
+            if start_date:
+                qs = qs.filter(start_date__gte=start_date)
+            if end_date:
+                qs = qs.filter(start_date__lte=end_date)
+            customers = qs
             filename = 'customers.xlsx'
 
         for row, c in enumerate(customers, 2):
@@ -676,8 +686,9 @@ class CustomerExcelDownloadView(APIView):
             ws.cell(row=row, column=5, value=c.center.center_name if c.center else '')
             ws.cell(row=row, column=6, value=c.plan.plan_name if c.plan else '')
             ws.cell(row=row, column=7, value=c.wave)
-            ws.cell(row=row, column=8, value=str(c.expiry_date))
-            ws.cell(row=row, column=9, value=c.status)
+            ws.cell(row=row, column=8, value=str(c.start_date) if c.start_date else '')
+            ws.cell(row=row, column=9, value=str(c.expiry_date) if c.expiry_date else '')
+            ws.cell(row=row, column=10, value=c.status)
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
