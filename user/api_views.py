@@ -755,7 +755,7 @@ class BranchDashboardView(APIView):
 
     def get(self, request):
         today = timezone.now().date()
-        center_id = request.query_params.get('center_id')
+        center_id = request.query_params.get('center_id') or request.query_params.get('center')
         if not center_id and hasattr(request.user, 'center') and request.user.center:
             center_id = request.user.center.id
 
@@ -775,6 +775,7 @@ class BranchDashboardView(APIView):
 
         most_purchased = (
             Invoice.objects.filter(center=center)
+            .values('plan__plan_name')
             .annotate(count=Count('id'))
             .order_by('-count')
             .first()
