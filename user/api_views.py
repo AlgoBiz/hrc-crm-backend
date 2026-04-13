@@ -354,6 +354,48 @@ class SlotViewSet(viewsets.ModelViewSet):
         self.get_object().delete()
         return custom_response(True, "Slot deleted successfully")
 
+    @action(detail=True, methods=['get'], url_path='customers')
+    def customers(self, request, pk=None):
+        slot = self.get_object()
+        booking_date = request.query_params.get('date')
+        bookings = SlotBooking.objects.filter(slot=slot).select_related('customer')
+        if booking_date:
+            bookings = bookings.filter(booking_date=booking_date)
+        data = [
+            {
+                'booking_id': b.id,
+                'booking_date': b.booking_date,
+                'status': b.status,
+                'customer': {
+                    'id': b.customer.id,
+                    'name': b.customer.name,
+                    'mobile': b.customer.mobile,
+                    'email': b.customer.email,
+                }
+            }
+            for b in bookings
+        ]
+        return custom_response(True, "Customers for slot fetched successfully", data)
+
+    @action(detail=False, methods=['get'], url_path='minimal')
+    def minimal(self, request):
+        booking_date = request.query_params.get('date')
+        qs = Slot.objects.filter(is_enabled=True)
+        if booking_date:
+            booked_slot_ids = SlotBooking.objects.filter(
+                booking_date=booking_date
+            ).values_list('slot_id', flat=True)
+            qs = qs.exclude(id__in=booked_slot_ids)
+        data = [
+            {
+                'id': s.id,
+                'start_time': s.start_time.strftime('%I:%M %p'),
+                'end_time': s.end_time.strftime('%I:%M %p'),
+            }
+            for s in qs
+        ]
+        return custom_response(True, "Available slots fetched successfully", data)
+
 
 # =========================================
 # SLOT BOOKING VIEWSET
@@ -476,7 +518,7 @@ class AdminDashboardView(APIView):
         total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
         total_sessions = Slot.objects.count()
         total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
-        total_booked = Slot.objects.aggregate(total=Sum('booked_count'))['total'] or 0
+        total_booked = SlotBooking.objects.count()
         booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
 
         customers_this_month = Customer.objects.filter(created_at__date__gte=this_month_start).count()
@@ -504,7 +546,7 @@ class AdminDashboardView(APIView):
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
             c_slots = Slot.objects.all()
             c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
-            c_booked = c_slots.aggregate(total=Sum('booked_count'))['total'] or 0
+            c_booked = SlotBooking.objects.filter(slot__in=c_slots).count()
             c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
             centers_data.append({
                 'center_id': center.id,
@@ -951,20 +993,20 @@ class CustomerReportView(APIView):
 class SlotBookingReportView(APIView):
 
     def get(self, request):
-        center = request.query_params.get(center)
-        start_date = request.query_params.get(start_date)
-        end_date = request.query_params.get(end_date)
-        export = request.query_params.get(export) == true
-        page = int(request.query_params.get(page, 1))
-        page_size = int(request.query_params.get(page_size, 10))
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        export = request.query_params.get('export') == 'true'
 
-        booking_qs = SlotBooking.objects.select_related(slot, customer, center)
-        if center:
-            booking_qs = booking_qs.filter(center_id=center)
+        booking_qs = SlotBooking.objects.select_related('slot', 'customer')
         if start_date:
             booking_qs = booking_qs.filter(booking_date__gte=start_date)
         if end_date:
             booking_qs = booking_qs.filter(booking_date__lte=end_date)
+
+        slot_data = []
+        for slot in Slot.objects.all():
+            total_booked = booking_qs.filter(slot=slot).count()
+            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
             if utilization == 100:
                 util_status = 'full'
             elif utilization >= 90:
@@ -973,7 +1015,6 @@ class SlotBookingReportView(APIView):
                 util_status = 'medium'
             else:
                 util_status = 'low'
-
             slot_data.append({
                 'slot_id': slot.id,
                 'slot_time': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
@@ -985,20 +1026,17 @@ class SlotBookingReportView(APIView):
 
         if export:
             return self._export_excel(slot_data)
-
         return custom_response(True, "Slot booking report fetched successfully", slot_data)
 
     def _export_excel(self, slot_data):
         import openpyxl
         from django.http import HttpResponse
-
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Slot Booking Report"
         ws.append(['Slot', 'Total Booked', 'Total Capacity', 'Utilization', 'Status'])
         for row in slot_data:
             ws.append([row['slot_time'], row['total_booked'], row['total_capacity'], row['utilization'], row['status']])
-
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="slot_booking_report.xlsx"'
         wb.save(response)
