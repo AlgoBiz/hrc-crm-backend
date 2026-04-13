@@ -315,11 +315,12 @@ class CenterMinimalSerializer(serializers.ModelSerializer):
 class SlotSerializer(serializers.ModelSerializer):
     slot_time = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    available_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Slot
-        fields = ['id', 'start_time', 'end_time', 'slot_time', 'booked_count', 'total_slot', 'status', 'created_at']
-        read_only_fields = ['id', 'booked_count', 'created_at', 'slot_time', 'status']
+        fields = ['id', 'start_time', 'end_time', 'slot_time', 'total_slot', 'available_count', 'status', 'is_enabled', 'created_at']
+        read_only_fields = ['id', 'created_at', 'slot_time', 'status', 'available_count']
 
     def get_slot_time(self, obj):
         return f"{obj.start_time.strftime('%I:%M %p')} - {obj.end_time.strftime('%I:%M %p')}"
@@ -327,23 +328,19 @@ class SlotSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         return 'enabled' if obj.is_enabled else 'disabled'
 
+    def get_available_count(self, obj):
+        request = self.context.get('request')
+        booking_date = request.query_params.get('date') if request else None
+        if booking_date:
+            booked = SlotBooking.objects.filter(slot=obj, booking_date=booking_date).count()
+        else:
+            booked = 0
+        return max(obj.total_slot - booked, 0)
+
     def validate(self, attrs):
         if attrs.get("start_time") and attrs.get("end_time") and attrs["start_time"] >= attrs["end_time"]:
             raise serializers.ValidationError("End time must be greater than start time.")
         return attrs
-
-    def create(self, validated_data):
-        # Handle is_enabled from request if provided
-        is_enabled = self.context.get('request').data.get('is_enabled', True)
-        validated_data['is_enabled'] = is_enabled
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        # Handle is_enabled from request if provided
-        request_data = self.context.get('request').data
-        if 'is_enabled' in request_data:
-            instance.is_enabled = request_data['is_enabled']
-        return super().update(instance, validated_data)
 
 
 class SlotBookingSerializer(serializers.ModelSerializer):
@@ -361,21 +358,26 @@ class SlotBookingSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         slot = attrs.get("slot")
+        booking_date = attrs.get("booking_date")
+        customer = attrs.get("customer")
+
         if not slot.is_enabled:
             raise serializers.ValidationError({"slot": "This slot is disabled."})
-        if slot.booked_count >= slot.total_slot:
-            raise serializers.ValidationError({"slot": "This slot is already full."})
+
+        booked_count_for_date = SlotBooking.objects.filter(
+            slot=slot, booking_date=booking_date
+        ).count()
+        if booked_count_for_date >= slot.total_slot:
+            raise serializers.ValidationError({"slot": "This slot is already full for the selected date."})
+
         if SlotBooking.objects.filter(
-            customer=attrs.get("customer"), slot=slot, booking_date=attrs.get("booking_date")
+            customer=customer, slot=slot, booking_date=booking_date
         ).exists():
             raise serializers.ValidationError({"non_field_errors": "This customer already booked this slot for this date."})
         return attrs
 
     def create(self, validated_data):
         booking = SlotBooking.objects.create(**validated_data)
-        slot = validated_data["slot"]
-        slot.booked_count += 1
-        slot.save()
         return booking
 
 
