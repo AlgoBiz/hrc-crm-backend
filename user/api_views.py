@@ -361,20 +361,28 @@ class SlotViewSet(viewsets.ModelViewSet):
         bookings = SlotBooking.objects.filter(slot=slot).select_related('customer')
         if booking_date:
             bookings = bookings.filter(booking_date=booking_date)
-        data = [
-            {
-                'booking_id': b.id,
-                'booking_date': b.booking_date,
-                'status': b.status,
-                'customer': {
-                    'id': b.customer.id,
-                    'name': b.customer.name,
-                    'mobile': b.customer.mobile,
-                    'email': b.customer.email,
+        data = {
+            'slot': {
+                'id': slot.id,
+                'start_time': slot.start_time.strftime('%I:%M %p'),
+                'end_time': slot.end_time.strftime('%I:%M %p'),
+                'total_slot': slot.total_slot,
+            },
+            'bookings': [
+                {
+                    'booking_id': b.id,
+                    'booking_date': str(b.booking_date),
+                    'status': b.status,
+                    'customer': {
+                        'id': b.customer.id,
+                        'name': b.customer.name,
+                        'mobile': b.customer.mobile,
+                        'email': b.customer.email,
+                    }
                 }
-            }
-            for b in bookings
-        ]
+                for b in bookings
+            ]
+        }
         return custom_response(True, "Customers for slot fetched successfully", data)
 
     @action(detail=False, methods=['get'], url_path='minimal')
