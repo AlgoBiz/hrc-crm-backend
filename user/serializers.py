@@ -392,8 +392,11 @@ class SlotBookingSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop('center_id', None)
+        center_id = validated_data.pop('center_id', None)
         booking = SlotBooking.objects.create(**validated_data)
+        if center_id:
+            booking.center_id = center_id
+            booking.save()
         return booking
 
 
