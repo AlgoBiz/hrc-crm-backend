@@ -76,9 +76,7 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
         fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'status', 'download_invoice_url']
 
     def get_download_invoice_url(self, obj):
-        if obj.status == 'paid':
-            return f'/api/invoices/{obj.id}/download/excel/'
-        return None
+        return f'/api/invoices/{obj.id}/download/excel/'
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
@@ -405,6 +403,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.name', read_only=True)
     center_name = serializers.CharField(source='center.center_name', read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
+    download_invoice_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -414,9 +413,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'center', 'center_name',
             'plan', 'plan_name',
             'amount',
-            'date', 'status', 'created_at'
+            'date', 'status', 'created_at', 'download_invoice_url'
         ]
-        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name']
+        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url']
+
+    def get_download_invoice_url(self, obj):
+        return f'/api/invoices/{obj.id}/download/excel/'
 
     def validate(self, attrs):
         customer = attrs.get('customer')
