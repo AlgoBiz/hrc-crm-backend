@@ -592,6 +592,8 @@ class AdminDashboardView(APIView):
         total_customers = Customer.objects.count()
         total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
         total_sessions = Slot.objects.count()
+        
+        # Calculate overall booking rate based on slot capacity
         total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
         total_booked = SlotBooking.objects.count()
         booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
@@ -602,12 +604,13 @@ class AdminDashboardView(APIView):
         revenue_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
         sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
         sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+        
+        # Booking rate calculations for growth
         booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
         booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
-        capacity_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).aggregate(total=Sum('total_slot'))['total'] or 0
-        capacity_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).aggregate(total=Sum('total_slot'))['total'] or 0
-        booking_rate_this_month = round((booked_this_month / capacity_this_month * 100), 2) if capacity_this_month > 0 else 0
-        booking_rate_last_month = round((booked_last_month / capacity_last_month * 100), 2) if capacity_last_month > 0 else 0
+        
+        booking_rate_this_month = round((booked_this_month / total_capacity * 100), 2) if total_capacity > 0 else 0
+        booking_rate_last_month = round((booked_last_month / total_capacity * 100), 2) if total_capacity > 0 else 0
 
         def growth(cur, prev):
             if prev == 0:
@@ -616,18 +619,18 @@ class AdminDashboardView(APIView):
 
         # Center-wise performance
         centers_data = []
+        # Get total slot capacity (shared across all centers)
+        total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
+        
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
             
-            # Get total slot capacity (all slots)
-            c_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
+            # Get total bookings for this center (all time)
+            c_total_booked = SlotBooking.objects.filter(center=center).count()
             
-            # Get bookings for this specific center
-            c_booked = SlotBooking.objects.filter(center=center).count()
-            
-            # Calculate booking rate for this center
-            c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
+            # Calculate booking rate: (Center's bookings / Total slot capacity) × 100
+            c_rate = round((c_total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
             
             centers_data.append({
                 'center_id': center.id,
@@ -635,7 +638,7 @@ class AdminDashboardView(APIView):
                 'customers': c_customers,
                 'revenue': float(c_revenue),
                 'booking_rate': c_rate,
-                'total_bookings': c_booked,
+                'total_bookings': c_total_booked,
             })
 
         # Revenue last 7 months
