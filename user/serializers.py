@@ -349,8 +349,13 @@ class SlotSerializer(serializers.ModelSerializer):
     def get_available_count(self, obj):
         request = self.context.get('request')
         booking_date = request.query_params.get('date') if request else None
+        center = request.query_params.get('center') if request else None
+        
         if booking_date:
-            booked = SlotBooking.objects.filter(slot=obj, booking_date=booking_date).count()
+            booking_filter = {'slot': obj, 'booking_date': booking_date}
+            if center:
+                booking_filter['center_id'] = center
+            booked = SlotBooking.objects.filter(**booking_filter).count()
         else:
             booked = 0
         return max(obj.total_slot - booked, 0)
