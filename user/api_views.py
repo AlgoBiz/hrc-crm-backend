@@ -619,19 +619,26 @@ class AdminDashboardView(APIView):
 
         # Center-wise performance
         centers_data = []
+        # Get total number of slots (shared across all centers)
+        total_slots_count = Slot.objects.count()
+        
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
-            c_slots = Slot.objects.filter(slot_bookings__center=center).distinct()
-            c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
+            
+            # Get total bookings for this center
             c_booked = SlotBooking.objects.filter(center=center).count()
-            c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
+            
+            # Calculate booking rate: (Center's bookings / Total number of slots) × 100
+            c_rate = round((c_booked / total_slots_count * 100), 2) if total_slots_count > 0 else 0
+            
             centers_data.append({
                 'center_id': center.id,
                 'center_name': center.center_name,
                 'customers': c_customers,
                 'revenue': float(c_revenue),
                 'booking_rate': c_rate,
+                'total_bookings': c_booked,
             })
 
         # Revenue last 7 months
