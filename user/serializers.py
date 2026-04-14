@@ -393,6 +393,7 @@ class SlotBookingSerializer(serializers.ModelSerializer):
         slot = attrs.get('slot')
         booking_date = attrs.get('booking_date')
         customer = attrs.get('customer')
+        center_id = attrs.get('center_id')
 
         if not slot:
             raise serializers.ValidationError({'slot': 'This field is required.'})
@@ -402,12 +403,16 @@ class SlotBookingSerializer(serializers.ModelSerializer):
         if not slot.is_enabled:
             raise serializers.ValidationError({'slot': 'This slot is disabled.'})
 
-        booked_count_for_date = SlotBooking.objects.filter(
-            slot=slot, booking_date=booking_date
-        ).count()
+        # Check if slot is full for this center on this date
+        booking_filter = {'slot': slot, 'booking_date': booking_date}
+        if center_id:
+            booking_filter['center_id'] = center_id
+        
+        booked_count_for_date = SlotBooking.objects.filter(**booking_filter).count()
         if booked_count_for_date >= slot.total_slot:
-            raise serializers.ValidationError({'slot': 'This slot is already full for the selected date.'})
+            raise serializers.ValidationError({'slot': 'This slot is already full for the selected date at this center.'})
 
+        # Check if customer already booked this slot on this date
         if SlotBooking.objects.filter(
             customer=customer, slot=slot, booking_date=booking_date
         ).exists():

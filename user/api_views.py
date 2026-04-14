@@ -479,8 +479,13 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         date_param = self.request.query_params.get('date')
+        center_param = self.request.query_params.get('center')
+        
         if date_param:
             qs = qs.filter(booking_date=date_param)
+        if center_param:
+            qs = qs.filter(center_id=center_param)
+        
         return qs
 
     def list(self, request, *args, **kwargs):
