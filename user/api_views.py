@@ -139,6 +139,21 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(users, many=True)
         return custom_response(True, f"Users with role '{role}' fetched successfully", serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='change-password')
+    def change_password(self, request, pk=None):
+        user = self.get_object()
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return custom_response(False, "new_password is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 6:
+            return custom_response(False, "New password must be at least 6 characters", None, status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        return custom_response(True, "Password changed successfully", None)
+
 
 # =========================================
 # CENTER VIEWSET
