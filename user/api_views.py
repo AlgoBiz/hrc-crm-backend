@@ -655,7 +655,8 @@ class AdminDashboardView(APIView):
 
         # Slot bookings last 7 months
         slot_bookings_data = []
-        total_slots_count = Slot.objects.count()  # Total number of slots
+        # Get total slot capacity (sum of all slots' total_slot)
+        total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
         
         for i in range(6, -1, -1):
             month_num = today.month - i
@@ -670,8 +671,8 @@ class AdminDashboardView(APIView):
                 booking_date__month=month_num
             ).count()
             
-            # Calculate free slots (total slots - booked)
-            free = max(total_slots_count - booked, 0)
+            # Calculate free slots (total capacity - booked)
+            free = max(total_capacity - booked, 0)
             
             slot_bookings_data.append({
                 'month': date(year, month_num, 1).strftime('%b'),
