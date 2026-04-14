@@ -686,22 +686,6 @@ class AdminDashboardView(APIView):
             for c in Customer.objects.select_related("center", "plan").order_by("-created_at")[:5]
         ]
 
-        # Slot bookings last 7 months
-        slot_bookings_data = []
-        for i in range(6, -1, -1):
-            month_num = today.month - i
-            year = today.year
-            while month_num <= 0:
-                month_num += 12
-                year -= 1
-            booked = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='Booked').count()
-            cancelled = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='cancelled').count()
-            slot_bookings_data.append({
-                'month': date(year, month_num, 1).strftime('%b'),
-                'booked': booked,
-                'cancelled': cancelled,
-            })
-
         page = int(request.query_params.get("page", 1))
         page_size = 10
 
@@ -733,7 +717,7 @@ class AdminDashboardView(APIView):
             },
             "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
-            "Slot_bookings": slot_bookings_data,
+            "slot_bookings_overview": slot_bookings_data,
             "membership_status": paginate(membership_data),
             "recent_customers": recent_customers,
         })
