@@ -564,15 +564,16 @@ class AdminDashboardView(APIView):
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
-            c_slots = Slot.objects.all()
+            c_slots = Slot.objects.filter(slot_bookings__center=center).distinct()
             c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
-            c_booked = SlotBooking.objects.filter(slot__in=c_slots).count()
+            c_booked = SlotBooking.objects.filter(center=center).count()
             c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
             centers_data.append({
                 'center_id': center.id,
                 'center_name': center.center_name,
                 'customers': c_customers,
                 'revenue': float(c_revenue),
+                'booking_rate': c_rate,
             })
 
         # Revenue last 7 months
@@ -586,6 +587,22 @@ class AdminDashboardView(APIView):
             rev = Invoice.objects.filter(date__year=year, date__month=month).aggregate(total=Sum('amount'))['total'] or 0
             revenue_labels.append(date(year, month, 1).strftime('%b'))
             revenue_values.append(float(rev))
+
+        # Slot bookings last 7 months
+        slot_bookings_data = []
+        for i in range(6, -1, -1):
+            month_num = today.month - i
+            year = today.year
+            while month_num <= 0:
+                month_num += 12
+                year -= 1
+            booked = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='Booked').count()
+            cancelled = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='cancelled').count()
+            slot_bookings_data.append({
+                'month': date(year, month_num, 1).strftime('%b'),
+                'booked': booked,
+                'cancelled': cancelled,
+            })
 
         # Membership by plan
         membership_data = [
@@ -635,6 +652,7 @@ class AdminDashboardView(APIView):
             },
             "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
+            "Slot_bookings": slot_bookings_data,
             "membership_status": paginate(membership_data),
             "recent_customers": recent_customers,
         })
