@@ -945,12 +945,16 @@ class BranchDashboardView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
+        # Get all slots
         slots = Slot.objects.all()
         total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        booked_today = SlotBooking.objects.filter(booking_date=today).count()
+        
+        # Filter bookings by center for today
+        booked_today = SlotBooking.objects.filter(booking_date=today, center_id=center_id).count()
         free_slots = total_slots - booked_today
         booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
 
+        # Most purchased plan for this center
         most_purchased = (
             Invoice.objects.filter(center=center)
             .values('plan__plan_name')
@@ -959,9 +963,14 @@ class BranchDashboardView(APIView):
             .first()
         )
 
+        # Today's slots with bookings for this center only
         today_slots = []
         for slot in slots.order_by('start_time'):
-            booking = SlotBooking.objects.filter(slot=slot, booking_date=today).select_related('customer').first()
+            booking = SlotBooking.objects.filter(
+                slot=slot, 
+                booking_date=today, 
+                center_id=center_id
+            ).select_related('customer').first()
             today_slots.append({
                 "id": slot.id,
                 "start_time": slot.start_time.strftime('%I:%M %p'),
@@ -970,6 +979,7 @@ class BranchDashboardView(APIView):
                 "customer_name": booking.customer.name if booking else None,
             })
 
+        # Recent customers for this center
         recent_customers_data = []
         for c in Customer.objects.filter(center=center).order_by('-created_at')[:5]:
             diff = (today - c.created_at.date()).days
