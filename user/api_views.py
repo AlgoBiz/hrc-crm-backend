@@ -139,6 +139,21 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(users, many=True)
         return custom_response(True, f"Users with role '{role}' fetched successfully", serializer.data)
 
+    @action(detail=True, methods=['post'], url_path='change-password')
+    def change_password(self, request, pk=None):
+        user = self.get_object()
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return custom_response(False, "new_password is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 6:
+            return custom_response(False, "New password must be at least 6 characters", None, status.HTTP_400_BAD_REQUEST)
+        
+        user.set_password(new_password)
+        user.save()
+        return custom_response(True, "Password changed successfully", None)
+
 
 # =========================================
 # CENTER VIEWSET
@@ -181,6 +196,33 @@ class CenterViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         self.get_object().delete()
         return custom_response(True, "Center deleted successfully")
+
+    @action(detail=True, methods=['post'], url_path='change-password')
+    def change_password(self, request, pk=None):
+        center = self.get_object()
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return custom_response(False, "new_password is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 6:
+            return custom_response(False, "New password must be at least 6 characters", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Find the branch user associated with this center
+        branch_user = User.objects.filter(center=center, role='branch_user').first()
+        
+        if not branch_user:
+            return custom_response(False, "No branch user found for this center", None, status.HTTP_404_NOT_FOUND)
+        
+        # Update the password
+        branch_user.set_password(new_password)
+        branch_user.save()
+        
+        return custom_response(True, f"Password changed successfully for {center.center_name}", {
+            "center_id": center.id,
+            "center_name": center.center_name,
+            "user_email": branch_user.email
+        })
 
 
 class CenterMinimalView(APIView):
@@ -306,7 +348,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
+        center = request.query_params.get('center')
         qs = Customer.objects.only('id', 'name').order_by('-id')
+        if center:
+            qs = qs.filter(center_id=center)
         data = [{'id': c.id, 'name': c.name} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
 
@@ -388,6 +433,7 @@ class SlotViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
         booking_date = request.query_params.get('date')
+        center_id = request.query_params.get('center')
         
         if not booking_date:
             return custom_response(False, "date parameter is required", None, status.HTTP_400_BAD_REQUEST)
@@ -397,8 +443,12 @@ class SlotViewSet(viewsets.ModelViewSet):
         
         available_slots = []
         for slot in slots:
-            # Count bookings for this slot on the given date
-            booked_count = SlotBooking.objects.filter(slot=slot, booking_date=booking_date).count()
+            # Count bookings for this slot on the given date (filtered by center if provided)
+            booking_filter = {'slot': slot, 'booking_date': booking_date}
+            if center_id:
+                booking_filter['center_id'] = center_id
+            
+            booked_count = SlotBooking.objects.filter(**booking_filter).count()
             
             # Calculate balance (remaining capacity)
             balance = slot.total_slot - booked_count
@@ -429,8 +479,13 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         date_param = self.request.query_params.get('date')
+        center_param = self.request.query_params.get('center')
+        
         if date_param:
             qs = qs.filter(booking_date=date_param)
+        if center_param:
+            qs = qs.filter(center_id=center_param)
+        
         return qs
 
     def list(self, request, *args, **kwargs):
@@ -537,6 +592,8 @@ class AdminDashboardView(APIView):
         total_customers = Customer.objects.count()
         total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
         total_sessions = Slot.objects.count()
+        
+        # Calculate overall booking rate based on slot capacity
         total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
         total_booked = SlotBooking.objects.count()
         booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
@@ -547,12 +604,13 @@ class AdminDashboardView(APIView):
         revenue_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
         sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
         sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
+        
+        # Booking rate calculations for growth
         booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
         booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
-        capacity_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).aggregate(total=Sum('total_slot'))['total'] or 0
-        capacity_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).aggregate(total=Sum('total_slot'))['total'] or 0
-        booking_rate_this_month = round((booked_this_month / capacity_this_month * 100), 2) if capacity_this_month > 0 else 0
-        booking_rate_last_month = round((booked_last_month / capacity_last_month * 100), 2) if capacity_last_month > 0 else 0
+        
+        booking_rate_this_month = round((booked_this_month / total_capacity * 100), 2) if total_capacity > 0 else 0
+        booking_rate_last_month = round((booked_last_month / total_capacity * 100), 2) if total_capacity > 0 else 0
 
         def growth(cur, prev):
             if prev == 0:
@@ -610,7 +668,7 @@ class AdminDashboardView(APIView):
             for p in Plan.objects.all()
         ]
 
-        # Recent customers
+        # Recent customers (limit to 5)
         recent_customers = [
             {
                 "id": c.id, "name": c.name, "mobile": c.mobile,
@@ -618,8 +676,24 @@ class AdminDashboardView(APIView):
                 "plan": c.plan.plan_name if c.plan else None,
                 "status": c.status, "joined": str(c.created_at.date()),
             }
-            for c in Customer.objects.select_related("center", "plan").order_by("-created_at")
+            for c in Customer.objects.select_related("center", "plan").order_by("-created_at")[:5]
         ]
+
+        # Slot bookings last 7 months
+        slot_bookings_data = []
+        for i in range(6, -1, -1):
+            month_num = today.month - i
+            year = today.year
+            while month_num <= 0:
+                month_num += 12
+                year -= 1
+            booked = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='Booked').count()
+            cancelled = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='cancelled').count()
+            slot_bookings_data.append({
+                'month': date(year, month_num, 1).strftime('%b'),
+                'booked': booked,
+                'cancelled': cancelled,
+            })
 
         page = int(request.query_params.get("page", 1))
         page_size = 10
@@ -908,12 +982,16 @@ class BranchDashboardView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
+        # Get all slots
         slots = Slot.objects.all()
         total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        booked_today = SlotBooking.objects.filter(booking_date=today).count()
+        
+        # Filter bookings by center for today
+        booked_today = SlotBooking.objects.filter(booking_date=today, center_id=center_id).count()
         free_slots = total_slots - booked_today
         booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
 
+        # Most purchased plan for this center
         most_purchased = (
             Invoice.objects.filter(center=center)
             .values('plan__plan_name')
@@ -922,9 +1000,14 @@ class BranchDashboardView(APIView):
             .first()
         )
 
+        # Today's slots with bookings for this center only
         today_slots = []
         for slot in slots.order_by('start_time'):
-            booking = SlotBooking.objects.filter(slot=slot, booking_date=today).select_related('customer').first()
+            booking = SlotBooking.objects.filter(
+                slot=slot, 
+                booking_date=today, 
+                center_id=center_id
+            ).select_related('customer').first()
             today_slots.append({
                 "id": slot.id,
                 "start_time": slot.start_time.strftime('%I:%M %p'),
@@ -933,8 +1016,9 @@ class BranchDashboardView(APIView):
                 "customer_name": booking.customer.name if booking else None,
             })
 
+        # Recent customers for this center
         recent_customers_data = []
-        for c in Customer.objects.filter(center=center).order_by('-created_at')[:10]:
+        for c in Customer.objects.filter(center=center).order_by('-created_at')[:5]:
             diff = (today - c.created_at.date()).days
             joined = "Today" if diff == 0 else "Yesterday" if diff == 1 else c.created_at.strftime('%d %b %Y')
             recent_customers_data.append({
