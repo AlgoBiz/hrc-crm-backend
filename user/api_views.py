@@ -601,7 +601,7 @@ class AdminDashboardView(APIView):
             for p in Plan.objects.all()
         ]
 
-        # Recent customers
+        # Recent customers (limit to 5)
         recent_customers = [
             {
                 "id": c.id, "name": c.name, "mobile": c.mobile,
@@ -609,7 +609,7 @@ class AdminDashboardView(APIView):
                 "plan": c.plan.plan_name if c.plan else None,
                 "status": c.status, "joined": str(c.created_at.date()),
             }
-            for c in Customer.objects.select_related("center", "plan").order_by("-created_at")
+            for c in Customer.objects.select_related("center", "plan").order_by("-created_at")[:5]
         ]
 
         page = int(request.query_params.get("page", 1))
@@ -924,7 +924,7 @@ class BranchDashboardView(APIView):
             })
 
         recent_customers_data = []
-        for c in Customer.objects.filter(center=center).order_by('-created_at')[:10]:
+        for c in Customer.objects.filter(center=center).order_by('-created_at')[:5]:
             diff = (today - c.created_at.date()).days
             joined = "Today" if diff == 0 else "Yesterday" if diff == 1 else c.created_at.strftime('%d %b %Y')
             recent_customers_data.append({
