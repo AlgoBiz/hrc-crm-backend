@@ -655,18 +655,28 @@ class AdminDashboardView(APIView):
 
         # Slot bookings last 7 months
         slot_bookings_data = []
+        total_slots_count = Slot.objects.count()  # Total number of slots
+        
         for i in range(6, -1, -1):
             month_num = today.month - i
             year = today.year
             while month_num <= 0:
                 month_num += 12
                 year -= 1
-            booked = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='Booked').count()
-            cancelled = SlotBooking.objects.filter(booking_date__year=year, booking_date__month=month_num, status='cancelled').count()
+            
+            # Count booked slots for this month
+            booked = SlotBooking.objects.filter(
+                booking_date__year=year, 
+                booking_date__month=month_num
+            ).count()
+            
+            # Calculate free slots (total slots - booked)
+            free = max(total_slots_count - booked, 0)
+            
             slot_bookings_data.append({
                 'month': date(year, month_num, 1).strftime('%b'),
                 'booked': booked,
-                'cancelled': cancelled,
+                'free': free,
             })
 
         # Membership by plan
