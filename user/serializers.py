@@ -70,15 +70,28 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     invoice_id = serializers.CharField(read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
     download_invoice_url = serializers.SerializerMethodField()
+    gst_applied = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
-        fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'status', 'download_invoice_url']
+        fields = ['id', 'invoice_id', 'date', 'plan_name', 'amount', 'gst_applied', 'gst_amount', 'subtotal', 'status', 'download_invoice_url']
 
     def get_download_invoice_url(self, obj):
-        if obj.status == 'paid':
-            return f'/api/invoices/{obj.id}/download/excel/'
-        return None
+        return f'/api/invoices/{obj.id}/download/excel/'
+
+    def get_gst_applied(self, obj):
+        return obj.plan.gst if obj.plan else False
+
+    def get_gst_amount(self, obj):
+        if obj.plan and obj.plan.gst:
+            return round(float(obj.amount) * 18 / 100, 2)
+        return 0.0
+
+    def get_subtotal(self, obj):
+        gst_amount = self.get_gst_amount(obj)
+        return round(float(obj.amount) + gst_amount, 2)
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
@@ -103,6 +116,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     )
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
+    last_visit = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -114,6 +128,10 @@ class CustomerSerializer(serializers.ModelSerializer):
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
+
+    def get_last_visit(self, obj):
+        latest_booking = obj.slot_bookings.order_by('-booking_date').first()
+        return latest_booking.booking_date if latest_booking else None
 
     def validate(self, attrs):
         center = attrs.get('center')
@@ -405,6 +423,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.name', read_only=True)
     center_name = serializers.CharField(source='center.center_name', read_only=True)
     plan_name = serializers.CharField(source='plan.plan_name', read_only=True)
+    download_invoice_url = serializers.SerializerMethodField()
+    gst_applied = serializers.SerializerMethodField()
+    gst_amount = serializers.SerializerMethodField()
+    subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -413,10 +435,25 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'customer', 'customer_name',
             'center', 'center_name',
             'plan', 'plan_name',
-            'amount',
-            'date', 'status', 'created_at'
+            'amount', 'gst_applied', 'gst_amount', 'subtotal',
+            'date', 'status', 'created_at', 'download_invoice_url'
         ]
-        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name']
+        read_only_fields = ['id', 'invoice_id', 'created_at', 'customer_name', 'center_name', 'plan_name', 'download_invoice_url', 'gst_applied', 'gst_amount', 'subtotal']
+
+    def get_download_invoice_url(self, obj):
+        return f'/api/invoices/{obj.id}/download/excel/'
+
+    def get_gst_applied(self, obj):
+        return obj.plan.gst if obj.plan else False
+
+    def get_gst_amount(self, obj):
+        if obj.plan and obj.plan.gst:
+            return round(float(obj.amount) * 18 / 100, 2)
+        return 0.0
+
+    def get_subtotal(self, obj):
+        gst_amount = self.get_gst_amount(obj)
+        return round(float(obj.amount) + gst_amount, 2)
 
     def validate(self, attrs):
         customer = attrs.get('customer')
