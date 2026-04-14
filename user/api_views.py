@@ -197,6 +197,33 @@ class CenterViewSet(viewsets.ModelViewSet):
         self.get_object().delete()
         return custom_response(True, "Center deleted successfully")
 
+    @action(detail=True, methods=['post'], url_path='change-password')
+    def change_password(self, request, pk=None):
+        center = self.get_object()
+        new_password = request.data.get('new_password')
+        
+        if not new_password:
+            return custom_response(False, "new_password is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        if len(new_password) < 6:
+            return custom_response(False, "New password must be at least 6 characters", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Find the branch user associated with this center
+        branch_user = User.objects.filter(center=center, role='branch_user').first()
+        
+        if not branch_user:
+            return custom_response(False, "No branch user found for this center", None, status.HTTP_404_NOT_FOUND)
+        
+        # Update the password
+        branch_user.set_password(new_password)
+        branch_user.save()
+        
+        return custom_response(True, f"Password changed successfully for {center.center_name}", {
+            "center_id": center.id,
+            "center_name": center.center_name,
+            "user_email": branch_user.email
+        })
+
 
 class CenterMinimalView(APIView):
     def get(self, request):
