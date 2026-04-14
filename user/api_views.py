@@ -619,15 +619,23 @@ class AdminDashboardView(APIView):
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
             c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
-            c_slots = Slot.objects.all()
-            c_capacity = c_slots.aggregate(total=Sum('total_slot'))['total'] or 0
-            c_booked = SlotBooking.objects.filter(slot__in=c_slots).count()
+            
+            # Get total slot capacity (all slots)
+            c_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
+            
+            # Get bookings for this specific center
+            c_booked = SlotBooking.objects.filter(center=center).count()
+            
+            # Calculate booking rate for this center
             c_rate = round((c_booked / c_capacity * 100), 2) if c_capacity > 0 else 0
+            
             centers_data.append({
                 'center_id': center.id,
                 'center_name': center.center_name,
                 'customers': c_customers,
                 'revenue': float(c_revenue),
+                'booking_rate': c_rate,
+                'total_bookings': c_booked,
             })
 
         # Revenue last 7 months
@@ -658,6 +666,34 @@ class AdminDashboardView(APIView):
             }
             for c in Customer.objects.select_related("center", "plan").order_by("-created_at")[:5]
         ]
+
+        # Slot bookings last 7 months
+        booking_labels, booked_values, free_values = [], [], []
+        for i in range(6, -1, -1):
+            month = today.month - i
+            year = today.year
+            while month <= 0:
+                month += 12
+                year -= 1
+            
+            # Get bookings for this month
+            month_bookings = SlotBooking.objects.filter(
+                booking_date__year=year, 
+                booking_date__month=month
+            ).count()
+            
+            # Get total capacity for slots created up to this month
+            month_capacity = Slot.objects.filter(
+                created_at__year__lte=year,
+                created_at__month__lte=month if year == today.year else 12
+            ).aggregate(total=Sum('total_slot'))['total'] or 0
+            
+            # Calculate free slots (capacity - booked)
+            free = max(month_capacity - month_bookings, 0)
+            
+            booking_labels.append(date(year, month, 1).strftime('%b'))
+            booked_values.append(month_bookings)
+            free_values.append(free)
 
         page = int(request.query_params.get("page", 1))
         page_size = 10
@@ -690,6 +726,11 @@ class AdminDashboardView(APIView):
             },
             "centerwise_performance": paginate(centers_data),
             "revenue_overview": {"labels": revenue_labels, "values": revenue_values},
+            "slot_bookings_overview": {
+                "labels": booking_labels, 
+                "booked": booked_values, 
+                "free": free_values
+            },
             "membership_status": paginate(membership_data),
             "recent_customers": recent_customers,
         })
