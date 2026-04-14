@@ -306,7 +306,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
+        center = request.query_params.get('center')
         qs = Customer.objects.only('id', 'name').order_by('-id')
+        if center:
+            qs = qs.filter(center_id=center)
         data = [{'id': c.id, 'name': c.name} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
 
