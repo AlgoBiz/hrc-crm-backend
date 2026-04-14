@@ -388,6 +388,7 @@ class SlotViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
         booking_date = request.query_params.get('date')
+        center_id = request.query_params.get('center')
         
         if not booking_date:
             return custom_response(False, "date parameter is required", None, status.HTTP_400_BAD_REQUEST)
@@ -397,8 +398,12 @@ class SlotViewSet(viewsets.ModelViewSet):
         
         available_slots = []
         for slot in slots:
-            # Count bookings for this slot on the given date
-            booked_count = SlotBooking.objects.filter(slot=slot, booking_date=booking_date).count()
+            # Count bookings for this slot on the given date (filtered by center if provided)
+            booking_filter = {'slot': slot, 'booking_date': booking_date}
+            if center_id:
+                booking_filter['center_id'] = center_id
+            
+            booked_count = SlotBooking.objects.filter(**booking_filter).count()
             
             # Calculate balance (remaining capacity)
             balance = slot.total_slot - booked_count
