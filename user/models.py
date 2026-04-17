@@ -52,7 +52,7 @@ class Customer(models.Model):
         ('Zayana', 'Zayana'),
         ('Prabhav', 'Prabhav'),
         ('Sexellence', 'Sexellence'),
-        ('g', 'Aanandha'),
+        ('Aanandha', 'Aanandha'),
         ('Relax', 'Relax'),
     ]
     name = models.CharField(max_length=100)
@@ -60,7 +60,7 @@ class Customer(models.Model):
     email = models.EmailField(max_length=45, blank=True, null=True)
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     plan = models.ForeignKey('Plan', on_delete=models.SET_NULL, null=True, blank=True)
-    wave = models.CharField(max_length=20, choices=WAVE_CHOICES)
+    wave = models.CharField(max_length=20, choices=WAVE_CHOICES, blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
     last_visit = models.DateField(blank=True, null=True)

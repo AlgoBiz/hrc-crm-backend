@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice
+from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice, Wave
 
 
 class LoginSerializer(serializers.Serializer):
@@ -114,20 +114,38 @@ class CustomerSerializer(serializers.ModelSerializer):
     center_id = serializers.PrimaryKeyRelatedField(
         queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
+    wave_id = serializers.SerializerMethodField()
+    wave_name = serializers.CharField(source='wave', read_only=True)
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
+
+    # Wave name to ID mapping
+    WAVE_ID_MAP = {
+        'Vikas': 15,
+        'Zayana': 16,
+        'Samriddhi': 17,
+        'Amrith': 18,
+        'Sexellence': 19,
+        'Prabhav': 20,
+        'Aanandha': 21,
+        'Relax': 23,
+    }
 
     class Meta:
         model = Customer
         fields = [
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
-            'plan', 'plan_id', 'wave',
+            'plan', 'plan_id', 
+            'wave', 'wave_id', 'wave_name',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
+
+    def get_wave_id(self, obj):
+        return self.WAVE_ID_MAP.get(obj.wave, None)
 
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
