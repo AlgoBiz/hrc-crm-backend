@@ -343,9 +343,17 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='wave-choices')
     def wave_choices(self, request):
-        from .models import Wave
-        waves = Wave.objects.all().order_by('wave_name')
-        choices = [{'id': wave.id, 'wave_name': wave.wave_name} for wave in waves]
+        # Hardcoded wave choices - no database needed
+        choices = [
+            {'id': 15, 'wave_name': 'Vikas'},
+            {'id': 16, 'wave_name': 'Zayana'},
+            {'id': 17, 'wave_name': 'Samriddhi'},
+            {'id': 18, 'wave_name': 'Amrith'},
+            {'id': 19, 'wave_name': 'Sexellence'},
+            {'id': 20, 'wave_name': 'Prabhav'},
+            {'id': 21, 'wave_name': 'Aanandha'},
+            {'id': 23, 'wave_name': 'Relax'},
+        ]
         return custom_response(True, "Wave choices fetched successfully", choices)
 
     @action(detail=False, methods=['get'], url_path='minimal')
