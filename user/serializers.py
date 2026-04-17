@@ -149,18 +149,6 @@ class CustomerSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Invalid wave_id. Must be one of: {list(self.WAVE_MAP.keys())}")
         return value
 
-    def create(self, validated_data):
-        wave_id = validated_data.pop('wave_id', None)
-        if wave_id:
-            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        wave_id = validated_data.pop('wave_id', None)
-        if wave_id:
-            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
-        return super().update(instance, validated_data)
-
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
         return latest_booking.booking_date if latest_booking else None
@@ -186,12 +174,22 @@ class CustomerSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # Handle wave_id conversion
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+        
+        # Handle plan dates
         plan = validated_data.get('plan')
         if plan:
             start = date.today()
             validated_data['start_date'] = start
             validated_data['expiry_date'] = start + relativedelta(months=plan.duration_months)
+        
+        # Create customer
         customer = Customer.objects.create(**validated_data)
+        
+        # Create invoice
         center = customer.center
         if plan and center:
             gst_amount = round(float(plan.price) * 18 / 100, 2) if plan.gst else 0.0
@@ -205,6 +203,18 @@ class CustomerSerializer(serializers.ModelSerializer):
                 status='pending',
             )
         return customer
+
+    def update(self, instance, validated_data):
+        # Handle wave_id conversion
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+        
+        # Update instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class StrictBooleanField(serializers.Field):
