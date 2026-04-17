@@ -114,22 +114,22 @@ class CustomerSerializer(serializers.ModelSerializer):
     center_id = serializers.PrimaryKeyRelatedField(
         queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
-    wave_id = serializers.SerializerMethodField()
+    wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     wave_name = serializers.CharField(source='wave', read_only=True)
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
 
-    # Wave name to ID mapping
-    WAVE_ID_MAP = {
-        'Vikas': 15,
-        'Zayana': 16,
-        'Samriddhi': 17,
-        'Amrith': 18,
-        'Sexellence': 19,
-        'Prabhav': 20,
-        'Aanandha': 21,
-        'Relax': 23,
+    # Wave ID to name mapping
+    WAVE_MAP = {
+        15: 'Vikas',
+        16: 'Zayana',
+        17: 'Samriddhi',
+        18: 'Amrith',
+        19: 'Sexellence',
+        20: 'Prabhav',
+        21: 'Aanandha',
+        23: 'Relax',
     }
 
     class Meta:
@@ -138,14 +138,28 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
             'plan', 'plan_id', 
-            'wave', 'wave_id', 'wave_name',
+            'wave_id', 'wave_name',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
 
-    def get_wave_id(self, obj):
-        return self.WAVE_ID_MAP.get(obj.wave, None)
+    def validate_wave_id(self, value):
+        if value and value not in self.WAVE_MAP:
+            raise serializers.ValidationError(f"Invalid wave_id. Must be one of: {list(self.WAVE_MAP.keys())}")
+        return value
+
+    def create(self, validated_data):
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+        return super().update(instance, validated_data)
 
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
