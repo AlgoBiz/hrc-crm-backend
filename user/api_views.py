@@ -343,10 +343,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='wave-choices')
     def wave_choices(self, request):
-        choices = [
-            {'id': idx + 1, 'wave_name': v} 
-            for idx, (k, v) in enumerate(Customer.WAVE_CHOICES)
-        ]
+        from .models import Wave
+        waves = Wave.objects.all().order_by('wave_name')
+        choices = [{'id': wave.id, 'wave_name': wave.wave_name} for wave in waves]
         return custom_response(True, "Wave choices fetched successfully", choices)
 
     @action(detail=False, methods=['get'], url_path='minimal')

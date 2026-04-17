@@ -30,6 +30,14 @@ class User(AbstractUser):
         return self.username
 
 
+class Wave(models.Model):
+    wave_name = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.wave_name
+
+
 
 class Customer(models.Model):
     STATUS_CHOICES = [
