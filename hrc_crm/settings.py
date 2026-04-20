@@ -101,8 +101,11 @@ CORS_ALLOW_HEADERS = [
     'dnt', 'origin', 'user-agent', 'x-csrftoken', 'x-requested-with',
 ]
 
-# CSRF — trust all origins
-CSRF_TRUSTED_ORIGINS = ['https://*', 'http://*']
+# CSRF
+CSRF_TRUSTED_ORIGINS = [
+    'https://crm.hrccosmos.com',
+    'http://crm.hrccosmos.com',
+]
 
 # Security (production)
 if not DEBUG:
