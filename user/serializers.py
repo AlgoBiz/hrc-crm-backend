@@ -178,17 +178,17 @@ class CustomerSerializer(serializers.ModelSerializer):
         wave_id = validated_data.pop('wave_id', None)
         if wave_id:
             validated_data['wave'] = self.WAVE_MAP.get(wave_id)
-        
+
         # Handle plan dates
         plan = validated_data.get('plan')
         if plan:
             start = date.today()
             validated_data['start_date'] = start
             validated_data['expiry_date'] = start + relativedelta(months=plan.duration_months)
-        
+
         # Create customer
         customer = Customer.objects.create(**validated_data)
-        
+
         # Create invoice
         center = customer.center
         if plan and center:
@@ -203,6 +203,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                 status='pending',
             )
         return customer
+
 
     def update(self, instance, validated_data):
         # Handle wave_id conversion

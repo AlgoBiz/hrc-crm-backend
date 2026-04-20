@@ -146,26 +146,31 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': '/var/www/hrc-crm-backend/logs/django.log',
-            'formatter': 'verbose',
-        },
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
     },
     'root': {
-        'handlers': ['file', 'console'],
+        'handlers': ['console'],
         'level': 'WARNING',
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'WARNING',
             'propagate': False,
         },
     },
 }
+
+# Add file logging only in production (when DEBUG=False)
+if not DEBUG:
+    LOGGING['handlers']['file'] = {
+        'level': 'WARNING',
+        'class': 'logging.FileHandler',
+        'filename': '/var/www/hrc-crm-backend/logs/django.log',
+        'formatter': 'verbose',
+    }
+    LOGGING['root']['handlers'].append('file')
+    LOGGING['loggers']['django']['handlers'].append('file')
