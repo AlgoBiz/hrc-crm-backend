@@ -24,7 +24,7 @@ class User(AbstractUser):
         ('super_admin', 'Super Admin'),
         ('branch_user', 'Branch User'),
     )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='branch_user')
     center = models.ForeignKey('Center', on_delete=models.SET_NULL, null=True, blank=True)
     def __str__(self):
         return self.username
