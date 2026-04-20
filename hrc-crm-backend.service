@@ -1,0 +1,29 @@
+# Systemd service for HRC CRM Backend (Gunicorn)
+# File location on server: /etc/systemd/system/hrc-crm-backend.service
+#
+# After placing the file run:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable hrc-crm-backend
+#   sudo systemctl start hrc-crm-backend
+
+[Unit]
+Description=HRC CRM Backend - Gunicorn
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/hrc-crm-backend
+EnvironmentFile=/var/www/hrc-crm-backend/.env
+ExecStart=/var/www/hrc-crm-backend/venv/bin/gunicorn \
+          --config /var/www/hrc-crm-backend/gunicorn.conf.py \
+          hrc_crm.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
