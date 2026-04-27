@@ -86,7 +86,10 @@ class LoginAPIView(APIView):
                 },
                 "redirect_to": "admin_dashboard" if user.role == "super_admin" else "branch_dashboard",
             })
-        return custom_response(False, "Invalid credentials", None, status.HTTP_400_BAD_REQUEST)
+        errors = serializer.errors
+        if 'non_field_errors' in errors:
+            errors.pop('non_field_errors')
+        return custom_response(False, "Invalid credentials", errors, status.HTTP_400_BAD_REQUEST)
 
 
 # =========================================
@@ -284,6 +287,12 @@ class PlanViewSet(viewsets.ModelViewSet):
         plan.delete()
         return custom_response(True, "Plan deleted successfully")
 
+    @action(detail=False, methods=['get'], url_path='minimal')
+    def minimal(self, request):
+        plans = Plan.objects.filter(status='active').order_by('plan_name')
+        data = [{'id': p.id, 'plan_name': p.plan_name, 'price': float(p.price), 'duration_months': p.duration_months} for p in plans]
+        return custom_response(True, "Plans fetched successfully", data)
+
 
 # =========================================
 # CUSTOMER VIEWSET
@@ -349,17 +358,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='wave-choices')
     def wave_choices(self, request):
-        # Hardcoded wave choices - no database needed
-        choices = [
-            {'id': 15, 'wave_name': 'Vikas'},
-            {'id': 16, 'wave_name': 'Zayana'},
-            {'id': 17, 'wave_name': 'Samriddhi'},
-            {'id': 18, 'wave_name': 'Amrith'},
-            {'id': 19, 'wave_name': 'Sexellence'},
-            {'id': 20, 'wave_name': 'Prabhav'},
-            {'id': 21, 'wave_name': 'Aanandha'},
-            {'id': 23, 'wave_name': 'Relax'},
-        ]
+        from .models import Wave
+        waves = Wave.objects.all().order_by('wave_name')
+        choices = [{'id': w.id, 'wave_name': w.wave_name} for w in waves]
         return custom_response(True, "Wave choices fetched successfully", choices)
 
     @action(detail=False, methods=['get'], url_path='minimal')
