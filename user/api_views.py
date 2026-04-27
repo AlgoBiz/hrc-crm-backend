@@ -59,7 +59,13 @@ class LoginAPIView(APIView):
 
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.validated_data["user"]
+            email = serializer.validated_data["email"]
+            password = serializer.validated_data["password"]
+            user = User.objects.filter(email=email).first()
+            if user is None or not user.check_password(password):
+                return custom_response(False, "Invalid email or password", None, status.HTTP_400_BAD_REQUEST)
+            if not user.is_active:
+                return custom_response(False, "User account is inactive", None, status.HTTP_400_BAD_REQUEST)
 
             if is_admin and user.role != 'super_admin':
                 return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
@@ -80,7 +86,7 @@ class LoginAPIView(APIView):
                 },
                 "redirect_to": "admin_dashboard" if user.role == "super_admin" else "branch_dashboard",
             })
-        return custom_response(False, "Invalid credentials", serializer.errors, status.HTTP_400_BAD_REQUEST)
+        return custom_response(False, "Invalid credentials", None, status.HTTP_400_BAD_REQUEST)
 
 
 # =========================================

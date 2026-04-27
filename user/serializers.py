@@ -8,15 +8,6 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-    def validate(self, attrs):
-        user = User.objects.filter(email=attrs.get("email")).first()
-        if user is None or not user.check_password(attrs.get("password")):
-            raise serializers.ValidationError("Invalid email or password")
-        if not user.is_active:
-            raise serializers.ValidationError("User account is inactive")
-        attrs["user"] = user
-        return attrs
-
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)
