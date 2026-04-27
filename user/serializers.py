@@ -106,7 +106,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    wave_name = serializers.CharField(source='wave', read_only=True)
+    wave_name = serializers.SerializerMethodField()
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
@@ -122,6 +122,9 @@ class CustomerSerializer(serializers.ModelSerializer):
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
+
+    def get_wave_name(self, obj):
+        return obj.wave if obj.wave else None
 
     def validate_wave_id(self, value):
         if value:
