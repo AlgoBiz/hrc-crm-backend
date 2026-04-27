@@ -77,6 +77,23 @@ class Customer(models.Model):
     occupation = models.CharField(max_length=50, blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def get_computed_status(self):
+        from datetime import date
+        if not self.expiry_date:
+            return self.status
+        today = date.today()
+        days_left = (self.expiry_date - today).days
+        if days_left < 0:
+            return 'expired'
+        elif days_left <= 10:
+            return 'expiring'
+        return 'active'
+
+    def save(self, *args, **kwargs):
+        self.status = self.get_computed_status()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
 

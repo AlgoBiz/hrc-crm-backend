@@ -110,6 +110,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -137,6 +138,9 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
         return latest_booking.booking_date if latest_booking else None
+
+    def get_status(self, obj):
+        return obj.get_computed_status()
 
     def validate(self, attrs):
         center = attrs.get('center')
