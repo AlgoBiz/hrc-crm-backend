@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Center(models.Model):
     STATUS_CHOICES = (
@@ -88,7 +89,7 @@ class Plan(models.Model):
 
     plan_name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    duration_months = models.IntegerField()
+    duration_months = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
     price = models.DecimalField(max_digits=10, decimal_places=2)
     gst = models.BooleanField(default=False)
     status = models.CharField(
