@@ -811,6 +811,7 @@ class SlotBookingsDashboardView(APIView):
 # =========================================
 
 class CustomerExcelDownloadView(APIView):
+    permission_classes = [AllowAny]
 
     def get(self, request, pk=None):
         import openpyxl
@@ -880,6 +881,7 @@ class CustomerExcelDownloadView(APIView):
 # =========================================
 
 class InvoiceExcelDownloadView(APIView):
+    permission_classes = [AllowAny]
 
     def get(self, request, pk=None):
         import openpyxl

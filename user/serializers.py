@@ -111,18 +111,6 @@ class CustomerSerializer(serializers.ModelSerializer):
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
 
-    # Wave ID to name mapping
-    WAVE_MAP = {
-        15: 'Vikas',
-        16: 'Zayana',
-        17: 'Samriddhi',
-        18: 'Amrith',
-        19: 'Sexellence',
-        20: 'Prabhav',
-        21: 'Aanandha',
-        23: 'Relax',
-    }
-
     class Meta:
         model = Customer
         fields = [
@@ -136,8 +124,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         ]
 
     def validate_wave_id(self, value):
-        if value and value not in self.WAVE_MAP:
-            raise serializers.ValidationError(f"Invalid wave_id. Must be one of: {list(self.WAVE_MAP.keys())}")
+        if value:
+            try:
+                Wave.objects.get(pk=value)
+            except Wave.DoesNotExist:
+                raise serializers.ValidationError(f"Invalid wave_id. Wave with id {value} does not exist.")
         return value
 
     def get_last_visit(self, obj):
@@ -168,7 +159,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         if wave_id:
-            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+            try:
+                wave = Wave.objects.get(pk=wave_id)
+                validated_data['wave'] = wave.wave_name
+            except Wave.DoesNotExist:
+                pass
 
         # Handle plan dates
         plan = validated_data.get('plan')
@@ -200,7 +195,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         if wave_id:
-            validated_data['wave'] = self.WAVE_MAP.get(wave_id)
+            try:
+                wave = Wave.objects.get(pk=wave_id)
+                validated_data['wave'] = wave.wave_name
+            except Wave.DoesNotExist:
+                pass
         
         # Update instance
         for attr, value in validated_data.items():
