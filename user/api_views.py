@@ -1229,6 +1229,7 @@ class BranchCustomerReportView(APIView):
         center_id = request.query_params.get('center_id')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
+        search = request.query_params.get('search')
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
@@ -1241,8 +1242,9 @@ class BranchCustomerReportView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
         
-        # Get customers for this branch
         customers_qs = Customer.objects.filter(center_id=center_id).select_related('plan').order_by('-created_at')
+        if search:
+            customers_qs = customers_qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
         if start_date:
             customers_qs = customers_qs.filter(created_at__date__gte=start_date)
         if end_date:
