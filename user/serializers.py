@@ -138,7 +138,9 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
-        return latest_booking.booking_date if latest_booking else None
+        if latest_booking:
+            return latest_booking.booking_date.strftime('%d/%m/%Y')
+        return None
 
     def get_status(self, obj):
         return obj.get_computed_status()

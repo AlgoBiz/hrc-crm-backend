@@ -435,7 +435,7 @@ class SlotViewSet(viewsets.ModelViewSet):
             'bookings': [
                 {
                     'booking_id': b.id,
-                    'booking_date': str(b.booking_date),
+                    'booking_date': b.booking_date.strftime('%d/%m/%Y'),
                     'status': b.status,
                     'customer': {
                         'id': b.customer.id,
@@ -711,7 +711,7 @@ class AdminDashboardView(APIView):
                 "id": c.id, "name": c.name, "mobile": c.mobile,
                 "center": c.center.center_name if c.center else None,
                 "plan": c.plan.plan_name if c.plan else None,
-                "status": c.status, "joined": str(c.created_at.date()),
+                "status": c.status, "joined": c.created_at.strftime('%d/%m/%Y'),
             }
             for c in Customer.objects.select_related("center", "plan").order_by("-created_at")[:5]
         ]
@@ -1100,10 +1100,10 @@ class CustomerReportView(APIView):
                 "email": c.email,
                 "center": c.center.center_name if c.center else None,
                 "plan": c.plan.plan_name if c.plan else None,
-                "start_date": str(c.start_date),
-                "expiry_date": str(c.expiry_date),
+                "start_date": c.start_date.strftime('%d/%m/%Y') if c.start_date else None,
+                "expiry_date": c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else None,
                 "status": c.status,
-                "joined": str(c.created_at.date()),
+                "joined": c.created_at.strftime('%d/%m/%Y'),
             }
             for c in qs
         ]
@@ -1227,7 +1227,7 @@ class BranchCustomerReportView(APIView):
                 "name": c.name,
                 "mobile": c.mobile,
                 "plan": c.plan.plan_name if c.plan else None,
-                "joined": str(c.created_at.date()),
+                "joined": c.created_at.strftime('%d/%m/%Y'),
                 "status": c.status,
             }
             for c in customers_qs
@@ -1419,7 +1419,7 @@ class AdminCustomerReportView(APIView):
                 "mobile": c.mobile,
                 "center": c.center.center_name if c.center else None,
                 "plan": c.plan.plan_name if c.plan else None,
-                "joined": str(c.created_at.date()),
+                "joined": c.created_at.strftime('%d/%m/%Y'),
                 "status": c.status,
             }
             for c in customers_qs
