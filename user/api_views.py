@@ -71,6 +71,8 @@ class LoginAPIView(APIView):
                 return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
             if is_branch and user.role != 'branch_user':
                 return custom_response(False, "Access denied. Not a branch user.", None, status.HTTP_403_FORBIDDEN)
+            if is_branch and user.center and user.center.status == 'inactive':
+                return custom_response(False, "Your branch has been deactivated. Please contact admin.", None, status.HTTP_403_FORBIDDEN)
 
             refresh = RefreshToken.for_user(user)
             return custom_response(True, "Login successful", {
