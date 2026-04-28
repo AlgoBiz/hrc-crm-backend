@@ -609,10 +609,10 @@ class AdminDashboardView(APIView):
         last_month_start = last_month_end.replace(day=1)
 
         total_customers = Customer.objects.count()
-        total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
-        total_sessions = Slot.objects.count()
-        
-        # Calculate overall booking rate based on slot capacity
+        total_invoice_amount = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+        total_sessions = SlotBooking.objects.count()
+
+        # Booking rate: today's bookings vs total slot capacity
         total_capacity = Slot.objects.aggregate(total=Sum('total_slot'))['total'] or 0
         total_booked = SlotBooking.objects.count()
         booking_rate = round((total_booked / total_capacity * 100), 2) if total_capacity > 0 else 0
@@ -621,13 +621,13 @@ class AdminDashboardView(APIView):
         customers_last_month = Customer.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
         revenue_this_month = Invoice.objects.filter(date__gte=this_month_start).aggregate(total=Sum('amount'))['total'] or 0
         revenue_last_month = Invoice.objects.filter(date__gte=last_month_start, date__lte=last_month_end).aggregate(total=Sum('amount'))['total'] or 0
-        sessions_this_month = Slot.objects.filter(created_at__date__gte=this_month_start).count()
-        sessions_last_month = Slot.objects.filter(created_at__date__gte=last_month_start, created_at__date__lte=last_month_end).count()
-        
+        sessions_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
+        sessions_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
+
         # Booking rate calculations for growth
-        booked_this_month = SlotBooking.objects.filter(booking_date__gte=this_month_start).count()
-        booked_last_month = SlotBooking.objects.filter(booking_date__gte=last_month_start, booking_date__lte=last_month_end).count()
-        
+        booked_this_month = sessions_this_month
+        booked_last_month = sessions_last_month
+
         booking_rate_this_month = round((booked_this_month / total_capacity * 100), 2) if total_capacity > 0 else 0
         booking_rate_last_month = round((booked_last_month / total_capacity * 100), 2) if total_capacity > 0 else 0
 
@@ -737,7 +737,7 @@ class AdminDashboardView(APIView):
         return custom_response(True, "Admin dashboard fetched successfully", {
             "summary": {
                 "total_customers": total_customers,
-                "total_revenue": float(total_revenue),
+                "total_invoice_amount": float(total_invoice_amount),
                 "total_sessions": total_sessions,
                 "booking_rate": booking_rate,
                 "customer_growth": growth(customers_this_month, customers_last_month),
@@ -1005,14 +1005,34 @@ class BranchDashboardView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
+        # Resolve filter date range
+        filter_type = request.query_params.get('filter')  # today, yesterday, tomorrow, custom
+        start_date_param = request.query_params.get('start_date')
+        end_date_param = request.query_params.get('end_date')
+
+        if filter_type == 'yesterday':
+            filter_start = filter_end = today - timedelta(days=1)
+        elif filter_type == 'tomorrow':
+            filter_start = filter_end = today + timedelta(days=1)
+        elif filter_type == 'custom' and start_date_param and end_date_param:
+            from datetime import datetime
+            filter_start = datetime.strptime(start_date_param, '%Y-%m-%d').date()
+            filter_end = datetime.strptime(end_date_param, '%Y-%m-%d').date()
+        else:  # default: today
+            filter_start = filter_end = today
+
         # Get all slots
         slots = Slot.objects.all()
         total_slots = slots.aggregate(total=Sum('total_slot'))['total'] or 0
-        
-        # Filter bookings by center for today
-        booked_today = SlotBooking.objects.filter(booking_date=today, center_id=center_id).count()
-        free_slots = total_slots - booked_today
-        booking_rate = round((booked_today / total_slots * 100), 1) if total_slots > 0 else 0
+
+        # Filter bookings by center and date range
+        booked_count = SlotBooking.objects.filter(
+            center_id=center_id,
+            booking_date__gte=filter_start,
+            booking_date__lte=filter_end
+        ).count()
+        free_slots = max(total_slots - booked_count, 0)
+        booking_rate = round((booked_count / total_slots * 100), 1) if total_slots > 0 else 0
 
         # Most purchased plan for this center
         most_purchased = (
@@ -1023,15 +1043,17 @@ class BranchDashboardView(APIView):
             .first()
         )
 
-        # Today's slots with bookings for this center only
-        today_slots = []
+        # Slots with bookings for the filtered date range
+        filtered_slots = []
         for slot in slots.order_by('start_time'):
-            booking = SlotBooking.objects.filter(
-                slot=slot, 
-                booking_date=today, 
-                center_id=center_id
-            ).select_related('customer').first()
-            today_slots.append({
+            bookings = SlotBooking.objects.filter(
+                slot=slot,
+                center_id=center_id,
+                booking_date__gte=filter_start,
+                booking_date__lte=filter_end,
+            ).select_related('customer')
+            booking = bookings.first()
+            filtered_slots.append({
                 "id": slot.id,
                 "start_time": slot.start_time.strftime('%I:%M %p'),
                 "end_time": slot.end_time.strftime('%I:%M %p'),
@@ -1043,7 +1065,7 @@ class BranchDashboardView(APIView):
         recent_customers_data = []
         for c in Customer.objects.filter(center=center).order_by('-created_at')[:5]:
             diff = (today - c.created_at.date()).days
-            joined = "Today" if diff == 0 else "Yesterday" if diff == 1 else c.created_at.strftime('%d %b %Y')
+            joined = "Today" if diff == 0 else "Yesterday" if diff == 1 else c.created_at.strftime('%d/%m/%Y')
             recent_customers_data.append({
                 "id": c.id,
                 "name": c.name,
@@ -1054,14 +1076,19 @@ class BranchDashboardView(APIView):
         return custom_response(True, "Branch dashboard fetched successfully", {
             "center_name": center.center_name,
             "center_email": center.email,
+            "filter": {
+                "type": filter_type or 'today',
+                "start_date": filter_start.strftime('%d/%m/%Y'),
+                "end_date": filter_end.strftime('%d/%m/%Y'),
+            },
             "stats": {
-                "slots_booked_today": booked_today,
+                "slots_booked": booked_count,
                 "total_slots": total_slots,
                 "free_slots": free_slots,
                 "booking_rate": f"{booking_rate}%",
                 "most_purchased_plan": most_purchased['plan__plan_name'] if most_purchased else None,
             },
-            "today_slots": today_slots,
+            "today_slots": filtered_slots,
             "recent_customers": recent_customers_data,
         })
 
