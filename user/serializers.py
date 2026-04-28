@@ -64,6 +64,7 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     gst_applied = serializers.SerializerMethodField()
     gst_amount = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -83,6 +84,9 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     def get_subtotal(self, obj):
         gst_amount = self.get_gst_amount(obj)
         return round(float(obj.amount) + gst_amount, 2)
+
+    def get_status(self, obj):
+        return 'paid'
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
