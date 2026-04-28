@@ -301,7 +301,7 @@ class PlanViewSet(viewsets.ModelViewSet):
 # =========================================
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    queryset = Customer.objects.all().order_by('-id')
+    queryset = Customer.objects.select_related('center', 'plan').prefetch_related('slot_bookings').all().order_by('-id')
     serializer_class = CustomerSerializer
     pagination_class = StandardPagination
 

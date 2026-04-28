@@ -107,6 +107,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     )
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     wave_name = serializers.SerializerMethodField()
+    wave = serializers.CharField(read_only=True)
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
@@ -117,8 +118,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
-            'plan', 'plan_id', 
-            'wave_id', 'wave_name',
+            'plan', 'plan_id',
+            'wave_id', 'wave_name', 'wave',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
