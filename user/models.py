@@ -85,7 +85,7 @@ class Customer(models.Model):
             return self.status
         today = date.today()
         days_left = (self.expiry_date - today).days
-        if days_left < 0:
+        if days_left <= 0:
             return 'expired'
         elif days_left <= 10:
             return 'expiring'
