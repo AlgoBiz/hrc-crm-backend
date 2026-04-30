@@ -172,9 +172,21 @@ class CustomerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
+        
+        # Also check if 'wave' was sent as a string ID (for backward compatibility)
+        if not wave_id and 'wave' in validated_data:
+            wave_value = validated_data.pop('wave')
+            # Check if it's a numeric string (external_id)
+            if wave_value and str(wave_value).isdigit():
+                wave_id = int(wave_value)
+        
         if wave_id:
             try:
-                wave = Wave.objects.get(pk=wave_id)
+                # Try to find by external_id first
+                wave = Wave.objects.filter(external_id=wave_id).first()
+                if not wave:
+                    # Fallback to primary key
+                    wave = Wave.objects.get(pk=wave_id)
                 validated_data['wave'] = wave.wave_name
             except Wave.DoesNotExist:
                 pass
@@ -208,9 +220,21 @@ class CustomerSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
+        
+        # Also check if 'wave' was sent as a string ID (for backward compatibility)
+        if not wave_id and 'wave' in validated_data:
+            wave_value = validated_data.pop('wave')
+            # Check if it's a numeric string (external_id)
+            if wave_value and str(wave_value).isdigit():
+                wave_id = int(wave_value)
+        
         if wave_id:
             try:
-                wave = Wave.objects.get(pk=wave_id)
+                # Try to find by external_id first
+                wave = Wave.objects.filter(external_id=wave_id).first()
+                if not wave:
+                    # Fallback to primary key
+                    wave = Wave.objects.get(pk=wave_id)
                 validated_data['wave'] = wave.wave_name
             except Wave.DoesNotExist:
                 pass
