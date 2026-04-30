@@ -120,6 +120,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     wave = serializers.CharField(write_only=True, required=False, allow_null=True)
     wave_name = serializers.CharField(required=False, allow_null=True)
+    wave_external_id = serializers.SerializerMethodField()
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
@@ -127,6 +128,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     start_date = serializers.SerializerMethodField()
     expiry_date = serializers.SerializerMethodField()
     dob = serializers.SerializerMethodField()
+    dob_input = serializers.DateField(write_only=True, required=False, allow_null=True, input_formats=['%Y-%m-%d', '%d/%m/%y', '%d/%m/%Y'])
     created_at = serializers.SerializerMethodField()
 
     class Meta:
@@ -135,14 +137,23 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
             'plan', 'plan_id',
-            'wave_id', 'wave', 'wave_name',
+            'wave_id', 'wave', 'wave_name', 'wave_external_id',
             'start_date', 'expiry_date', 'last_visit', 'status',
-            'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
+            'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'dob_input', 'created_at',
             'billing_history', 'sessions',
         ]
 
     def get_wave_name(self, obj):
         return obj.wave if obj.wave else None
+
+    def get_wave_external_id(self, obj):
+        if obj.wave:
+            try:
+                wave = Wave.objects.get(wave_name=obj.wave)
+                return wave.external_id
+            except Wave.DoesNotExist:
+                return None
+        return None
 
     def to_representation(self, instance):
         # Override to_representation to always show wave_name from database
@@ -151,11 +162,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         return ret
 
     def to_internal_value(self, data):
+        data = data.copy()
+        # Handle dob - copy to dob_input for processing
+        if 'dob' in data and data['dob']:
+            data['dob_input'] = data.pop('dob')
         # Handle wave_name in input
         if 'wave_name' in data:
             # Copy wave_name to wave for processing
             if 'wave' not in data and 'wave_id' not in data:
-                data = data.copy()
                 data['wave'] = data['wave_name']
         return super().to_internal_value(data)
 
@@ -175,7 +189,9 @@ class CustomerSerializer(serializers.ModelSerializer):
         return obj.expiry_date.strftime('%d/%m/%y') if obj.expiry_date else None
 
     def get_dob(self, obj):
-        return obj.dob.strftime('%d/%m/%y') if obj.dob else None
+        if obj.dob:
+            return obj.dob.strftime('%d/%m/%Y')
+        return None
 
     def get_created_at(self, obj):
         return obj.created_at.strftime('%d/%m/%y %H:%M') if obj.created_at else None
@@ -201,6 +217,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # Handle dob_input
+        if 'dob_input' in validated_data:
+            validated_data['dob'] = validated_data.pop('dob_input')
+        
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
@@ -268,6 +288,10 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
     def update(self, instance, validated_data):
+        # Handle dob_input
+        if 'dob_input' in validated_data:
+            validated_data['dob'] = validated_data.pop('dob_input')
+        
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
