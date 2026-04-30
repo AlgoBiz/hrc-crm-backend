@@ -1336,6 +1336,7 @@ class BranchSlotBookingReportView(APIView):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         search = request.query_params.get('search')
+        customer_name = request.query_params.get('customer_name')
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
@@ -1355,10 +1356,13 @@ class BranchSlotBookingReportView(APIView):
             bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
         if search:
             bookings_qs = bookings_qs.filter(customer__name__icontains=search)
+        if customer_name:
+            bookings_qs = bookings_qs.filter(customer__name__icontains=customer_name)
 
         bookings_data = [
             {
                 "booking_id": b.id,
+                "customer_name": b.customer.name,
                 "booking_date": b.booking_date.strftime('%d/%m/%Y'),
                 "slot": f"{b.slot.start_time.strftime('%I:%M %p')} - {b.slot.end_time.strftime('%I:%M %p')}",
                 "status": b.status,

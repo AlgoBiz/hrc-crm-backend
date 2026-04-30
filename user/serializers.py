@@ -385,8 +385,10 @@ class PlanSerializer(serializers.ModelSerializer):
         return value
 
     def validate_duration_months(self, value):
-        if value < 1 or value > 12:
-            raise serializers.ValidationError("Duration months must be between 1 and 12.")
+        if value > 12:
+            raise serializers.ValidationError("Cannot exceed 12.")
+        if value < 1:
+            raise serializers.ValidationError("Duration must be at least 1 month.")
         return value
 
 
