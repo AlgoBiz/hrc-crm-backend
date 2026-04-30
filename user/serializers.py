@@ -90,7 +90,7 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
         return 'paid'
 
     def get_date(self, obj):
-        return obj.date.strftime('%d/%m/%y') if obj.date else None
+        return obj.date.strftime('%d/%m/%Y') if obj.date else None
 
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
@@ -105,7 +105,7 @@ class CustomerSessionSerializer(serializers.ModelSerializer):
         return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"
 
     def get_booking_date(self, obj):
-        return obj.booking_date.strftime('%d/%m/%y') if obj.booking_date else None
+        return obj.booking_date.strftime('%d/%m/%Y') if obj.booking_date else None
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -125,6 +125,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    days_left = serializers.SerializerMethodField()
     start_date = serializers.SerializerMethodField()
     expiry_date = serializers.SerializerMethodField()
     dob = serializers.SerializerMethodField()
@@ -138,7 +139,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'center', 'center_id',
             'plan', 'plan_id',
             'wave_id', 'wave', 'wave_name', 'wave_external_id',
-            'start_date', 'expiry_date', 'last_visit', 'status',
+            'start_date', 'expiry_date', 'last_visit', 'status', 'days_left',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'dob_input', 'created_at',
             'billing_history', 'sessions',
         ]
@@ -176,17 +177,25 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
         if latest_booking:
-            return latest_booking.booking_date.strftime('%d/%m/%y')
+            return latest_booking.booking_date.strftime('%d/%m/%Y')
         return None
 
     def get_status(self, obj):
         return obj.get_computed_status()
 
+    def get_days_left(self, obj):
+        from datetime import date
+        if not obj.expiry_date:
+            return None
+        today = date.today()
+        days_left = (obj.expiry_date - today).days
+        return days_left if days_left >= 0 else 0
+
     def get_start_date(self, obj):
-        return obj.start_date.strftime('%d/%m/%y') if obj.start_date else None
+        return obj.start_date.strftime('%d/%m/%Y') if obj.start_date else None
 
     def get_expiry_date(self, obj):
-        return obj.expiry_date.strftime('%d/%m/%y') if obj.expiry_date else None
+        return obj.expiry_date.strftime('%d/%m/%Y') if obj.expiry_date else None
 
     def get_dob(self, obj):
         if obj.dob:
@@ -194,7 +203,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         return None
 
     def get_created_at(self, obj):
-        return obj.created_at.strftime('%d/%m/%y %H:%M') if obj.created_at else None
+        return obj.created_at.strftime('%d/%m/%Y %H:%M') if obj.created_at else None
 
     def validate(self, attrs):
         center = attrs.get('center')
