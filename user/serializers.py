@@ -65,6 +65,7 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     gst_amount = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -88,9 +89,13 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
     def get_status(self, obj):
         return 'paid'
 
+    def get_date(self, obj):
+        return obj.date.strftime('%d/%m/%y') if obj.date else None
+
 
 class CustomerSessionSerializer(serializers.ModelSerializer):
     slot_time = serializers.SerializerMethodField()
+    booking_date = serializers.SerializerMethodField()
 
     class Meta:
         model = SlotBooking
@@ -98,6 +103,9 @@ class CustomerSessionSerializer(serializers.ModelSerializer):
 
     def get_slot_time(self, obj):
         return f"{obj.slot.start_time.strftime('%I:%M %p')} - {obj.slot.end_time.strftime('%I:%M %p')}"
+
+    def get_booking_date(self, obj):
+        return obj.booking_date.strftime('%d/%m/%y') if obj.booking_date else None
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -110,12 +118,15 @@ class CustomerSerializer(serializers.ModelSerializer):
         queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    wave_name = serializers.SerializerMethodField()
-    wave = serializers.CharField(read_only=True)
+    wave_name = serializers.CharField(source='wave', read_only=True, allow_null=True)
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    start_date = serializers.SerializerMethodField()
+    expiry_date = serializers.SerializerMethodField()
+    dob = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -123,11 +134,23 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
             'plan', 'plan_id',
-            'wave_id', 'wave_name', 'wave',
+            'wave_id', 'wave_name',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
+
+    def get_wave_name(self, obj):
+        if obj.wave:
+            # obj.wave contains the wave name string
+            return obj.wave
+        return None
+
+    def get_wave_name(self, obj):
+        if obj.wave:
+            # obj.wave contains the wave name string
+            return obj.wave
+        return None
 
     def get_wave_name(self, obj):
         return obj.wave if obj.wave else None
@@ -135,7 +158,12 @@ class CustomerSerializer(serializers.ModelSerializer):
     def validate_wave_id(self, value):
         if value:
             try:
-                Wave.objects.get(pk=value)
+                # Try to find by external_id first
+                wave = Wave.objects.filter(external_id=value).first()
+                if not wave:
+                    # Fallback to primary key
+                    wave = Wave.objects.get(pk=value)
+                return value
             except Wave.DoesNotExist:
                 raise serializers.ValidationError(f"Invalid wave_id. Wave with id {value} does not exist.")
         return value
@@ -143,11 +171,23 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
         if latest_booking:
-            return latest_booking.booking_date.strftime('%d/%m/%Y')
+            return latest_booking.booking_date.strftime('%d/%m/%y')
         return None
 
     def get_status(self, obj):
         return obj.get_computed_status()
+
+    def get_start_date(self, obj):
+        return obj.start_date.strftime('%d/%m/%y') if obj.start_date else None
+
+    def get_expiry_date(self, obj):
+        return obj.expiry_date.strftime('%d/%m/%y') if obj.expiry_date else None
+
+    def get_dob(self, obj):
+        return obj.dob.strftime('%d/%m/%y') if obj.dob else None
+
+    def get_created_at(self, obj):
+        return obj.created_at.strftime('%d/%m/%y %H:%M') if obj.created_at else None
 
     def validate(self, attrs):
         center = attrs.get('center')
@@ -174,10 +214,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         wave_id = validated_data.pop('wave_id', None)
         
         # Also check if 'wave' was sent as a string ID (for backward compatibility)
-        if not wave_id and 'wave' in validated_data:
+        wave_value = None
+        if 'wave' in validated_data:
             wave_value = validated_data.pop('wave')
+        
+        if not wave_id and wave_value:
             # Check if it's a numeric string (external_id)
-            if wave_value and str(wave_value).isdigit():
+            if str(wave_value).isdigit():
                 wave_id = int(wave_value)
         
         if wave_id:
@@ -189,7 +232,10 @@ class CustomerSerializer(serializers.ModelSerializer):
                     wave = Wave.objects.get(pk=wave_id)
                 validated_data['wave'] = wave.wave_name
             except Wave.DoesNotExist:
-                pass
+                # Don't silently ignore - raise error
+                raise serializers.ValidationError({
+                    'wave_id': f'Wave with id {wave_id} does not exist.'
+                })
 
         # Handle plan dates
         plan = validated_data.get('plan')
@@ -222,10 +268,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         wave_id = validated_data.pop('wave_id', None)
         
         # Also check if 'wave' was sent as a string ID (for backward compatibility)
-        if not wave_id and 'wave' in validated_data:
+        wave_value = None
+        if 'wave' in validated_data:
             wave_value = validated_data.pop('wave')
+        
+        if not wave_id and wave_value:
             # Check if it's a numeric string (external_id)
-            if wave_value and str(wave_value).isdigit():
+            if str(wave_value).isdigit():
                 wave_id = int(wave_value)
         
         if wave_id:
@@ -237,7 +286,8 @@ class CustomerSerializer(serializers.ModelSerializer):
                     wave = Wave.objects.get(pk=wave_id)
                 validated_data['wave'] = wave.wave_name
             except Wave.DoesNotExist:
-                pass
+                # If wave not found, keep the original value or set to None
+                validated_data['wave'] = None
         
         # Update instance
         for attr, value in validated_data.items():

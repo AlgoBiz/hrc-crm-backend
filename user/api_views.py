@@ -371,6 +371,10 @@ class CustomerViewSet(viewsets.ModelViewSet):
         qs = Customer.objects.only('id', 'name').order_by('-id')
         if center:
             qs = qs.filter(center_id=center)
+        else:
+            # If no center specified and user is branch user, use their center
+            if hasattr(request.user, 'center') and request.user.center:
+                qs = qs.filter(center_id=request.user.center.id)
         data = [{'id': c.id, 'name': c.name} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
 
@@ -422,16 +426,16 @@ class SlotViewSet(viewsets.ModelViewSet):
     def customers(self, request, pk=None):
         slot = self.get_object()
         booking_date = request.query_params.get('date')
+        center_id = request.query_params.get('center')
+        
         bookings = SlotBooking.objects.filter(slot=slot)
         if booking_date:
             bookings = bookings.filter(booking_date=booking_date)
-        # Group bookings by center
-        center_ids = bookings.values_list('center_id', flat=True).distinct()
-        filtered_bookings = []
-        if center_ids:
-            # If there are bookings, only show customers for the first center that booked this slot on this date
-            center_id = center_ids[0]
-            filtered_bookings = bookings.filter(center_id=center_id).select_related('customer')
+        if center_id:
+            bookings = bookings.filter(center_id=center_id)
+        
+        bookings = bookings.select_related('customer')
+        
         data = {
             'slot': {
                 'id': slot.id,
@@ -451,7 +455,7 @@ class SlotViewSet(viewsets.ModelViewSet):
                         'email': b.customer.email,
                     }
                 }
-                for b in filtered_bookings
+                for b in bookings
             ]
         }
         return custom_response(True, "Customers for slot fetched successfully", data)
