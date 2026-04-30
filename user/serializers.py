@@ -118,7 +118,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         queryset=Center.objects.all(), source='center', write_only=True, required=False, allow_null=True
     )
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    wave_name = serializers.CharField(source='wave', read_only=True, allow_null=True)
+    wave = serializers.CharField(write_only=True, required=False, allow_null=True)
+    wave_name = serializers.CharField(required=False, allow_null=True)
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
     last_visit = serializers.SerializerMethodField()
@@ -134,37 +135,29 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id', 'name', 'mobile', 'email',
             'center', 'center_id',
             'plan', 'plan_id',
-            'wave_id', 'wave_name',
+            'wave_id', 'wave', 'wave_name',
             'start_date', 'expiry_date', 'last_visit', 'status',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'created_at',
             'billing_history', 'sessions',
         ]
 
     def get_wave_name(self, obj):
-        if obj.wave:
-            # obj.wave contains the wave name string
-            return obj.wave
-        return None
-
-    def get_wave_name(self, obj):
-        if obj.wave:
-            # obj.wave contains the wave name string
-            return obj.wave
-        return None
-
-    def get_wave_name(self, obj):
         return obj.wave if obj.wave else None
-        if value:
-            try:
-                # Try to find by external_id first
-                wave = Wave.objects.filter(external_id=value).first()
-                if not wave:
-                    # Fallback to primary key
-                    wave = Wave.objects.get(pk=value)
-                return value
-            except Wave.DoesNotExist:
-                raise serializers.ValidationError(f"Invalid wave_id. Wave with id {value} does not exist.")
-        return value
+
+    def to_representation(self, instance):
+        # Override to_representation to always show wave_name from database
+        ret = super().to_representation(instance)
+        ret['wave_name'] = instance.wave if instance.wave else None
+        return ret
+
+    def to_internal_value(self, data):
+        # Handle wave_name in input
+        if 'wave_name' in data:
+            # Copy wave_name to wave for processing
+            if 'wave' not in data and 'wave_id' not in data:
+                data = data.copy()
+                data['wave'] = data['wave_name']
+        return super().to_internal_value(data)
 
     def get_last_visit(self, obj):
         latest_booking = obj.slot_bookings.order_by('-booking_date').first()
@@ -211,10 +204,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
-        # Also check if 'wave' was sent
-        wave_value = None
-        if 'wave' in validated_data:
-            wave_value = validated_data.pop('wave')
+        # Also check if 'wave' or 'wave_name' was sent
+        wave_value = validated_data.pop('wave', None)
+        wave_name_value = validated_data.pop('wave_name', None)
+        
+        # Prioritize wave_name, then wave, then wave_id
+        if not wave_value and wave_name_value:
+            wave_value = wave_name_value
         
         if not wave_id and wave_value:
             # Check if it's a numeric string (external_id)
@@ -228,7 +224,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                     wave_id = None  # Already set the wave name
                 except Wave.DoesNotExist:
                     raise serializers.ValidationError({
-                        'wave': f'Wave with name "{wave_value}" does not exist.'
+                        'wave_name': f'Wave with name "{wave_value}" does not exist.'
                     })
         
         if wave_id:
@@ -275,10 +271,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
-        # Also check if 'wave' was sent
-        wave_value = None
-        if 'wave' in validated_data:
-            wave_value = validated_data.pop('wave')
+        # Also check if 'wave' or 'wave_name' was sent
+        wave_value = validated_data.pop('wave', None)
+        wave_name_value = validated_data.pop('wave_name', None)
+        
+        # Prioritize wave_name, then wave, then wave_id
+        if not wave_value and wave_name_value:
+            wave_value = wave_name_value
         
         if not wave_id and wave_value:
             # Check if it's a numeric string (external_id)
@@ -292,7 +291,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                     wave_id = None  # Already set the wave name
                 except Wave.DoesNotExist:
                     raise serializers.ValidationError({
-                        'wave': f'Wave with name "{wave_value}" does not exist.'
+                        'wave_name': f'Wave with name "{wave_value}" does not exist.'
                     })
         
         if wave_id:
