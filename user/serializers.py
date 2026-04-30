@@ -154,8 +154,6 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     def get_wave_name(self, obj):
         return obj.wave if obj.wave else None
-
-    def validate_wave_id(self, value):
         if value:
             try:
                 # Try to find by external_id first
@@ -213,7 +211,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
-        # Also check if 'wave' was sent as a string ID (for backward compatibility)
+        # Also check if 'wave' was sent
         wave_value = None
         if 'wave' in validated_data:
             wave_value = validated_data.pop('wave')
@@ -222,6 +220,16 @@ class CustomerSerializer(serializers.ModelSerializer):
             # Check if it's a numeric string (external_id)
             if str(wave_value).isdigit():
                 wave_id = int(wave_value)
+            else:
+                # It's a wave name string, look it up
+                try:
+                    wave = Wave.objects.get(wave_name=wave_value)
+                    validated_data['wave'] = wave.wave_name
+                    wave_id = None  # Already set the wave name
+                except Wave.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'wave': f'Wave with name "{wave_value}" does not exist.'
+                    })
         
         if wave_id:
             try:
@@ -267,7 +275,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle wave_id conversion
         wave_id = validated_data.pop('wave_id', None)
         
-        # Also check if 'wave' was sent as a string ID (for backward compatibility)
+        # Also check if 'wave' was sent
         wave_value = None
         if 'wave' in validated_data:
             wave_value = validated_data.pop('wave')
@@ -276,6 +284,16 @@ class CustomerSerializer(serializers.ModelSerializer):
             # Check if it's a numeric string (external_id)
             if str(wave_value).isdigit():
                 wave_id = int(wave_value)
+            else:
+                # It's a wave name string, look it up
+                try:
+                    wave = Wave.objects.get(wave_name=wave_value)
+                    validated_data['wave'] = wave.wave_name
+                    wave_id = None  # Already set the wave name
+                except Wave.DoesNotExist:
+                    raise serializers.ValidationError({
+                        'wave': f'Wave with name "{wave_value}" does not exist.'
+                    })
         
         if wave_id:
             try:
