@@ -566,7 +566,21 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         date_param = self.request.query_params.get('date')
         plan = self.request.query_params.get('plan')
         if search:
-            qs = qs.filter(Q(customer__name__icontains=search))
+            # Search by customer name or invoice ID
+            if search.upper().startswith('INV-'):
+                # Extract the numeric part from INV-XXX
+                try:
+                    invoice_num = int(search.upper().replace('INV-', ''))
+                    qs = qs.filter(id=invoice_num)
+                except ValueError:
+                    qs = qs.filter(customer__name__icontains=search)
+            else:
+                # Try to search by ID if it's numeric, otherwise search by customer name
+                try:
+                    invoice_id = int(search)
+                    qs = qs.filter(Q(id=invoice_id) | Q(customer__name__icontains=search))
+                except ValueError:
+                    qs = qs.filter(customer__name__icontains=search)
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
