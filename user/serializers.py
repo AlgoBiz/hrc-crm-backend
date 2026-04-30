@@ -537,8 +537,22 @@ class SlotSerializer(serializers.ModelSerializer):
         return max(obj.total_slot - booked, 0)
 
     def validate(self, attrs):
-        if attrs.get("start_time") and attrs.get("end_time") and attrs["start_time"] >= attrs["end_time"]:
+        start_time = attrs.get("start_time")
+        end_time = attrs.get("end_time")
+        
+        if start_time and end_time and start_time >= end_time:
             raise serializers.ValidationError("End time must be greater than start time.")
+        
+        # Check for duplicate slot times (only when creating or updating times)
+        if start_time and end_time:
+            qs = Slot.objects.filter(start_time=start_time, end_time=end_time)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    f"A slot with time {start_time.strftime('%I:%M %p')} - {end_time.strftime('%I:%M %p')} already exists."
+                )
+        
         return attrs
 
 
