@@ -384,6 +384,11 @@ class PlanSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A plan with this name already exists.")
         return value
 
+    def validate_duration_months(self, value):
+        if value < 1 or value > 12:
+            raise serializers.ValidationError("Duration months must be between 1 and 12.")
+        return value
+
 
 class CenterSerializer(serializers.ModelSerializer):
     total_customers = serializers.SerializerMethodField()
