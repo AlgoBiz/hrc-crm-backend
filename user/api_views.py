@@ -362,7 +362,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     def wave_choices(self, request):
         from .models import Wave
         waves = Wave.objects.all().order_by('wave_name')
-        choices = [{'id': w.id, 'wave_name': w.wave_name} for w in waves]
+        choices = [{'id': w.external_id if w.external_id else w.id, 'wave_name': w.wave_name} for w in waves]
         return custom_response(True, "Wave choices fetched successfully", choices)
 
     @action(detail=False, methods=['get'], url_path='minimal')

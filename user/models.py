@@ -33,6 +33,7 @@ class User(AbstractUser):
 
 class Wave(models.Model):
     wave_name = models.CharField(max_length=100, unique=True)
+    external_id = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
