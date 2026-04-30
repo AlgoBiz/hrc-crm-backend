@@ -450,6 +450,19 @@ class SlotBookingSerializer(serializers.ModelSerializer):
         if not slot.is_enabled:
             raise serializers.ValidationError({'slot': 'This slot is disabled.'})
 
+        # Validate customer can only book from their own branch
+        if customer.center:
+            if center_id and customer.center.id != center_id:
+                raise serializers.ValidationError({
+                    'customer': f'This customer belongs to {customer.center.center_name}. They can only book slots from their own branch.'
+                })
+            # If center_id not provided, use customer's center
+            if not center_id:
+                attrs['center_id'] = customer.center.id
+                center_id = customer.center.id
+        else:
+            raise serializers.ValidationError({'customer': 'Customer must be assigned to a branch before booking slots.'})
+
         # Check if slot is full for this center on this date
         booking_filter = {'slot': slot, 'booking_date': booking_date}
         if center_id:
