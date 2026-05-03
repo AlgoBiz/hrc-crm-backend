@@ -1260,7 +1260,11 @@ class BranchCustomerReportView(APIView):
         page_size = int(request.query_params.get('page_size', 10))
         
         if not center_id:
-            return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
+            # Try to get center_id from logged-in user
+            if hasattr(request.user, 'center') and request.user.center:
+                center_id = request.user.center.id
+            else:
+                return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
         
         try:
             center = Center.objects.get(pk=center_id)
@@ -1269,11 +1273,19 @@ class BranchCustomerReportView(APIView):
         
         customers_qs = Customer.objects.filter(center_id=center_id).select_related('plan').order_by('-created_at')
         if search:
-            customers_qs = customers_qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
+            customers_qs = customers_qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search) | Q(email__icontains=search))
         if start_date:
             customers_qs = customers_qs.filter(created_at__date__gte=start_date)
         if end_date:
             customers_qs = customers_qs.filter(created_at__date__lte=end_date)
+        
+        # Get total count before pagination
+        total = customers_qs.count()
+        
+        # Apply pagination to queryset
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_qs = customers_qs[start:end]
         
         customers_data = [
             {
@@ -1284,23 +1296,28 @@ class BranchCustomerReportView(APIView):
                 "joined": c.created_at.strftime('%d/%m/%Y'),
                 "status": c.status,
             }
-            for c in customers_qs
+            for c in paginated_qs
         ]
         
-        # Export to Excel
+        # Export to Excel (export all, not paginated)
         if export:
-            return self._export_excel(center.center_name, customers_data)
-        
-        # Pagination
-        total = len(customers_data)
-        start = (page - 1) * page_size
-        end = start + page_size
-        paginated = customers_data[start:end]
+            all_customers_data = [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "mobile": c.mobile,
+                    "plan": c.plan.plan_name if c.plan else None,
+                    "joined": c.created_at.strftime('%d/%m/%Y'),
+                    "status": c.status,
+                }
+                for c in customers_qs
+            ]
+            return self._export_excel(center.center_name, all_customers_data)
         
         return Response({
             "success": True,
             "message": f"Customers for {center.center_name}",
-            "data": paginated,
+            "data": customers_data,
             "pagination": {
                 "count": total,
                 "total_pages": max(1, (total + page_size - 1) // page_size),
@@ -1356,7 +1373,11 @@ class BranchSlotBookingReportView(APIView):
         page_size = int(request.query_params.get('page_size', 10))
 
         if not center_id:
-            return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
+            # Try to get center_id from logged-in user
+            if hasattr(request.user, 'center') and request.user.center:
+                center_id = request.user.center.id
+            else:
+                return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
 
         try:
             center = Center.objects.get(pk=center_id)
@@ -1369,38 +1390,55 @@ class BranchSlotBookingReportView(APIView):
         if end_date:
             bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
         if search:
-            bookings_qs = bookings_qs.filter(customer__name__icontains=search)
+            bookings_qs = bookings_qs.filter(Q(customer__name__icontains=search) | Q(customer__mobile__icontains=search))
         if customer_name:
             bookings_qs = bookings_qs.filter(customer__name__icontains=customer_name)
+
+        # Get total count before pagination
+        total = bookings_qs.count()
+        
+        # Apply pagination to queryset
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_qs = bookings_qs[start:end]
 
         bookings_data = [
             {
                 "booking_id": b.id,
+                "customer_id": b.customer.id,
                 "customer_name": b.customer.name,
+                "customer_mobile": b.customer.mobile,
+                "customer_email": b.customer.email or "",
                 "booking_date": b.booking_date.strftime('%d/%m/%Y'),
                 "slot": f"{b.slot.start_time.strftime('%I:%M %p')} - {b.slot.end_time.strftime('%I:%M %p')}",
+                "slot_id": b.slot.id,
                 "status": b.status,
-                "customer": {
-                    "id": b.customer.id,
-                    "name": b.customer.name,
-                    "mobile": b.customer.mobile,
-                    "email": b.customer.email or "",
-                },
             }
-            for b in bookings_qs
+            for b in paginated_qs
         ]
 
+        # Export to Excel (export all, not paginated)
         if export:
-            return self._export_excel(center.center_name, bookings_data)
-
-        total = len(bookings_data)
-        start = (page - 1) * page_size
-        paginated = bookings_data[start:start + page_size]
+            all_bookings_data = [
+                {
+                    "booking_id": b.id,
+                    "customer_id": b.customer.id,
+                    "customer_name": b.customer.name,
+                    "customer_mobile": b.customer.mobile,
+                    "customer_email": b.customer.email or "",
+                    "booking_date": b.booking_date.strftime('%d/%m/%Y'),
+                    "slot": f"{b.slot.start_time.strftime('%I:%M %p')} - {b.slot.end_time.strftime('%I:%M %p')}",
+                    "slot_id": b.slot.id,
+                    "status": b.status,
+                }
+                for b in bookings_qs
+            ]
+            return self._export_excel(center.center_name, all_bookings_data)
 
         return Response({
             "success": True,
             "message": f"Slot bookings for {center.center_name}",
-            "data": paginated,
+            "data": bookings_data,
             "pagination": {
                 "count": total,
                 "total_pages": max(1, (total + page_size - 1) // page_size),
@@ -1432,9 +1470,9 @@ class BranchSlotBookingReportView(APIView):
             ws.cell(row=row, column=1, value=b['booking_id'])
             ws.cell(row=row, column=2, value=b['booking_date'])
             ws.cell(row=row, column=3, value=b['slot'])
-            ws.cell(row=row, column=4, value=b['customer']['name'])
-            ws.cell(row=row, column=5, value=b['customer']['mobile'])
-            ws.cell(row=row, column=6, value=b['customer']['email'])
+            ws.cell(row=row, column=4, value=b['customer_name'])
+            ws.cell(row=row, column=5, value=b['customer_mobile'])
+            ws.cell(row=row, column=6, value=b['customer_email'])
             ws.cell(row=row, column=7, value=b['status'])
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
