@@ -10,11 +10,11 @@ from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from django.db import models
 
-from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User
+from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User, SecondaryCustomer
 from .serializers import (
     CustomerSerializer, LoginSerializer, UserSerializer,
     CenterSerializer, SlotSerializer, SlotBookingSerializer,
-    PlanSerializer, InvoiceSerializer,
+    PlanSerializer, InvoiceSerializer, SecondaryCustomerSerializer,
 )
 
 
@@ -372,11 +372,31 @@ class CustomerViewSet(viewsets.ModelViewSet):
         if center:
             qs = qs.filter(center_id=center)
         else:
-            # If no center specified and user is branch user, use their center
             if hasattr(request.user, 'center') and request.user.center:
                 qs = qs.filter(center_id=request.user.center.id)
         data = [{'id': c.id, 'name': c.name} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
+
+    @action(detail=True, methods=['get', 'post'], url_path='secondary')
+    def secondary(self, request, pk=None):
+        customer = self.get_object()
+        if request.method == 'GET':
+            serializer = SecondaryCustomerSerializer(customer.secondary_customers.all(), many=True)
+            return custom_response(True, "Secondary customers fetched successfully", serializer.data)
+        serializer = SecondaryCustomerSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(customer=customer)
+            return custom_response(True, "Secondary customer added successfully", serializer.data, status.HTTP_201_CREATED)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'], url_path='secondary/(?P<secondary_id>[^/.]+)')
+    def secondary_delete(self, request, pk=None, secondary_id=None):
+        try:
+            secondary = SecondaryCustomer.objects.get(pk=secondary_id, customer_id=pk)
+        except SecondaryCustomer.DoesNotExist:
+            return custom_response(False, "Secondary customer not found", None, status.HTTP_404_NOT_FOUND)
+        secondary.delete()
+        return custom_response(True, "Secondary customer deleted successfully")
 
 
 # =========================================
@@ -1482,7 +1502,6 @@ class BranchSlotBookingReportView(APIView):
 
 
 # ============ ADMIN REPORTS ============
-
 class AdminCustomerReportView(APIView):
     """Get customers from all branches"""
     

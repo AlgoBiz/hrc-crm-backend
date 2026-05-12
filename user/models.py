@@ -154,6 +154,17 @@ class Slot(models.Model):
         return f"{self.start_time} - {self.end_time}"
 
 
+class SecondaryCustomer(models.Model):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='secondary_customers')
+    name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=45, blank=True, null=True)
+    mobile = models.CharField(max_length=15)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} (secondary of {self.customer.name})"
+
+
 class SlotBooking(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='slot_bookings')
     slot = models.ForeignKey(Slot, on_delete=models.CASCADE, related_name='slot_bookings')

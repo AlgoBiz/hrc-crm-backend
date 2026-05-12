@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice, Wave
+from .models import Customer, User, Center, Plan, Slot, SlotBooking, Invoice, Wave, SecondaryCustomer
 
 
 class LoginSerializer(serializers.Serializer):
@@ -43,6 +43,13 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+
+
+class SecondaryCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SecondaryCustomer
+        fields = ['id', 'name', 'email', 'mobile', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
 class CustomerCenterSerializer(serializers.ModelSerializer):
@@ -123,6 +130,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     wave_external_id = serializers.SerializerMethodField()
     billing_history = CustomerInvoiceSerializer(source='invoices', many=True, read_only=True)
     sessions = CustomerSessionSerializer(source='slot_bookings', many=True, read_only=True)
+    secondary_customers = SecondaryCustomerSerializer(many=True, required=False)
     last_visit = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     days_left = serializers.SerializerMethodField()
@@ -141,7 +149,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             'wave_id', 'wave', 'wave_name', 'wave_external_id',
             'start_date', 'expiry_date', 'last_visit', 'status', 'days_left',
             'address', 'city', 'state', 'pincode', 'occupation', 'dob', 'dob_input', 'created_at',
-            'billing_history', 'sessions',
+            'billing_history', 'sessions', 'secondary_customers',
         ]
 
     def get_wave_name(self, obj):
@@ -278,7 +286,11 @@ class CustomerSerializer(serializers.ModelSerializer):
             validated_data['expiry_date'] = start + relativedelta(months=plan.duration_months)
 
         # Create customer
+        secondary_customers_data = validated_data.pop('secondary_customers', [])
         customer = Customer.objects.create(**validated_data)
+
+        for sc in secondary_customers_data:
+            SecondaryCustomer.objects.create(customer=customer, **sc)
 
         # Create invoice
         center = customer.center
@@ -339,6 +351,13 @@ class CustomerSerializer(serializers.ModelSerializer):
                 # If wave not found, keep the original value or set to None
                 validated_data['wave'] = None
         
+        # Handle secondary customers — replace existing
+        secondary_customers_data = validated_data.pop('secondary_customers', None)
+        if secondary_customers_data is not None:
+            instance.secondary_customers.all().delete()
+            for sc in secondary_customers_data:
+                SecondaryCustomer.objects.create(customer=instance, **sc)
+
         # Update instance
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
