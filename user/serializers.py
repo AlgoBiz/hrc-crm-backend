@@ -407,8 +407,8 @@ class CustomerSerializer(serializers.ModelSerializer):
         if secondary_customers_data is not None:
             instance.secondary_customers.all().delete()
             for sc_data in secondary_customers_data:
-                # Handle wave_id for secondary customer (same as main customer)
-                wave_id = sc_data.pop('wave_id', None)
+                # Handle wave_id or wave for secondary customer (same as main customer)
+                wave_id = sc_data.pop('wave_id', None) or sc_data.pop('wave', None)
                 if wave_id:
                     try:
                         wave = Wave.objects.get(pk=wave_id)
