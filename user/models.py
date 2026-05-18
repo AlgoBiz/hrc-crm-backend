@@ -160,6 +160,7 @@ class SecondaryCustomer(models.Model):
     email = models.EmailField(max_length=45, blank=True, null=True)
     mobile = models.CharField(max_length=15)
     dob = models.DateField(blank=True, null=True)
+    wave = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

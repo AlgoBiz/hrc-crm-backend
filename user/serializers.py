@@ -48,16 +48,43 @@ class UserSerializer(serializers.ModelSerializer):
 class SecondaryCustomerSerializer(serializers.ModelSerializer):
     dob_display = serializers.SerializerMethodField()
     dob = serializers.DateField(required=False, allow_null=True, input_formats=['%Y-%m-%d', '%d/%m/%y', '%d/%m/%Y'])
+    wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    wave_name = serializers.SerializerMethodField()
 
     class Meta:
         model = SecondaryCustomer
-        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_display', 'created_at']
-        read_only_fields = ['id', 'created_at', 'dob_display']
+        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_display', 'wave_id', 'wave_name', 'created_at']
+        read_only_fields = ['id', 'created_at', 'dob_display', 'wave_name']
 
     def get_dob_display(self, obj):
         if obj.dob:
             return obj.dob.strftime('%d/%m/%Y')
         return None
+
+    def get_wave_name(self, obj):
+        return obj.wave if obj.wave else None
+
+    def create(self, validated_data):
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            try:
+                from .models import Wave
+                wave = Wave.objects.get(pk=wave_id)
+                validated_data['wave'] = wave.wave_name
+            except Wave.DoesNotExist:
+                pass
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        wave_id = validated_data.pop('wave_id', None)
+        if wave_id:
+            try:
+                from .models import Wave
+                wave = Wave.objects.get(pk=wave_id)
+                validated_data['wave'] = wave.wave_name
+            except Wave.DoesNotExist:
+                pass
+        return super().update(instance, validated_data)
         return super().to_internal_value(data)
 
     def create(self, validated_data):
