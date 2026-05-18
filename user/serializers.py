@@ -85,9 +85,6 @@ class SecondaryCustomerSerializer(serializers.ModelSerializer):
             except Wave.DoesNotExist:
                 pass
         return super().update(instance, validated_data)
-        return super().to_internal_value(data)
-
-    def create(self, validated_data):
         if 'dob_input' in validated_data:
             validated_data['dob'] = validated_data.pop('dob_input')
         return super().create(validated_data)
