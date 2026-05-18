@@ -10,7 +10,7 @@ from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from django.db import models
 
-from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User, SecondaryCustomer
+from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User, SecondaryCustomer, SecondaryCustomer
 from .serializers import (
     CustomerSerializer, LoginSerializer, UserSerializer,
     CenterSerializer, SlotSerializer, SlotBookingSerializer,
@@ -389,7 +389,21 @@ class CustomerViewSet(viewsets.ModelViewSet):
             return custom_response(True, "Secondary customer added successfully", serializer.data, status.HTTP_201_CREATED)
         return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['delete'], url_path='secondary/(?P<secondary_id>[^/.]+)')
+    @action(detail=True, methods=['put', 'patch'], url_path='secondary/(?P<secondary_id>[^/.]+)')
+    def secondary_update(self, request, pk=None, secondary_id=None):
+        try:
+            secondary = SecondaryCustomer.objects.get(pk=secondary_id, customer_id=pk)
+        except SecondaryCustomer.DoesNotExist:
+            return custom_response(False, "Secondary customer not found", None, status.HTTP_404_NOT_FOUND)
+        
+        partial = request.method == 'PATCH'
+        serializer = SecondaryCustomerSerializer(secondary, data=request.data, partial=partial)
+        if serializer.is_valid():
+            serializer.save()
+            return custom_response(True, "Secondary customer updated successfully", serializer.data)
+        return custom_response(False, "Validation error", serializer.errors, status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'], url_path='secondary/(?P<secondary_id>[^/.]+)/delete')
     def secondary_delete(self, request, pk=None, secondary_id=None):
         try:
             secondary = SecondaryCustomer.objects.get(pk=secondary_id, customer_id=pk)
