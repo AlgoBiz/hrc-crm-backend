@@ -335,8 +335,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         secondary_customers_data = validated_data.pop('secondary_customers', [])
         customer = Customer.objects.create(**validated_data)
 
-        for sc in secondary_customers_data:
-            SecondaryCustomer.objects.create(customer=customer, **sc)
+        for sc_data in secondary_customers_data:
+            # Use the SecondaryCustomerSerializer to properly handle wave_id
+            sc_serializer = SecondaryCustomerSerializer(data=sc_data)
+            if sc_serializer.is_valid(raise_exception=True):
+                sc_serializer.save(customer=customer)
 
         # Create invoice
         center = customer.center
@@ -401,8 +404,11 @@ class CustomerSerializer(serializers.ModelSerializer):
         secondary_customers_data = validated_data.pop('secondary_customers', None)
         if secondary_customers_data is not None:
             instance.secondary_customers.all().delete()
-            for sc in secondary_customers_data:
-                SecondaryCustomer.objects.create(customer=instance, **sc)
+            for sc_data in secondary_customers_data:
+                # Use the SecondaryCustomerSerializer to properly handle wave_id
+                sc_serializer = SecondaryCustomerSerializer(data=sc_data)
+                if sc_serializer.is_valid(raise_exception=True):
+                    sc_serializer.save(customer=instance)
 
         # Update instance
         for attr, value in validated_data.items():
