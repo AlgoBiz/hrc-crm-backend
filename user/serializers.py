@@ -333,10 +333,15 @@ class CustomerSerializer(serializers.ModelSerializer):
         customer = Customer.objects.create(**validated_data)
 
         for sc_data in secondary_customers_data:
-            # Use the SecondaryCustomerSerializer to properly handle wave_id
-            sc_serializer = SecondaryCustomerSerializer(data=sc_data)
-            if sc_serializer.is_valid(raise_exception=True):
-                sc_serializer.save(customer=customer)
+            # Handle wave_id for secondary customer (same as main customer)
+            wave_id = sc_data.pop('wave_id', None)
+            if wave_id:
+                try:
+                    wave = Wave.objects.get(pk=wave_id)
+                    sc_data['wave'] = wave.wave_name
+                except Wave.DoesNotExist:
+                    pass
+            SecondaryCustomer.objects.create(customer=customer, **sc_data)
 
         # Create invoice
         center = customer.center
@@ -402,10 +407,15 @@ class CustomerSerializer(serializers.ModelSerializer):
         if secondary_customers_data is not None:
             instance.secondary_customers.all().delete()
             for sc_data in secondary_customers_data:
-                # Use the SecondaryCustomerSerializer to properly handle wave_id
-                sc_serializer = SecondaryCustomerSerializer(data=sc_data)
-                if sc_serializer.is_valid(raise_exception=True):
-                    sc_serializer.save(customer=instance)
+                # Handle wave_id for secondary customer (same as main customer)
+                wave_id = sc_data.pop('wave_id', None)
+                if wave_id:
+                    try:
+                        wave = Wave.objects.get(pk=wave_id)
+                        sc_data['wave'] = wave.wave_name
+                    except Wave.DoesNotExist:
+                        pass
+                SecondaryCustomer.objects.create(customer=instance, **sc_data)
 
         # Update instance
         for attr, value in validated_data.items():
