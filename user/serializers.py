@@ -118,7 +118,7 @@ class CustomerSessionSerializer(serializers.ModelSerializer):
 class CustomerSerializer(serializers.ModelSerializer):
     plan = CustomerPlanSerializer(read_only=True)
     plan_id = serializers.PrimaryKeyRelatedField(
-        queryset=Plan.objects.all(), source='plan', write_only=True
+        queryset=Plan.objects.all(), source='plan', write_only=True, required=False, allow_null=True
     )
     center = CustomerCenterSerializer(read_only=True)
     center_id = serializers.PrimaryKeyRelatedField(
