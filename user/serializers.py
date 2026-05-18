@@ -46,23 +46,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SecondaryCustomerSerializer(serializers.ModelSerializer):
-    dob = serializers.SerializerMethodField()
-    dob_input = serializers.DateField(write_only=True, required=False, allow_null=True, input_formats=['%Y-%m-%d', '%d/%m/%y', '%d/%m/%Y'])
+    dob_display = serializers.SerializerMethodField()
+    dob = serializers.DateField(required=False, allow_null=True, input_formats=['%Y-%m-%d', '%d/%m/%y', '%d/%m/%Y'])
 
     class Meta:
         model = SecondaryCustomer
-        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_input', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_display', 'created_at']
+        read_only_fields = ['id', 'created_at', 'dob_display']
 
-    def get_dob(self, obj):
+    def get_dob_display(self, obj):
         if obj.dob:
             return obj.dob.strftime('%d/%m/%Y')
         return None
-
-    def to_internal_value(self, data):
-        data = data.copy() if hasattr(data, 'copy') else dict(data)
-        if 'dob' in data and data['dob']:
-            data['dob_input'] = data.pop('dob')
         return super().to_internal_value(data)
 
     def create(self, validated_data):
