@@ -45,53 +45,93 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
+def resolve_wave(validated_data):
+    """
+    Resolves wave_id, wave, and wave_name from validated_data to determine
+    the correct wave name, and sets validated_data['wave'] = wave_name.
+    """
+    has_wave_id = 'wave_id' in validated_data
+    has_wave = 'wave' in validated_data
+    has_wave_name = 'wave_name' in validated_data
+
+    wave_id = validated_data.pop('wave_id', None)
+    wave_value = validated_data.pop('wave', None)
+    wave_name_value = validated_data.pop('wave_name', None)
+    
+    # Prioritize wave_name, then wave, then wave_id
+    if not wave_value and wave_name_value:
+        wave_value = wave_name_value
+    
+    if not wave_id and wave_value:
+        # Check if it's a numeric string (external_id or pk)
+        if str(wave_value).isdigit():
+            wave_id = int(wave_value)
+        else:
+            # It's a wave name string, look it up
+            try:
+                wave = Wave.objects.get(wave_name=wave_value)
+                validated_data['wave'] = wave.wave_name
+                return validated_data
+            except Wave.DoesNotExist:
+                raise serializers.ValidationError({
+                    'wave_name': f'Wave with name "{wave_value}" does not exist.'
+                })
+    
+    if wave_id:
+        try:
+            # Try to find by external_id first
+            wave = Wave.objects.filter(external_id=wave_id).first()
+            if not wave:
+                # Fallback to primary key
+                wave = Wave.objects.get(pk=wave_id)
+            validated_data['wave'] = wave.wave_name
+        except Wave.DoesNotExist:
+            raise serializers.ValidationError({
+                'wave_id': f'Wave with id {wave_id} does not exist.'
+            })
+    elif has_wave_id or has_wave or has_wave_name:
+        # If any of the wave fields were explicitly passed but resolved to None,
+        # set wave to None to clear it.
+        validated_data['wave'] = None
+
+    return validated_data
+
+
 class SecondaryCustomerSerializer(serializers.ModelSerializer):
     dob_display = serializers.SerializerMethodField()
     dob = serializers.DateField(required=False, allow_null=True, input_formats=['%Y-%m-%d', '%d/%m/%y', '%d/%m/%Y'])
     wave_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
-    wave_name = serializers.SerializerMethodField()
+    wave = serializers.CharField(write_only=True, required=False, allow_null=True)
+    wave_name = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = SecondaryCustomer
-        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_display', 'wave_id', 'wave_name', 'created_at']
-        read_only_fields = ['id', 'created_at', 'dob_display', 'wave_name']
+        fields = ['id', 'name', 'email', 'mobile', 'dob', 'dob_display', 'wave_id', 'wave', 'wave_name', 'created_at']
+        read_only_fields = ['id', 'created_at', 'dob_display']
 
     def get_dob_display(self, obj):
         if obj.dob:
             return obj.dob.strftime('%d/%m/%Y')
         return None
 
-    def get_wave_name(self, obj):
-        return obj.wave if obj.wave else None
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['wave_name'] = instance.wave if instance.wave else None
+        return ret
+
+    def to_internal_value(self, data):
+        data = data.copy()
+        if 'wave_name' in data:
+            if 'wave' not in data and 'wave_id' not in data:
+                data['wave'] = data['wave_name']
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
-        wave_id = validated_data.pop('wave_id', None)
-        if wave_id:
-            try:
-                from .models import Wave
-                wave = Wave.objects.get(pk=wave_id)
-                validated_data['wave'] = wave.wave_name
-            except Wave.DoesNotExist:
-                pass
+        validated_data = resolve_wave(validated_data)
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        wave_id = validated_data.pop('wave_id', None)
-        if wave_id:
-            try:
-                from .models import Wave
-                wave = Wave.objects.get(pk=wave_id)
-                validated_data['wave'] = wave.wave_name
-            except Wave.DoesNotExist:
-                pass
-        return super().update(instance, validated_data)
-        if 'dob_input' in validated_data:
-            validated_data['dob'] = validated_data.pop('dob_input')
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        if 'dob_input' in validated_data:
-            validated_data['dob'] = validated_data.pop('dob_input')
+        validated_data = resolve_wave(validated_data)
         return super().update(instance, validated_data)
 
 
@@ -281,45 +321,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         if 'dob_input' in validated_data:
             validated_data['dob'] = validated_data.pop('dob_input')
         
-        # Handle wave_id conversion
-        wave_id = validated_data.pop('wave_id', None)
-        
-        # Also check if 'wave' or 'wave_name' was sent
-        wave_value = validated_data.pop('wave', None)
-        wave_name_value = validated_data.pop('wave_name', None)
-        
-        # Prioritize wave_name, then wave, then wave_id
-        if not wave_value and wave_name_value:
-            wave_value = wave_name_value
-        
-        if not wave_id and wave_value:
-            # Check if it's a numeric string (external_id)
-            if str(wave_value).isdigit():
-                wave_id = int(wave_value)
-            else:
-                # It's a wave name string, look it up
-                try:
-                    wave = Wave.objects.get(wave_name=wave_value)
-                    validated_data['wave'] = wave.wave_name
-                    wave_id = None  # Already set the wave name
-                except Wave.DoesNotExist:
-                    raise serializers.ValidationError({
-                        'wave_name': f'Wave with name "{wave_value}" does not exist.'
-                    })
-        
-        if wave_id:
-            try:
-                # Try to find by external_id first
-                wave = Wave.objects.filter(external_id=wave_id).first()
-                if not wave:
-                    # Fallback to primary key
-                    wave = Wave.objects.get(pk=wave_id)
-                validated_data['wave'] = wave.wave_name
-            except Wave.DoesNotExist:
-                # Don't silently ignore - raise error
-                raise serializers.ValidationError({
-                    'wave_id': f'Wave with id {wave_id} does not exist.'
-                })
+        validated_data = resolve_wave(validated_data)
 
         # Handle plan dates
         plan = validated_data.get('plan')
@@ -333,14 +335,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         customer = Customer.objects.create(**validated_data)
 
         for sc_data in secondary_customers_data:
-            # Handle wave_id for secondary customer (same as main customer)
-            wave_id = sc_data.pop('wave_id', None)
-            if wave_id:
-                try:
-                    wave = Wave.objects.get(pk=wave_id)
-                    sc_data['wave'] = wave.wave_name
-                except Wave.DoesNotExist:
-                    pass
+            sc_data = resolve_wave(sc_data)
             SecondaryCustomer.objects.create(customer=customer, **sc_data)
 
         # Create invoice
@@ -364,57 +359,14 @@ class CustomerSerializer(serializers.ModelSerializer):
         if 'dob_input' in validated_data:
             validated_data['dob'] = validated_data.pop('dob_input')
         
-        # Handle wave_id conversion
-        wave_id = validated_data.pop('wave_id', None)
-        
-        # Also check if 'wave' or 'wave_name' was sent
-        wave_value = validated_data.pop('wave', None)
-        wave_name_value = validated_data.pop('wave_name', None)
-        
-        # Prioritize wave_name, then wave, then wave_id
-        if not wave_value and wave_name_value:
-            wave_value = wave_name_value
-        
-        if not wave_id and wave_value:
-            # Check if it's a numeric string (external_id)
-            if str(wave_value).isdigit():
-                wave_id = int(wave_value)
-            else:
-                # It's a wave name string, look it up
-                try:
-                    wave = Wave.objects.get(wave_name=wave_value)
-                    validated_data['wave'] = wave.wave_name
-                    wave_id = None  # Already set the wave name
-                except Wave.DoesNotExist:
-                    raise serializers.ValidationError({
-                        'wave_name': f'Wave with name "{wave_value}" does not exist.'
-                    })
-        
-        if wave_id:
-            try:
-                # Try to find by external_id first
-                wave = Wave.objects.filter(external_id=wave_id).first()
-                if not wave:
-                    # Fallback to primary key
-                    wave = Wave.objects.get(pk=wave_id)
-                validated_data['wave'] = wave.wave_name
-            except Wave.DoesNotExist:
-                # If wave not found, keep the original value or set to None
-                validated_data['wave'] = None
+        validated_data = resolve_wave(validated_data)
         
         # Handle secondary customers — replace existing
         secondary_customers_data = validated_data.pop('secondary_customers', None)
         if secondary_customers_data is not None:
             instance.secondary_customers.all().delete()
             for sc_data in secondary_customers_data:
-                # Handle wave_id or wave for secondary customer (same as main customer)
-                wave_id = sc_data.pop('wave_id', None) or sc_data.pop('wave', None)
-                if wave_id:
-                    try:
-                        wave = Wave.objects.get(pk=wave_id)
-                        sc_data['wave'] = wave.wave_name
-                    except Wave.DoesNotExist:
-                        pass
+                sc_data = resolve_wave(sc_data)
                 SecondaryCustomer.objects.create(customer=instance, **sc_data)
 
         # Update instance
