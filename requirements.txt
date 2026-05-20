@@ -2,12 +2,14 @@ argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 asgiref==3.8.1
 attrs==23.2.0
+celery==5.3.6
 certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
 crispy-bootstrap5==2024.2
 Django==5.0.7
 django-allauth==0.63.6
+django-celery-beat==2.5.0
 django-cors-headers==4.4.0
 django-crispy-forms==2.3
 django-environ==0.11.2
@@ -27,8 +29,10 @@ pillow==10.4.0
 psycopg2-binary==2.9.9
 pycparser==2.22
 PyJWT==2.10.1
+python-dateutil==2.8.2
 pytz==2024.1
 PyYAML==6.0.1
+redis==5.0.1
 referencing==0.35.1
 requests==2.32.3
 rpds-py==0.19.0

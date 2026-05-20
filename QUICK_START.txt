@@ -1,0 +1,79 @@
+╔══════════════════════════════════════════════════════════════╗
+║          HRC CRM - DEPLOYMENT QUICK START GUIDE              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📤 STEP 1: PUSH FROM LOCAL (Windows)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd c:\Users\HANIMA\OneDrive\Desktop\new_project_algobiz\HRC_CRM
+git add .
+git commit -m "Add Celery, email reminders, day-based dates"
+git push origin main
+
+
+🖥️ STEP 2: DEPLOY ON SERVER (EC2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ssh -i your-key.pem ubuntu@your-server-ip
+cd /var/www/hrc-crm-backend
+git pull origin main
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic --noinput
+sudo systemctl restart hrc-crm-backend
+
+
+🔧 STEP 3: INSTALL REDIS (First Time Only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo apt update
+sudo apt install redis-server -y
+sudo systemctl start redis
+sudo systemctl enable redis
+redis-cli ping  # Should return: PONG
+
+
+🔄 STEP 4: SETUP CELERY (First Time Only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+See PUSH_TO_SERVER.md for detailed Celery setup
+Or run the provided systemd service files
+
+
+✅ STEP 5: VERIFY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+sudo systemctl status hrc-crm-backend
+sudo systemctl status celery-worker
+sudo systemctl status celery-beat
+sudo systemctl status redis
+
+
+📧 STEP 6: SCHEDULE EMAILS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Go to: https://crm.hrccosmos.com/admin/
+Navigate to: Periodic Tasks
+Add new task:
+  - Name: Send Plan Expiry Reminders
+  - Task: user.tasks.send_expiry_reminders
+  - Interval: Every 1 day
+  - Enabled: ✅
+
+
+═══════════════════════════════════════════════════════════════
+
+📚 DETAILED GUIDES:
+  • PUSH_TO_SERVER.md - Quick deployment guide
+  • DEPLOYMENT_CHECKLIST.md - Detailed checklist
+  • CHANGES_SUMMARY.md - All changes made
+
+🔍 USEFUL COMMANDS:
+  • View logs: sudo journalctl -u hrc-crm-backend -f
+  • Restart: sudo systemctl restart hrc-crm-backend
+  • Status: sudo systemctl status hrc-crm-backend
+
+═══════════════════════════════════════════════════════════════
+
+✨ WHAT'S NEW:
+  ✅ Celery for background tasks
+  ✅ Automated email reminders (30, 15, 2 days)
+  ✅ Day-based date calculation (1 month = 30 days)
+  ✅ Test API endpoints
+
+═══════════════════════════════════════════════════════════════
