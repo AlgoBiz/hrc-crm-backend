@@ -180,3 +180,15 @@ if not DEBUG:
     }
     LOGGING['root']['handlers'].append('file')
     LOGGING['loggers']['django']['handlers'].append('file')
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'HRC CRM <noreply@hrccosmos.com>')
+
+# Project settings
+PROJECT_NAME = os.getenv('PROJECT_NAME', 'HRC CRM')
+LOGIN_URL = os.getenv('LOGIN_URL', 'https://crm.hrccosmos.com/login')

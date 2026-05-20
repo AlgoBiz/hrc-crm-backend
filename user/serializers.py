@@ -339,6 +339,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             SecondaryCustomer.objects.create(customer=customer, **sc_data)
 
         # Create invoice
+               # Create invoice
         center = customer.center
         if plan and center:
             gst_amount = round(float(plan.price) * 18 / 100, 2) if plan.gst else 0.0
@@ -351,7 +352,14 @@ class CustomerSerializer(serializers.ModelSerializer):
                 date=customer.start_date,
                 status='pending',
             )
+        
+        # Send welcome email
+        if customer.email:
+            from .utils import send_welcome_email
+            send_welcome_email(customer)
+        
         return customer
+
 
 
     def update(self, instance, validated_data):
