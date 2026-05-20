@@ -668,7 +668,14 @@ class SlotBookingSerializer(serializers.ModelSerializer):
         if center_id:
             booking.center_id = center_id
             booking.save()
+        
+        # Send booking confirmation email
+        if booking.customer.email:
+            from .utils import send_slot_booking_email
+            send_slot_booking_email(booking)
+        
         return booking
+
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
