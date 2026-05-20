@@ -156,3 +156,96 @@ Team {settings.PROJECT_NAME}
     except Exception as e:
         print(f"Error sending booking email: {str(e)}")
         return False
+
+
+
+def send_plan_expiry_reminder(customer, days_left):
+    """Send plan expiry reminder email to customer"""
+    
+    if not customer.email:
+        return False
+    
+    subject = f'Plan Expiry Reminder - {settings.PROJECT_NAME}'
+    
+    # Determine urgency message
+    if days_left == 30:
+        urgency = "in 1 month"
+        color = "#FF9800"
+    elif days_left == 7:
+        urgency = "in 1 week"
+        color = "#FF5722"
+    elif days_left == 2:
+        urgency = "in 2 days"
+        color = "#F44336"
+    else:
+        urgency = f"in {days_left} days"
+        color = "#FF9800"
+    
+    # HTML email content
+    html_message = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: {color};">Hi {customer.name},</h2>
+            <p>This is a reminder that your plan is expiring <strong>{urgency}</strong>.</p>
+            
+            <div style="background-color: #fff3cd; border-left: 4px solid {color}; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: {color};">Plan Details:</h3>
+                <p><strong>Plan:</strong> {customer.plan.plan_name if customer.plan else 'N/A'}</p>
+                <p><strong>Start Date:</strong> {customer.start_date.strftime('%d/%m/%Y') if customer.start_date else 'N/A'}</p>
+                <p><strong>Expiry Date:</strong> {customer.expiry_date.strftime('%d/%m/%Y') if customer.expiry_date else 'N/A'}</p>
+                <p><strong>Days Left:</strong> {days_left} days</p>
+            </div>
+            
+            <p style="margin-top: 30px;">
+                To continue enjoying our services, please renew your plan before it expires.
+            </p>
+            
+            <p style="margin-top: 20px;">
+                Contact us for renewal or visit your nearest center.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            
+            <p style="color: #666; font-size: 14px;">
+                Thank you,<br>
+                <strong>Team {settings.PROJECT_NAME}</strong>
+            </p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Plain text version
+    plain_message = f"""
+Hi {customer.name},
+
+This is a reminder that your plan is expiring {urgency}.
+
+Plan Details:
+Plan: {customer.plan.plan_name if customer.plan else 'N/A'}
+Start Date: {customer.start_date.strftime('%d/%m/%Y') if customer.start_date else 'N/A'}
+Expiry Date: {customer.expiry_date.strftime('%d/%m/%Y') if customer.expiry_date else 'N/A'}
+Days Left: {days_left} days
+
+To continue enjoying our services, please renew your plan before it expires.
+
+Contact us for renewal or visit your nearest center.
+
+Thank you,
+Team {settings.PROJECT_NAME}
+    """
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[customer.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        print(f"Error sending expiry reminder: {str(e)}")
+        return False
