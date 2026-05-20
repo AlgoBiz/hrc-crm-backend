@@ -1,17 +1,17 @@
 from celery import shared_task
-from django.utils import timezone
-from datetime import timedelta
+from datetime import date, timedelta
 from .models import Customer
 from .utils import send_plan_expiry_reminder
 
 
 @shared_task
 def send_expiry_reminders():
-    """Send plan expiry reminder emails"""
-    today = timezone.now().date()
+    """Send plan expiry reminder emails at 30, 15, and 2 days before expiry"""
     
-    # Days to check: 30, 7, 2
-    reminder_days = [30, 7, 2]
+    today = date.today()
+    
+    # Days to check: 30, 15, 2
+    reminder_days = [30, 15, 2]
     
     total_sent = 0
     
