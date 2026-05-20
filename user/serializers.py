@@ -377,6 +377,28 @@ class CustomerSerializer(serializers.ModelSerializer):
                 sc_data = resolve_wave(sc_data)
                 SecondaryCustomer.objects.create(customer=instance, **sc_data)
 
+        # Handle plan change - recalculate dates if plan is changed
+        new_plan = validated_data.get('plan')
+        if new_plan and new_plan != instance.plan:
+            # Plan has changed, recalculate dates
+            start = date.today()
+            validated_data['start_date'] = start
+            validated_data['expiry_date'] = start + relativedelta(months=new_plan.duration_months)
+            
+            # Create new invoice for the new plan
+            center = validated_data.get('center', instance.center)
+            if center:
+                gst_amount = round(float(new_plan.price) * 18 / 100, 2) if new_plan.gst else 0.0
+                total_amount = round(float(new_plan.price) + gst_amount, 2)
+                Invoice.objects.create(
+                    customer=instance,
+                    center=center,
+                    plan=new_plan,
+                    amount=total_amount,
+                    date=start,
+                    status='pending',
+                )
+
         # Update instance
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
