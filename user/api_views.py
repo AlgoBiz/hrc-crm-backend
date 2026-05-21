@@ -1439,6 +1439,13 @@ class BranchSlotBookingReportView(APIView):
             else:
                 util_status = 'low'
             
+            # Build download URL with date filters
+            download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}"
+            if start_date:
+                download_url += f"&start_date={start_date}"
+            if end_date:
+                download_url += f"&end_date={end_date}"
+            
             slot_data.append({
                 'slot_id': slot.id,
                 'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
@@ -1446,7 +1453,7 @@ class BranchSlotBookingReportView(APIView):
                 'total_capacity': slot.total_slot,
                 'utilization': f"{utilization}%",
                 'status': util_status,
-                'download_url': f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}"
+                'download_url': download_url
             })
 
         if export:
