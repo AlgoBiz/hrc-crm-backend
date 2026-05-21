@@ -1286,8 +1286,8 @@ class BranchCustomerReportView(APIView):
     
     def get(self, request):
         center_id = request.query_params.get('center_id')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        from_date = request.query_params.get('from_date') or request.query_params.get('start_date')
+        to_date = request.query_params.get('to_date') or request.query_params.get('end_date')
         search = request.query_params.get('search')
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
@@ -1308,10 +1308,10 @@ class BranchCustomerReportView(APIView):
         customers_qs = Customer.objects.filter(center_id=center_id).select_related('plan').order_by('-created_at')
         if search:
             customers_qs = customers_qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search) | Q(email__icontains=search))
-        if start_date:
-            customers_qs = customers_qs.filter(created_at__date__gte=start_date)
-        if end_date:
-            customers_qs = customers_qs.filter(created_at__date__lte=end_date)
+        if from_date:
+            customers_qs = customers_qs.filter(created_at__date__gte=from_date)
+        if to_date:
+            customers_qs = customers_qs.filter(created_at__date__lte=to_date)
         
         # Get total count before pagination
         total = customers_qs.count()
@@ -1394,16 +1394,15 @@ class BranchCustomerReportView(APIView):
 
 
 class BranchSlotBookingReportView(APIView):
-    """Get slot bookings summary for a specific branch"""
+    """Get slot booking statistics for a specific branch"""
 
     def get(self, request):
         center_id = request.query_params.get('center_id')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        from_date = request.query_params.get('from_date') or request.query_params.get('start_date')
+        to_date = request.query_params.get('to_date') or request.query_params.get('end_date')
         export = request.query_params.get('export') == 'true'
 
         if not center_id:
-            # Try to get center_id from logged-in user
             if hasattr(request.user, 'center') and request.user.center:
                 center_id = request.user.center.id
             else:
@@ -1414,46 +1413,42 @@ class BranchSlotBookingReportView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
-        # Filter bookings by center and date range
-        bookings_qs = SlotBooking.objects.filter(center_id=center_id).select_related('slot')
-        if start_date:
-            bookings_qs = bookings_qs.filter(booking_date__gte=start_date)
-        if end_date:
-            bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
+        # Get bookings for this center
+        bookings_qs = SlotBooking.objects.filter(center_id=center_id)
+        if from_date:
+            bookings_qs = bookings_qs.filter(booking_date__gte=from_date)
+        if to_date:
+            bookings_qs = bookings_qs.filter(booking_date__lte=to_date)
 
-        # Get all slots and calculate statistics for each
+        # Calculate slot statistics
         slot_data = []
         for slot in Slot.objects.all().order_by('start_time'):
-            total_booked = bookings_qs.filter(slot=slot).count()
-            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+            booked_count = bookings_qs.filter(slot=slot).count()
+            utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
             
-            # Determine status based on utilization
             if utilization == 100:
                 util_status = 'full'
-            elif utilization >= 85:
+            elif utilization >= 90:
                 util_status = 'high'
-            elif utilization >= 75:
+            elif utilization >= 70:
                 util_status = 'medium'
-            elif utilization >= 50:
-                util_status = 'low'
             else:
                 util_status = 'low'
             
-            # Build download URL with date filters
+            # Build download URL with date filters if present
             download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}"
-            if start_date:
-                download_url += f"&start_date={start_date}"
-            if end_date:
-                download_url += f"&end_date={end_date}"
+            if from_date:
+                download_url += f"&start_date={from_date}"
+            if to_date:
+                download_url += f"&end_date={to_date}"
             
             slot_data.append({
                 'slot_id': slot.id,
                 'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                'total_booked': total_booked,
-                'total_capacity': slot.total_slot,
+                'booked_slot_count': booked_count,
                 'utilization': f"{utilization}%",
                 'status': util_status,
-                'download_url': download_url
+                'download_url': download_url,
             })
 
         if export:
@@ -1468,12 +1463,12 @@ class BranchSlotBookingReportView(APIView):
 
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Slot Bookings"
+        ws.title = "Slot Booking Report"
 
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Slot', 'Total Booked', 'Total Capacity', 'Utilization', 'Status']
+        headers = ['Slot', 'Booked Slot Count', 'Utilization', 'Status']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.fill = header_fill
@@ -1482,13 +1477,12 @@ class BranchSlotBookingReportView(APIView):
 
         for row, s in enumerate(slot_data, 2):
             ws.cell(row=row, column=1, value=s['slot'])
-            ws.cell(row=row, column=2, value=s['total_booked'])
-            ws.cell(row=row, column=3, value=s['total_capacity'])
-            ws.cell(row=row, column=4, value=s['utilization'])
-            ws.cell(row=row, column=5, value=s['status'])
+            ws.cell(row=row, column=2, value=s['booked_slot_count'])
+            ws.cell(row=row, column=3, value=s['utilization'])
+            ws.cell(row=row, column=4, value=s['status'])
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="branch_slot_bookings_{center_name}.xlsx"'
+        response['Content-Disposition'] = f'attachment; filename="branch_slot_booking_report_{center_name}.xlsx"'
         wb.save(response)
         return response
 
