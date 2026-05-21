@@ -1305,13 +1305,17 @@ class BranchCustomerReportView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
         
-        customers_qs = Customer.objects.filter(center_id=center_id).select_related('plan').order_by('-created_at')
+        customers_qs = Customer.objects.filter(center_id=center_id).select_related('plan', 'center').order_by('-created_at')
         if search:
             customers_qs = customers_qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search) | Q(email__icontains=search))
         if from_date:
             customers_qs = customers_qs.filter(created_at__date__gte=from_date)
         if to_date:
             customers_qs = customers_qs.filter(created_at__date__lte=to_date)
+        
+        # Export to Excel (export all, not paginated)
+        if export:
+            return self._export_excel(center, customers_qs)
         
         # Get total count before pagination
         total = customers_qs.count()
@@ -1333,21 +1337,6 @@ class BranchCustomerReportView(APIView):
             for c in paginated_qs
         ]
         
-        # Export to Excel (export all, not paginated)
-        if export:
-            all_customers_data = [
-                {
-                    "id": c.id,
-                    "name": c.name,
-                    "mobile": c.mobile,
-                    "plan": c.plan.plan_name if c.plan else None,
-                    "joined": c.created_at.strftime('%d/%m/%Y'),
-                    "status": c.status,
-                }
-                for c in customers_qs
-            ]
-            return self._export_excel(center.center_name, all_customers_data)
-        
         return Response({
             "success": True,
             "message": f"Customers for {center.center_name}",
@@ -1360,7 +1349,7 @@ class BranchCustomerReportView(APIView):
             }
         })
     
-    def _export_excel(self, center_name, customers_data):
+    def _export_excel(self, center, customers_qs):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
         from django.http import HttpResponse
@@ -1372,23 +1361,33 @@ class BranchCustomerReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
         
-        headers = ['ID', 'Name', 'Mobile', 'Plan', 'Joined', 'Status']
+        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status', 'Joined']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
         
-        for row, c in enumerate(customers_data, 2):
-            ws.cell(row=row, column=1, value=c['id'])
-            ws.cell(row=row, column=2, value=c['name'])
-            ws.cell(row=row, column=3, value=c['mobile'])
-            ws.cell(row=row, column=4, value=c['plan'] or '')
-            ws.cell(row=row, column=5, value=c['joined'])
-            ws.cell(row=row, column=6, value=c['status'])
+        for row, c in enumerate(customers_qs, 2):
+            ws.cell(row=row, column=1, value=c.id)
+            ws.cell(row=row, column=2, value=c.name)
+            ws.cell(row=row, column=3, value=c.mobile)
+            ws.cell(row=row, column=4, value=c.email or '')
+            ws.cell(row=row, column=5, value=c.center.center_name if c.center else '')
+            ws.cell(row=row, column=6, value=c.plan.plan_name if c.plan else '')
+            ws.cell(row=row, column=7, value=c.wave or '')
+            ws.cell(row=row, column=8, value=c.start_date.strftime('%d/%m/%Y') if c.start_date else '')
+            ws.cell(row=row, column=9, value=c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else '')
+            ws.cell(row=row, column=10, value=c.status)
+            ws.cell(row=row, column=11, value=c.created_at.strftime('%d/%m/%Y'))
+        
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_len + 4
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="branch_customers_{center_name}.xlsx"'
+        response['Content-Disposition'] = f'attachment; filename="branch_customers_{center.center_name}.xlsx"'
         wb.save(response)
         return response
 
