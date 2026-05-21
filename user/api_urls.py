@@ -22,6 +22,7 @@ from .api_views import (
     AdminSlotBookingReportView,
     BranchCustomerReportView,
     BranchSlotBookingReportView,
+    BranchSlotBookingDetailView,
     CustomerLookupByPhoneView,
     TestExpiryReminderView,
 )
@@ -48,6 +49,7 @@ urlpatterns = [
     path('reports/admin/slot-bookings/', AdminSlotBookingReportView.as_view(), name='admin_slot_booking_report'),
     path('reports/branch/customers/', BranchCustomerReportView.as_view(), name='branch_customer_report'),
     path('reports/branch/slot-bookings/', BranchSlotBookingReportView.as_view(), name='branch_slot_booking_report'),
+    path('reports/branch/slot-bookings/<int:slot_id>/download/', BranchSlotBookingDetailView.as_view(), name='branch_slot_booking_detail'),
     path('invoices/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download'),
     path('invoices/<int:pk>/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download_single'),
     path('customers/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download'),

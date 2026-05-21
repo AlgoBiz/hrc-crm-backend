@@ -1446,6 +1446,7 @@ class BranchSlotBookingReportView(APIView):
                 'total_capacity': slot.total_slot,
                 'utilization': f"{utilization}%",
                 'status': util_status,
+                'download_url': f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}"
             })
 
         if export:
@@ -1481,6 +1482,99 @@ class BranchSlotBookingReportView(APIView):
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="branch_slot_bookings_{center_name}.xlsx"'
+        wb.save(response)
+        return response
+
+
+class BranchSlotBookingDetailView(APIView):
+    """Download individual slot booking details for a specific branch"""
+
+    def get(self, request, slot_id):
+        center_id = request.query_params.get('center_id')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if not center_id:
+            if hasattr(request.user, 'center') and request.user.center:
+                center_id = request.user.center.id
+            else:
+                return custom_response(False, "center_id is required", None, status.HTTP_400_BAD_REQUEST)
+
+        try:
+            center = Center.objects.get(pk=center_id)
+            slot = Slot.objects.get(pk=slot_id)
+        except Center.DoesNotExist:
+            return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
+        except Slot.DoesNotExist:
+            return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
+
+        # Get bookings for this slot and center
+        bookings_qs = SlotBooking.objects.filter(
+            center_id=center_id,
+            slot_id=slot_id
+        ).select_related('customer', 'slot').order_by('-booking_date')
+
+        if start_date:
+            bookings_qs = bookings_qs.filter(booking_date__gte=start_date)
+        if end_date:
+            bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
+
+        return self._export_slot_excel(center, slot, bookings_qs)
+
+    def _export_slot_excel(self, center, slot, bookings_qs):
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Slot Bookings"
+
+        # Add title
+        ws.merge_cells('A1:G1')
+        title_cell = ws['A1']
+        title_cell.value = f"Slot Bookings - {slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center')
+
+        # Add center info
+        ws.merge_cells('A2:G2')
+        center_cell = ws['A2']
+        center_cell.value = f"Branch: {center.center_name}"
+        center_cell.font = Font(bold=True)
+        center_cell.alignment = Alignment(horizontal='center')
+
+        # Headers
+        header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF')
+
+        headers = ['Booking ID', 'Customer Name', 'Mobile', 'Email', 'Booking Date', 'Status', 'Wave']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=4, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        # Data rows
+        for row, booking in enumerate(bookings_qs, 5):
+            ws.cell(row=row, column=1, value=booking.id)
+            ws.cell(row=row, column=2, value=booking.customer.name)
+            ws.cell(row=row, column=3, value=booking.customer.mobile)
+            ws.cell(row=row, column=4, value=booking.customer.email or '')
+            ws.cell(row=row, column=5, value=booking.booking_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=6, value=booking.status)
+            ws.cell(row=row, column=7, value=booking.customer.wave or '')
+
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+
+        slot_time = f"{slot.start_time.strftime('%I%M%p')}-{slot.end_time.strftime('%I%M%p')}"
+        filename = f"slot_bookings_{center.center_name}_{slot_time}.xlsx"
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         wb.save(response)
         return response
 
