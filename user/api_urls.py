@@ -24,6 +24,7 @@ from .api_views import (
     BranchSlotBookingReportView,
     BranchSlotBookingDetailView,
     CustomerLookupByPhoneView,
+    PublicSlotBookingView,
     TestExpiryReminderView,
 )
 
@@ -41,6 +42,7 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('centers/minimal/', CenterMinimalView.as_view(), name='center_minimal'),
     path('customer/lookup/', CustomerLookupByPhoneView.as_view(), name='customer_lookup_by_phone'),
+    path('customer/book-slot/', PublicSlotBookingView.as_view(), name='public_slot_booking'),
     path('dashboard/admin/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('dashboard/branch/', BranchDashboardView.as_view(), name='branch_dashboard'),
     path('admin/change-password/', ChangePasswordView.as_view(), name='change_password'),

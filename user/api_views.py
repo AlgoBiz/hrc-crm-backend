@@ -1763,6 +1763,97 @@ class CustomerLookupByPhoneView(APIView):
         return custom_response(True, message, response_data)
 
 
+class PublicSlotBookingView(APIView):
+    """Book a slot without authentication using phone number"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from datetime import datetime
+        
+        phone = request.query_params.get('phone')
+        slot_id = request.data.get('slot_id')
+        booking_date = request.data.get('date')
+        
+        if not phone:
+            return custom_response(False, "phone parameter is required in URL", None, status.HTTP_400_BAD_REQUEST)
+        if not slot_id:
+            return custom_response(False, "slot_id is required", None, status.HTTP_400_BAD_REQUEST)
+        if not booking_date:
+            return custom_response(False, "date is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Parse date string to date object
+        try:
+            if isinstance(booking_date, str):
+                booking_date_obj = datetime.strptime(booking_date, '%Y-%m-%d').date()
+            else:
+                booking_date_obj = booking_date
+        except ValueError:
+            return custom_response(False, "Invalid date format. Use YYYY-MM-DD", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Find customer by phone
+        try:
+            customer = Customer.objects.select_related('center').get(mobile=phone)
+        except Customer.DoesNotExist:
+            return custom_response(False, "Customer not found with this phone number", None, status.HTTP_404_NOT_FOUND)
+        except Customer.MultipleObjectsReturned:
+            customer = Customer.objects.select_related('center').filter(mobile=phone).first()
+        
+        # Validate customer has a branch
+        if not customer.center:
+            return custom_response(False, "Customer is not assigned to any branch", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Find slot
+        try:
+            slot = Slot.objects.get(pk=slot_id)
+        except Slot.DoesNotExist:
+            return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
+        
+        # Validate slot is enabled
+        if not slot.is_enabled:
+            return custom_response(False, "This slot is disabled", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Check if slot is full
+        booked_count = SlotBooking.objects.filter(
+            slot=slot,
+            booking_date=booking_date_obj,
+            center_id=customer.center.id
+        ).count()
+        
+        if booked_count >= slot.total_slot:
+            return custom_response(False, "This slot is already full for the selected date", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Check if customer already booked this slot
+        if SlotBooking.objects.filter(
+            customer=customer,
+            slot=slot,
+            booking_date=booking_date_obj
+        ).exists():
+            return custom_response(False, "You have already booked this slot for this date", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Create booking
+        booking = SlotBooking.objects.create(
+            customer=customer,
+            slot=slot,
+            center=customer.center,
+            booking_date=booking_date_obj,
+            status='Booked'
+        )
+        
+        # Send confirmation email
+        if customer.email:
+            from .utils import send_slot_booking_email
+            send_slot_booking_email(booking)
+        
+        return custom_response(True, "Slot booked successfully", {
+            'booking_id': booking.id,
+            'customer_name': customer.name,
+            'slot_time': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+            'booking_date': booking.booking_date.strftime('%d/%m/%Y'),
+            'center': customer.center.center_name,
+            'status': booking.status,
+        }, status.HTTP_201_CREATED)
+
+
 # =========================================
 # TEST EXPIRY REMINDER EMAIL API
 # =========================================
