@@ -1605,6 +1605,99 @@ class AdminCustomerReportView(APIView):
         return response
 
 
+# =========================================
+# CUSTOMER LOOKUP BY PHONE API
+# =========================================
+
+class CustomerLookupByPhoneView(APIView):
+    """Find customer by phone number and get their branch with available slots"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        phone = request.query_params.get('phone')
+        booking_date = request.query_params.get('date')
+        
+        if not phone:
+            return custom_response(False, "phone parameter is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Find customer by phone number
+        try:
+            customer = Customer.objects.select_related('center', 'plan').get(mobile=phone)
+        except Customer.DoesNotExist:
+            return custom_response(False, "Customer not found with this phone number", None, status.HTTP_404_NOT_FOUND)
+        except Customer.MultipleObjectsReturned:
+            # If multiple customers with same phone, get the first active one
+            customer = Customer.objects.select_related('center', 'plan').filter(mobile=phone).first()
+        
+        # Get customer's branch
+        if not customer.center:
+            return custom_response(False, "Customer is not assigned to any branch", None, status.HTTP_404_NOT_FOUND)
+        
+        center = customer.center
+        
+        # Prepare customer data
+        customer_data = {
+            'id': customer.id,
+            'name': customer.name,
+            'mobile': customer.mobile,
+            'email': customer.email,
+            'status': customer.get_computed_status(),
+            'plan': customer.plan.plan_name if customer.plan else None,
+            'wave': customer.wave,
+        }
+        
+        # Prepare branch data
+        branch_data = {
+            'id': center.id,
+            'center_name': center.center_name,
+            'location': center.location,
+            'mobile': center.mobile,
+            'email': center.email,
+        }
+        
+        # Get available slots
+        available_slots = []
+        if booking_date:
+            # Get all enabled slots
+            slots = Slot.objects.filter(is_enabled=True).order_by('start_time')
+            
+            for slot in slots:
+                # Count bookings for this slot on the given date at this center
+                booked_count = SlotBooking.objects.filter(
+                    slot=slot,
+                    booking_date=booking_date,
+                    center_id=center.id
+                ).count()
+                
+                # Calculate balance (remaining capacity)
+                balance = slot.total_slot - booked_count
+                
+                # Only include slots that have available capacity
+                if balance > 0:
+                    available_slots.append({
+                        'id': slot.id,
+                        'start_time': slot.start_time.strftime('%I:%M %p'),
+                        'end_time': slot.end_time.strftime('%I:%M %p'),
+                        'slot_time': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                        'total_slot': slot.total_slot,
+                        'booked_slot': booked_count,
+                        'balance_slot': balance,
+                    })
+        
+        response_data = {
+            'customer': customer_data,
+            'branch': branch_data,
+            'available_slots': available_slots,
+            'booking_date': booking_date if booking_date else None,
+        }
+        
+        message = f"Customer found in {center.center_name}"
+        if booking_date:
+            message += f" with {len(available_slots)} available slots on {booking_date}"
+        
+        return custom_response(True, message, response_data)
+
+
 class AdminSlotBookingReportView(APIView):
     """Get slot bookings from all branches"""
     
