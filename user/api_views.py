@@ -1394,17 +1394,13 @@ class BranchCustomerReportView(APIView):
 
 
 class BranchSlotBookingReportView(APIView):
-    """Get slot bookings for a specific branch"""
+    """Get slot bookings summary for a specific branch"""
 
     def get(self, request):
         center_id = request.query_params.get('center_id')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
-        search = request.query_params.get('search')
-        customer_name = request.query_params.get('customer_name')
         export = request.query_params.get('export') == 'true'
-        page = int(request.query_params.get('page', 1))
-        page_size = int(request.query_params.get('page_size', 10))
 
         if not center_id:
             # Try to get center_id from logged-in user
@@ -1418,70 +1414,46 @@ class BranchSlotBookingReportView(APIView):
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
 
-        bookings_qs = SlotBooking.objects.filter(center_id=center_id).select_related('slot', 'customer').order_by('-booking_date')
+        # Filter bookings by center and date range
+        bookings_qs = SlotBooking.objects.filter(center_id=center_id).select_related('slot')
         if start_date:
             bookings_qs = bookings_qs.filter(booking_date__gte=start_date)
         if end_date:
             bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
-        if search:
-            bookings_qs = bookings_qs.filter(Q(customer__name__icontains=search) | Q(customer__mobile__icontains=search))
-        if customer_name:
-            bookings_qs = bookings_qs.filter(customer__name__icontains=customer_name)
 
-        # Get total count before pagination
-        total = bookings_qs.count()
-        
-        # Apply pagination to queryset
-        start = (page - 1) * page_size
-        end = start + page_size
-        paginated_qs = bookings_qs[start:end]
+        # Get all slots and calculate statistics for each
+        slot_data = []
+        for slot in Slot.objects.all().order_by('start_time'):
+            total_booked = bookings_qs.filter(slot=slot).count()
+            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+            
+            # Determine status based on utilization
+            if utilization == 100:
+                util_status = 'full'
+            elif utilization >= 85:
+                util_status = 'high'
+            elif utilization >= 75:
+                util_status = 'medium'
+            elif utilization >= 50:
+                util_status = 'low'
+            else:
+                util_status = 'low'
+            
+            slot_data.append({
+                'slot_id': slot.id,
+                'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                'total_booked': total_booked,
+                'total_capacity': slot.total_slot,
+                'utilization': f"{utilization}%",
+                'status': util_status,
+            })
 
-        bookings_data = [
-            {
-                "booking_id": b.id,
-                "customer_id": b.customer.id,
-                "customer_name": b.customer.name,
-                "customer_mobile": b.customer.mobile,
-                "customer_email": b.customer.email or "",
-                "booking_date": b.booking_date.strftime('%d/%m/%Y'),
-                "slot": f"{b.slot.start_time.strftime('%I:%M %p')} - {b.slot.end_time.strftime('%I:%M %p')}",
-                "slot_id": b.slot.id,
-                "status": b.status,
-            }
-            for b in paginated_qs
-        ]
-
-        # Export to Excel (export all, not paginated)
         if export:
-            all_bookings_data = [
-                {
-                    "booking_id": b.id,
-                    "customer_id": b.customer.id,
-                    "customer_name": b.customer.name,
-                    "customer_mobile": b.customer.mobile,
-                    "customer_email": b.customer.email or "",
-                    "booking_date": b.booking_date.strftime('%d/%m/%Y'),
-                    "slot": f"{b.slot.start_time.strftime('%I:%M %p')} - {b.slot.end_time.strftime('%I:%M %p')}",
-                    "slot_id": b.slot.id,
-                    "status": b.status,
-                }
-                for b in bookings_qs
-            ]
-            return self._export_excel(center.center_name, all_bookings_data)
+            return self._export_excel(center.center_name, slot_data)
 
-        return Response({
-            "success": True,
-            "message": f"Slot bookings for {center.center_name}",
-            "data": bookings_data,
-            "pagination": {
-                "count": total,
-                "total_pages": max(1, (total + page_size - 1) // page_size),
-                "current_page": page,
-                "page_size": page_size,
-            }
-        })
+        return custom_response(True, f"Slot booking report for {center.center_name}", slot_data)
 
-    def _export_excel(self, center_name, bookings_data):
+    def _export_excel(self, center_name, slot_data):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
         from django.http import HttpResponse
@@ -1493,21 +1465,19 @@ class BranchSlotBookingReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Booking ID', 'Booking Date', 'Slot', 'Customer Name', 'Mobile', 'Email', 'Status']
+        headers = ['Slot', 'Total Booked', 'Total Capacity', 'Utilization', 'Status']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
 
-        for row, b in enumerate(bookings_data, 2):
-            ws.cell(row=row, column=1, value=b['booking_id'])
-            ws.cell(row=row, column=2, value=b['booking_date'])
-            ws.cell(row=row, column=3, value=b['slot'])
-            ws.cell(row=row, column=4, value=b['customer_name'])
-            ws.cell(row=row, column=5, value=b['customer_mobile'])
-            ws.cell(row=row, column=6, value=b['customer_email'])
-            ws.cell(row=row, column=7, value=b['status'])
+        for row, s in enumerate(slot_data, 2):
+            ws.cell(row=row, column=1, value=s['slot'])
+            ws.cell(row=row, column=2, value=s['total_booked'])
+            ws.cell(row=row, column=3, value=s['total_capacity'])
+            ws.cell(row=row, column=4, value=s['utilization'])
+            ws.cell(row=row, column=5, value=s['status'])
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="branch_slot_bookings_{center_name}.xlsx"'
