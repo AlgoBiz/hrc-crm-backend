@@ -1828,7 +1828,7 @@ class PublicSlotBookingView(APIView):
             slot=slot,
             booking_date=booking_date_obj
         ).exists():
-            return custom_response(False, "You have already booked this slot for this date", None, status.HTTP_400_BAD_REQUEST)
+            return custom_response(False, "Slot is already booked", None, status.HTTP_400_BAD_REQUEST)
         
         # Create booking
         booking = SlotBooking.objects.create(
