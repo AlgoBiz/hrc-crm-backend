@@ -323,12 +323,15 @@ class CustomerSerializer(serializers.ModelSerializer):
         
         validated_data = resolve_wave(validated_data)
 
-        # Handle plan dates
+        # Handle plan dates - Calculate 1 month = 30 days exactly
         plan = validated_data.get('plan')
         if plan:
+            from datetime import timedelta
             start = date.today()
             validated_data['start_date'] = start
-            validated_data['expiry_date'] = start + relativedelta(months=plan.duration_months)
+            # Calculate expiry: 1 month = 30 days, 2 months = 60 days, etc.
+            total_days = plan.duration_months * 30
+            validated_data['expiry_date'] = start + timedelta(days=total_days)
 
         # Create customer
         secondary_customers_data = validated_data.pop('secondary_customers', [])
@@ -380,10 +383,13 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Handle plan change - recalculate dates if plan is changed
         new_plan = validated_data.get('plan')
         if new_plan and new_plan != instance.plan:
-            # Plan has changed, recalculate dates
+            # Plan has changed, recalculate dates - 1 month = 30 days exactly
+            from datetime import timedelta
             start = date.today()
             validated_data['start_date'] = start
-            validated_data['expiry_date'] = start + relativedelta(months=new_plan.duration_months)
+            # Calculate expiry: 1 month = 30 days, 2 months = 60 days, etc.
+            total_days = new_plan.duration_months * 30
+            validated_data['expiry_date'] = start + timedelta(days=total_days)
             
             # Create new invoice for the new plan
             center = validated_data.get('center', instance.center)

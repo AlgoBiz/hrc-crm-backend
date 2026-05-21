@@ -6,12 +6,12 @@ from .utils import send_plan_expiry_reminder
 
 @shared_task
 def send_expiry_reminders():
-    """Send plan expiry reminder emails at 30, 15, and 2 days before expiry"""
+    """Send plan expiry reminder emails at 30, 15, 7, and 2 days before expiry"""
     
     today = date.today()
     
-    # Days to check: 30, 15, 2
-    reminder_days = [30, 15, 2]
+    # Days to check: 30, 15, 7, 2
+    reminder_days = [30, 15, 7, 2]
     
     total_sent = 0
     

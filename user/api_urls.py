@@ -23,6 +23,7 @@ from .api_views import (
     BranchCustomerReportView,
     BranchSlotBookingReportView,
     CustomerLookupByPhoneView,
+    TestExpiryReminderView,
 )
 
 router = DefaultRouter()
@@ -51,5 +52,6 @@ urlpatterns = [
     path('invoices/<int:pk>/download/excel/', InvoiceExcelDownloadView.as_view(), name='invoice_excel_download_single'),
     path('customers/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download'),
     path('customers/<int:pk>/download/excel/', CustomerExcelDownloadView.as_view(), name='customer_excel_download_single'),
+    path('test/expiry-reminder/', TestExpiryReminderView.as_view(), name='test_expiry_reminder'),
     path('', include(router.urls)),
 ]

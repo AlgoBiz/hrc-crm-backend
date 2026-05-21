@@ -11,8 +11,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         today = timezone.now().date()
         
-        # Days to check: 30, 7, 2
-        reminder_days = [30, 7, 2]
+        # Days to check: 30, 15, 7, 2
+        reminder_days = [30, 15, 7, 2]
         
         total_sent = 0
         

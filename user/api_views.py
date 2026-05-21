@@ -1698,6 +1698,49 @@ class CustomerLookupByPhoneView(APIView):
         return custom_response(True, message, response_data)
 
 
+# =========================================
+# TEST EXPIRY REMINDER EMAIL API
+# =========================================
+
+class TestExpiryReminderView(APIView):
+    """Test endpoint to send expiry reminder email to a specific customer"""
+    
+    def post(self, request):
+        from .utils import send_plan_expiry_reminder
+        
+        customer_id = request.data.get('customer_id')
+        days_left = request.data.get('days_left', 30)
+        
+        if not customer_id:
+            return custom_response(False, "customer_id is required", None, status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            customer = Customer.objects.select_related('plan').get(pk=customer_id)
+        except Customer.DoesNotExist:
+            return custom_response(False, "Customer not found", None, status.HTTP_404_NOT_FOUND)
+        
+        if not customer.email:
+            return custom_response(False, "Customer has no email address", None, status.HTTP_400_BAD_REQUEST)
+        
+        if not customer.plan:
+            return custom_response(False, "Customer has no plan assigned", None, status.HTTP_400_BAD_REQUEST)
+        
+        # Send test reminder
+        success = send_plan_expiry_reminder(customer, days_left)
+        
+        if success:
+            return custom_response(True, f"Test reminder email sent successfully to {customer.email}", {
+                "customer_id": customer.id,
+                "customer_name": customer.name,
+                "customer_email": customer.email,
+                "plan": customer.plan.plan_name,
+                "days_left": days_left,
+                "expiry_date": customer.expiry_date.strftime('%d/%m/%Y') if customer.expiry_date else None
+            })
+        else:
+            return custom_response(False, "Failed to send email. Check email configuration.", None, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class AdminSlotBookingReportView(APIView):
     """Get slot bookings from all branches"""
     
