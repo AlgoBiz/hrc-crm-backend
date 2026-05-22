@@ -1261,6 +1261,7 @@ class CustomerReportView(APIView):
 class SlotBookingReportView(APIView):
 
     def get(self, request):
+        from datetime import datetime
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         export = request.query_params.get('export') == 'true'
@@ -1270,11 +1271,24 @@ class SlotBookingReportView(APIView):
             booking_qs = booking_qs.filter(booking_date__gte=start_date)
         if end_date:
             booking_qs = booking_qs.filter(booking_date__lte=end_date)
+        
+        # Calculate number of days in the date range
+        if start_date and end_date:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date() if isinstance(start_date, str) else start_date
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date() if isinstance(end_date, str) else end_date
+            num_days = (end_date_obj - start_date_obj).days + 1
+        else:
+            num_days = 1
 
         slot_data = []
         for slot in Slot.objects.all():
             total_booked = booking_qs.filter(slot=slot).count()
-            utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+            
+            # Calculate total available seats: slot capacity × number of days
+            total_available_seats = slot.total_slot * num_days
+            
+            # Calculate utilization: (total booked seats / total available seats) × 100
+            utilization = round((total_booked / total_available_seats * 100), 1) if total_available_seats > 0 else 0
             if utilization == 100:
                 util_status = 'full'
             elif utilization >= 90:
@@ -1288,6 +1302,8 @@ class SlotBookingReportView(APIView):
                 'slot_time': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                 'total_booked': total_booked,
                 'total_capacity': slot.total_slot,
+                'total_available_seats': total_available_seats,
+                'num_days': num_days,
                 'utilization': f"{utilization}%",
                 'status': util_status,
             })
@@ -1439,6 +1455,7 @@ class BranchSlotBookingReportView(APIView):
     """Get slot booking statistics for a specific branch"""
 
     def get(self, request):
+        from datetime import datetime
         center_id = request.query_params.get('center_id')
         # Support multiple date parameter names
         from_date = (request.query_params.get('date_from') or 
@@ -1466,6 +1483,14 @@ class BranchSlotBookingReportView(APIView):
             bookings_qs = bookings_qs.filter(booking_date__gte=from_date)
         if to_date:
             bookings_qs = bookings_qs.filter(booking_date__lte=to_date)
+        
+        # Calculate number of days in the date range
+        if from_date and to_date:
+            start_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
+            end_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
+            num_days = (end_date_obj - start_date_obj).days + 1
+        else:
+            num_days = 1
 
         # Calculate slot statistics
         slot_data = []
@@ -1474,11 +1499,11 @@ class BranchSlotBookingReportView(APIView):
             booked_count = slot_bookings_for_slot.count()
             
             if booked_count > 0:  # Only show slots with bookings
-                # Calculate utilization: (total booked / slot capacity) × 100
-                utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+                # Calculate total available seats: slot capacity × number of days
+                total_available_seats = slot.total_slot * num_days
                 
-                # Cap utilization at 100%
-                utilization = min(utilization, 100.0)
+                # Calculate utilization: (total booked seats / total available seats) × 100
+                utilization = round((booked_count / total_available_seats * 100), 1) if total_available_seats > 0 else 0
                 
                 if utilization == 100:
                     util_status = 'full'
@@ -1500,6 +1525,8 @@ class BranchSlotBookingReportView(APIView):
                     'slot_id': slot.id,
                     'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                     'booked_slot_count': booked_count,
+                    'total_available_seats': total_available_seats,
+                    'num_days': num_days,
                     'utilization': f"{utilization}%",
                     'status': util_status,
                     'download_url': download_url,
@@ -1964,6 +1991,7 @@ class AdminSlotBookingReportView(APIView):
     """Get slot bookings from all branches"""
     
     def get(self, request):
+        from datetime import datetime
         center_id = request.query_params.get('center')
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -1980,6 +2008,14 @@ class AdminSlotBookingReportView(APIView):
         if end_date:
             bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
         
+        # Calculate number of days in the date range
+        if start_date and end_date:
+            start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date() if isinstance(start_date, str) else start_date
+            end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date() if isinstance(end_date, str) else end_date
+            num_days = (end_date_obj - start_date_obj).days + 1
+        else:
+            num_days = 1
+        
         # Group slot bookings by slot
         slot_bookings_data = []
         slots = Slot.objects.all().order_by('start_time')
@@ -1989,11 +2025,11 @@ class AdminSlotBookingReportView(APIView):
             total_booked = slot_bookings.count()
             
             if total_booked > 0:  # Only show slots with bookings
-                # Calculate utilization: (total booked / slot capacity) × 100
-                utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+                # Calculate total available seats: slot capacity × number of days
+                total_available_seats = slot.total_slot * num_days
                 
-                # Cap utilization at 100%
-                utilization = min(utilization, 100.0)
+                # Calculate utilization: (total booked seats / total available seats) × 100
+                utilization = round((total_booked / total_available_seats * 100), 1) if total_available_seats > 0 else 0
                 
                 if utilization == 100:
                     util_status = 'full'
@@ -2021,6 +2057,8 @@ class AdminSlotBookingReportView(APIView):
                     "slot": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                     "total_booked": total_booked,
                     "total_capacity": slot.total_slot,
+                    "total_available_seats": total_available_seats,
+                    "num_days": num_days,
                     "utilization": f"{utilization}%",
                     "status": util_status,
                     "download_url": download_url,
