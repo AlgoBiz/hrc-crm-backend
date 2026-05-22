@@ -1289,8 +1289,13 @@ class BranchCustomerReportView(APIView):
     
     def get(self, request):
         center_id = request.query_params.get('center_id')
-        from_date = request.query_params.get('from_date') or request.query_params.get('start_date')
-        to_date = request.query_params.get('to_date') or request.query_params.get('end_date')
+        # Support multiple date parameter names
+        from_date = (request.query_params.get('date_from') or 
+                     request.query_params.get('from_date') or 
+                     request.query_params.get('start_date'))
+        to_date = (request.query_params.get('date_to') or 
+                   request.query_params.get('to_date') or 
+                   request.query_params.get('end_date'))
         search = request.query_params.get('search')
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
