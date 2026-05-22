@@ -307,21 +307,46 @@ class CustomerViewSet(viewsets.ModelViewSet):
     pagination_class = StandardPagination
 
     def get_queryset(self):
+        from datetime import datetime
         qs = super().get_queryset()
         search = self.request.query_params.get('search')
         center = self.request.query_params.get('center')
         date_param = self.request.query_params.get('date')
-        start_date = self.request.query_params.get('start_date')
-        end_date = self.request.query_params.get('end_date')
+        # Support multiple date parameter names
+        start_date = (self.request.query_params.get('start_date') or 
+                     self.request.query_params.get('from_date') or 
+                     self.request.query_params.get('date_from'))
+        end_date = (self.request.query_params.get('end_date') or 
+                   self.request.query_params.get('to_date') or 
+                   self.request.query_params.get('date_to'))
+        
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(mobile__icontains=search))
         if center:
             qs = qs.filter(center_id=center)
         if date_param:
+            # Parse date if it's a string
+            if isinstance(date_param, str):
+                try:
+                    date_param = datetime.strptime(date_param, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
             qs = qs.filter(created_at__date=date_param)
         if start_date:
+            # Parse date if it's a string
+            if isinstance(start_date, str):
+                try:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
             qs = qs.filter(created_at__date__gte=start_date)
         if end_date:
+            # Parse date if it's a string
+            if isinstance(end_date, str):
+                try:
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
             qs = qs.filter(created_at__date__lte=end_date)
         return qs
 
