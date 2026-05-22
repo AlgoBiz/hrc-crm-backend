@@ -1964,42 +1964,51 @@ class AdminSlotBookingReportView(APIView):
         if end_date:
             bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
         
-        # Group slot bookings by slot and center
+        # Group slot bookings by slot
         slot_bookings_data = []
         slots = Slot.objects.all().order_by('start_time')
         
         for slot in slots:
             slot_bookings = bookings_qs.filter(slot=slot)
+            total_booked = slot_bookings.count()
             
-            # Group by center
-            centers_dict = {}
-            for booking in slot_bookings:
-                center_name = booking.center.center_name if booking.center else "No Center"
-                if center_name not in centers_dict:
-                    centers_dict[center_name] = 0
-                centers_dict[center_name] += 1
-            
-            # Create entries for each center
-            for center_name, booked_count in centers_dict.items():
-                utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
-                if utilization >= 90:
-                    util_status = "high"
+            if total_booked > 0:  # Only show slots with bookings
+                utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+                
+                if utilization == 100:
+                    util_status = 'full'
+                elif utilization >= 90:
+                    util_status = 'high'
                 elif utilization >= 70:
-                    util_status = "medium"
+                    util_status = 'medium'
                 else:
-                    util_status = "low"
+                    util_status = 'low'
+                
+                # Build download URL with filters
+                download_url = f"/api/reports/admin/slot-bookings/{slot.id}/download/"
+                params = []
+                if center_id:
+                    params.append(f"center_id={center_id}")
+                if start_date:
+                    params.append(f"start_date={start_date}")
+                if end_date:
+                    params.append(f"end_date={end_date}")
+                if params:
+                    download_url += "?" + "&".join(params)
                 
                 slot_bookings_data.append({
+                    "slot_id": slot.id,
                     "slot": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                    "center": center_name,
-                    "total_booked": booked_count,
+                    "total_booked": total_booked,
+                    "total_capacity": slot.total_slot,
                     "utilization": f"{utilization}%",
                     "status": util_status,
+                    "download_url": download_url,
                 })
         
         # Export to Excel
         if export:
-            return self._export_excel(slot_bookings_data)
+            return self._export_excel(center_id, start_date, end_date)
         
         # Pagination
         total = len(slot_bookings_data)
@@ -2019,33 +2028,175 @@ class AdminSlotBookingReportView(APIView):
             }
         })
     
-    def _export_excel(self, slot_bookings_data):
+    def _export_excel(self, center_id, start_date, end_date):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
         from django.http import HttpResponse
+        
+        # Get detailed bookings data
+        bookings_qs = SlotBooking.objects.select_related('slot', 'customer', 'center').order_by('slot__start_time', '-booking_date')
+        if center_id:
+            bookings_qs = bookings_qs.filter(center_id=center_id)
+        if start_date:
+            bookings_qs = bookings_qs.filter(booking_date__gte=start_date)
+        if end_date:
+            bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
         
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Slot Bookings"
         
+        # Add title
+        ws.merge_cells('A1:I1')
+        title_cell = ws['A1']
+        title_cell.value = "Slot Booking Report - All Branches"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center')
+        
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
         
-        headers = ['Slot', 'Center', 'Total Booked', 'Utilization', 'Status']
+        headers = ['Booking ID', 'Slot', 'Customer Name', 'Mobile', 'Email', 'Branch', 'Booking Date', 'Status', 'Wave']
         for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
+            cell = ws.cell(row=3, column=col, value=header)
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
         
-        for row, sb in enumerate(slot_bookings_data, 2):
-            ws.cell(row=row, column=1, value=sb['slot'])
-            ws.cell(row=row, column=2, value=sb['center'])
-            ws.cell(row=row, column=3, value=sb['total_booked'])
-            ws.cell(row=row, column=4, value=sb['utilization'])
-            ws.cell(row=row, column=5, value=sb['status'])
+        # Add booking data
+        for row, booking in enumerate(bookings_qs, 4):
+            ws.cell(row=row, column=1, value=booking.id)
+            ws.cell(row=row, column=2, value=f"{booking.slot.start_time.strftime('%I:%M %p')} - {booking.slot.end_time.strftime('%I:%M %p')}")
+            ws.cell(row=row, column=3, value=booking.customer.name)
+            ws.cell(row=row, column=4, value=booking.customer.mobile)
+            ws.cell(row=row, column=5, value=booking.customer.email or '')
+            ws.cell(row=row, column=6, value=booking.center.center_name if booking.center else '')
+            ws.cell(row=row, column=7, value=booking.booking_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=8, value=booking.status)
+            ws.cell(row=row, column=9, value=booking.customer.wave or '')
+        
+        # Auto-adjust column widths
+        for col_idx in range(1, len(headers) + 1):
+            max_len = 0
+            for row_idx in range(1, ws.max_row + 1):
+                try:
+                    cell_value = ws.cell(row=row_idx, column=col_idx).value
+                    if cell_value:
+                        max_len = max(max_len, len(str(cell_value)))
+                except Exception:
+                    pass
+            column_letter = get_column_letter(col_idx)
+            ws.column_dimensions[column_letter].width = max_len + 4
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="admin_slot_bookings_all_branches.xlsx"'
+        wb.save(response)
+        return response
+
+
+class AdminSlotBookingDetailView(APIView):
+    """Download individual slot booking details for admin (all branches or filtered)"""
+
+    def get(self, request, slot_id):
+        center_id = request.query_params.get('center_id')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        try:
+            slot = Slot.objects.get(pk=slot_id)
+        except Slot.DoesNotExist:
+            return custom_response(False, "Slot not found", None, status.HTTP_404_NOT_FOUND)
+
+        # Get bookings for this slot (all branches or filtered)
+        bookings_qs = SlotBooking.objects.filter(
+            slot_id=slot_id
+        ).select_related('customer', 'slot', 'center').order_by('-booking_date')
+
+        if center_id:
+            bookings_qs = bookings_qs.filter(center_id=center_id)
+        if start_date:
+            bookings_qs = bookings_qs.filter(booking_date__gte=start_date)
+        if end_date:
+            bookings_qs = bookings_qs.filter(booking_date__lte=end_date)
+
+        return self._export_slot_excel(slot, bookings_qs, center_id)
+
+    def _export_slot_excel(self, slot, bookings_qs, center_id=None):
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+        from django.http import HttpResponse
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Slot Bookings"
+
+        # Add title
+        ws.merge_cells('A1:H1')
+        title_cell = ws['A1']
+        title_cell.value = f"Slot Bookings - {slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center')
+
+        # Add filter info if center is specified
+        if center_id:
+            try:
+                center = Center.objects.get(pk=center_id)
+                ws.merge_cells('A2:H2')
+                center_cell = ws['A2']
+                center_cell.value = f"Branch: {center.center_name}"
+                center_cell.font = Font(bold=True)
+                center_cell.alignment = Alignment(horizontal='center')
+                header_row = 4
+            except Center.DoesNotExist:
+                header_row = 3
+        else:
+            ws.merge_cells('A2:H2')
+            center_cell = ws['A2']
+            center_cell.value = "All Branches"
+            center_cell.font = Font(bold=True)
+            center_cell.alignment = Alignment(horizontal='center')
+            header_row = 4
+
+        # Headers
+        header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF')
+
+        headers = ['Booking ID', 'Customer Name', 'Mobile', 'Email', 'Branch', 'Booking Date', 'Status', 'Wave']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=header_row, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        # Data rows
+        for row, booking in enumerate(bookings_qs, header_row + 1):
+            ws.cell(row=row, column=1, value=booking.id)
+            ws.cell(row=row, column=2, value=booking.customer.name)
+            ws.cell(row=row, column=3, value=booking.customer.mobile)
+            ws.cell(row=row, column=4, value=booking.customer.email or '')
+            ws.cell(row=row, column=5, value=booking.center.center_name if booking.center else '')
+            ws.cell(row=row, column=6, value=booking.booking_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=7, value=booking.status)
+            ws.cell(row=row, column=8, value=booking.customer.wave or '')
+
+        # Auto-adjust column widths
+        for col_idx in range(1, len(headers) + 1):
+            max_len = 0
+            for row in range(1, ws.max_row + 1):
+                try:
+                    cell_value = ws.cell(row=row, column=col_idx).value
+                    if cell_value:
+                        max_len = max(max_len, len(str(cell_value)))
+                except Exception:
+                    pass
+            column_letter = get_column_letter(col_idx)
+            ws.column_dimensions[column_letter].width = max_len + 4
+
+        slot_time = f"{slot.start_time.strftime('%I%M%p')}-{slot.end_time.strftime('%I%M%p')}"
+        filename = f"admin_slot_bookings_{slot_time}.xlsx"
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         wb.save(response)
         return response
