@@ -1461,7 +1461,7 @@ class BranchSlotBookingReportView(APIView):
     """Get slot booking statistics for a specific branch"""
 
     def get(self, request):
-        from datetime import datetime
+        from datetime import datetime, timedelta
         center_id = request.query_params.get('center_id')
         # Support multiple date parameter names
         from_date = (request.query_params.get('date_from') or 
@@ -1482,68 +1482,69 @@ class BranchSlotBookingReportView(APIView):
             center = Center.objects.get(pk=center_id)
         except Center.DoesNotExist:
             return custom_response(False, "Center not found", None, status.HTTP_404_NOT_FOUND)
-
-        # Get bookings for this center
-        bookings_qs = SlotBooking.objects.filter(center_id=center_id)
-        if from_date:
-            bookings_qs = bookings_qs.filter(booking_date__gte=from_date)
-        if to_date:
-            bookings_qs = bookings_qs.filter(booking_date__lte=to_date)
         
-        # Calculate number of days in the date range
-        if from_date and to_date:
-            start_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
-            end_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
-            num_days = (end_date_obj - start_date_obj).days + 1
-        else:
-            num_days = 1
+        # Default to today if no dates provided
+        if not from_date:
+            from_date = date.today().strftime('%Y-%m-%d')
+        if not to_date:
+            to_date = from_date
+        
+        # Parse dates
+        start_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
+        end_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
+        
+        # Generate list of dates in range
+        date_list = []
+        current_date = start_date_obj
+        while current_date <= end_date_obj:
+            date_list.append(current_date)
+            current_date += timedelta(days=1)
 
-        # Calculate slot statistics
+        # Calculate slot statistics for each day
         slot_data = []
-        for slot in Slot.objects.all().order_by('start_time'):
-            slot_bookings_for_slot = bookings_qs.filter(slot=slot)
-            booked_count = slot_bookings_for_slot.count()
-            
-            if booked_count > 0:  # Only show slots with bookings
-                # Calculate total available seats: slot capacity × number of days
-                total_available_seats = slot.total_slot * num_days
+        for booking_date in date_list:
+            for slot in Slot.objects.all().order_by('start_time'):
+                # Count bookings for this slot, center, and specific date
+                booked_count = SlotBooking.objects.filter(
+                    slot=slot,
+                    center_id=center_id,
+                    booking_date=booking_date
+                ).count()
                 
-                # Calculate utilization: (total booked seats / total available seats) × 100
-                utilization = round((booked_count / total_available_seats * 100), 1) if total_available_seats > 0 else 0
-                
-                if utilization == 100:
-                    util_status = 'full'
-                elif utilization >= 90:
-                    util_status = 'high'
-                elif utilization >= 70:
-                    util_status = 'medium'
-                else:
-                    util_status = 'low'
-                
-                # Build download URL with date filters if present
-                download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}"
-                if from_date:
-                    download_url += f"&start_date={from_date}"
-                if to_date:
-                    download_url += f"&end_date={to_date}"
-                
-                slot_data.append({
-                    'slot_id': slot.id,
-                    'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                    'booked_slot_count': booked_count,
-                    'total_available_seats': total_available_seats,
-                    'num_days': num_days,
-                    'utilization': f"{utilization}%",
-                    'status': util_status,
-                    'download_url': download_url,
-                })
+                if booked_count > 0:  # Only show slots with bookings
+                    # Calculate utilization for this day: (booked / slot capacity) × 100
+                    utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
+                    
+                    if utilization == 100:
+                        util_status = 'full'
+                    elif utilization >= 90:
+                        util_status = 'high'
+                    elif utilization >= 70:
+                        util_status = 'medium'
+                    else:
+                        util_status = 'low'
+                    
+                    # Build download URL with date filters
+                    download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}&start_date={booking_date}&end_date={booking_date}"
+                    
+                    slot_data.append({
+                        'date': booking_date.strftime('%d/%m/%Y'),
+                        'slot_id': slot.id,
+                        'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                        'center': center.center_name,
+                        'booked_slot_count': booked_count,
+                        'total_capacity': slot.total_slot,
+                        'utilization': f"{utilization}%",
+                        'status': util_status,
+                        'download_url': download_url,
+                    })
 
         if export:
-            return self._export_excel(center.center_name, slot_data)
+            return self._export_excel(center.center_name, slot_data, from_date, to_date)
 
         return custom_response(True, f"Slot booking report for {center.center_name}", slot_data)
 
-    def _export_excel(self, center_name, slot_data):
+    def _export_excel(self, center_name, slot_data, from_date, to_date):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
         from django.http import HttpResponse
@@ -1551,25 +1552,48 @@ class BranchSlotBookingReportView(APIView):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Slot Booking Report"
+        
+        # Add title
+        ws.merge_cells('A1:G1')
+        title_cell = ws['A1']
+        title_cell.value = f"Slot Booking Report - {center_name} ({from_date} to {to_date})"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center')
 
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Slot', 'Booked Slot Count', 'Utilization', 'Status']
+        headers = ['Date', 'Slot', 'Center', 'Booked Slot Count', 'Total Capacity', 'Utilization', 'Status']
         for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
+            cell = ws.cell(row=3, column=col, value=header)
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
 
-        for row, s in enumerate(slot_data, 2):
-            ws.cell(row=row, column=1, value=s['slot'])
-            ws.cell(row=row, column=2, value=s['booked_slot_count'])
-            ws.cell(row=row, column=3, value=s['utilization'])
-            ws.cell(row=row, column=4, value=s['status'])
+        for row, s in enumerate(slot_data, 4):
+            ws.cell(row=row, column=1, value=s['date'])
+            ws.cell(row=row, column=2, value=s['slot'])
+            ws.cell(row=row, column=3, value=s['center'])
+            ws.cell(row=row, column=4, value=s['booked_slot_count'])
+            ws.cell(row=row, column=5, value=s['total_capacity'])
+            ws.cell(row=row, column=6, value=s['utilization'])
+            ws.cell(row=row, column=7, value=s['status'])
+        
+        # Auto-adjust column widths
+        for col_idx in range(1, len(headers) + 1):
+            max_len = 0
+            for row_idx in range(1, ws.max_row + 1):
+                try:
+                    cell_value = ws.cell(row=row_idx, column=col_idx).value
+                    if cell_value:
+                        max_len = max(max_len, len(str(cell_value)))
+                except Exception:
+                    pass
+            column_letter = get_column_letter(col_idx)
+            ws.column_dimensions[column_letter].width = max_len + 4
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="branch_slot_booking_report_{center_name}.xlsx"'
+        response['Content-Disposition'] = f'attachment; filename="branch_slot_booking_report_{center_name}_{from_date}_to_{to_date}.xlsx"'
         wb.save(response)
         return response
 
@@ -1998,9 +2022,15 @@ class AdminSlotBookingReportView(APIView):
     
     def get(self, request):
         from datetime import datetime, timedelta
-        center_id = request.query_params.get('center')
-        from_date = request.query_params.get('from_date') or request.query_params.get('start_date')
-        to_date = request.query_params.get('to_date') or request.query_params.get('end_date')
+        
+        # Support multiple parameter names for flexibility
+        center_id = request.query_params.get('center') or request.query_params.get('center_id')
+        from_date = (request.query_params.get('from_date') or 
+                    request.query_params.get('start_date') or 
+                    request.query_params.get('date_from'))
+        to_date = (request.query_params.get('to_date') or 
+                  request.query_params.get('end_date') or 
+                  request.query_params.get('date_to'))
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
