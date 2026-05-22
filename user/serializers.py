@@ -450,12 +450,13 @@ class PlanSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A plan with this name already exists.")
         return value
 
-    def validate_duration_months(self, value):
-        if value > 36:
+    def validate(self, attrs):
+        duration_months = attrs.get('duration_months')
+        if duration_months and duration_months > 36:
             raise serializers.ValidationError("Duration months cannot exceed 36.")
-        if value < 1:
+        if duration_months and duration_months < 1:
             raise serializers.ValidationError("Duration must be at least 1 month.")
-        return value
+        return attrs
 
 
 class CenterSerializer(serializers.ModelSerializer):
