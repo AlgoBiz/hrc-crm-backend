@@ -695,8 +695,9 @@ class AdminDashboardView(APIView):
 
         total_customers = Customer.objects.count()
         
-        # Calculate total invoice amount: sum of all invoices
-        total_invoice_amount = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+        # Calculate total invoice amount: sum of plan prices for all customers with plans
+        customers_with_plans = Customer.objects.filter(plan__isnull=False).select_related('plan')
+        total_invoice_amount = sum(float(c.plan.price) for c in customers_with_plans if c.plan)
         
         total_sessions = SlotBooking.objects.count()
 
@@ -835,7 +836,7 @@ class AdminDashboardView(APIView):
         return custom_response(True, "Admin dashboard fetched successfully", {
             "summary": {
                 "total_customers": total_customers,
-                "total_invoice_amount": float(total_invoice_amount),
+                "total_invoice_amount": total_invoice_amount,
                 "total_sessions": total_sessions,
                 "booking_rate": booking_rate,
                 "customer_growth": growth(customers_this_month, customers_last_month),
