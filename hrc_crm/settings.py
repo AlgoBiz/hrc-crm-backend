@@ -92,18 +92,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'user.User'
 
-# Project settings
-PROJECT_NAME = env('PROJECT_NAME', default='HRC CRM')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@hrccosmos.com')
-
-# Email Configuration
-EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
-EMAIL_PORT = env('EMAIL_PORT', default=587)
-EMAIL_USE_TLS = env('EMAIL_USE_TLS', default=True)
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
-
 # CORS
 CORS_ALLOW_ALL_ORIGINS = True  # set to False and use CORS_ALLOWED_ORIGINS if credentials are needed
 CORS_ALLOW_CREDENTIALS = False  # can't use True with CORS_ALLOW_ALL_ORIGINS (browser blocks it)
