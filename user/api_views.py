@@ -9,6 +9,7 @@ from datetime import timedelta, date
 from django.db.models import Q, Sum, Count
 from django.utils import timezone
 from django.db import models
+from openpyxl.utils import get_column_letter
 
 from .models import Customer, Center, Slot, SlotBooking, Plan, Invoice, User, SecondaryCustomer, SecondaryCustomer
 from .serializers import (
@@ -927,7 +928,8 @@ class CustomerExcelDownloadView(APIView):
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
-            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+            column_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[column_letter].width = max_len + 4
 
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -984,7 +986,8 @@ class InvoiceExcelDownloadView(APIView):
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
-            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+            column_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[column_letter].width = max_len + 4
 
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1384,7 +1387,8 @@ class BranchCustomerReportView(APIView):
         # Auto-adjust column widths
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
-            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+            column_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[column_letter].width = max_len + 4
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = f'attachment; filename="branch_customers_{center.center_name}.xlsx"'
