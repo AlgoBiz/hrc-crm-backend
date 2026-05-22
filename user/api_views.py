@@ -1565,10 +1565,14 @@ class BranchSlotBookingDetailView(APIView):
             ws.cell(row=row, column=6, value=booking.status)
             ws.cell(row=row, column=7, value=booking.customer.wave or '')
 
-        # Auto-adjust column widths
-        for col in ws.columns:
-            max_len = max(len(str(cell.value or '')) for cell in col)
-            ws.column_dimensions[col[0].column_letter].width = max_len + 4
+        # Auto-adjust column widths (skip merged cells)
+        for col_idx in range(1, 8):  # 7 columns
+            max_len = 0
+            for row_idx in range(4, ws.max_row + 1):  # Start from header row
+                cell = ws.cell(row=row_idx, column=col_idx)
+                if cell.value:
+                    max_len = max(max_len, len(str(cell.value)))
+            ws.column_dimensions[ws.cell(row=4, column=col_idx).column_letter].width = max_len + 4
 
         slot_time = f"{slot.start_time.strftime('%I%M%p')}-{slot.end_time.strftime('%I%M%p')}"
         filename = f"slot_bookings_{center.center_name}_{slot_time}.xlsx"
