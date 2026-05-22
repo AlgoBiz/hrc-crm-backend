@@ -694,7 +694,11 @@ class AdminDashboardView(APIView):
         last_month_start = last_month_end.replace(day=1)
 
         total_customers = Customer.objects.count()
-        total_invoice_amount = Invoice.objects.aggregate(total=Sum('amount'))['total'] or 0
+        
+        # Calculate total invoice amount: sum of all customer plan prices
+        customers_with_plans = Customer.objects.filter(plan__isnull=False).select_related('plan')
+        total_invoice_amount = sum(float(c.plan.price) for c in customers_with_plans if c.plan)
+        
         total_sessions = SlotBooking.objects.count()
 
         # Booking rate: today's bookings vs total slot capacity
@@ -728,7 +732,10 @@ class AdminDashboardView(APIView):
         
         for center in Center.objects.all():
             c_customers = Customer.objects.filter(center=center).count()
-            c_revenue = Invoice.objects.filter(center=center).aggregate(total=Sum('amount'))['total'] or 0
+            
+            # Calculate revenue: sum of plan prices for all customers in this center
+            customers_with_plans = Customer.objects.filter(center=center, plan__isnull=False).select_related('plan')
+            c_revenue = sum(float(c.plan.price) for c in customers_with_plans if c.plan)
             
             # Get total bookings for this center
             c_booked = SlotBooking.objects.filter(center=center).count()
@@ -742,7 +749,7 @@ class AdminDashboardView(APIView):
                 'center_id': center.id,
                 'center_name': center.center_name,
                 'customers': c_customers,
-                'revenue': float(c_revenue),
+                'revenue': c_revenue,
                 'booking_rate': c_rate,
                 'total_bookings': c_booked,
             })
@@ -824,7 +831,7 @@ class AdminDashboardView(APIView):
         return custom_response(True, "Admin dashboard fetched successfully", {
             "summary": {
                 "total_customers": total_customers,
-                "total_invoice_amount": float(total_invoice_amount),
+                "total_invoice_amount": total_invoice_amount,
                 "total_sessions": total_sessions,
                 "booking_rate": booking_rate,
                 "customer_growth": growth(customers_this_month, customers_last_month),
