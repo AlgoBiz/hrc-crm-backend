@@ -1524,6 +1524,7 @@ class BranchSlotBookingDetailView(APIView):
     def _export_slot_excel(self, center, slot, bookings_qs):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
         from django.http import HttpResponse
 
         wb = openpyxl.Workbook()
@@ -1565,14 +1566,18 @@ class BranchSlotBookingDetailView(APIView):
             ws.cell(row=row, column=6, value=booking.status)
             ws.cell(row=row, column=7, value=booking.customer.wave or '')
 
-        # Auto-adjust column widths (skip merged cells)
-        for col_idx in range(1, 8):  # 7 columns
+        # Auto-adjust column widths
+        for col_idx in range(1, len(headers) + 1):
             max_len = 0
-            for row_idx in range(4, ws.max_row + 1):  # Start from header row
-                cell = ws.cell(row=row_idx, column=col_idx)
-                if cell.value:
-                    max_len = max(max_len, len(str(cell.value)))
-            ws.column_dimensions[ws.cell(row=4, column=col_idx).column_letter].width = max_len + 4
+            for row in range(1, ws.max_row + 1):
+                try:
+                    cell_value = ws.cell(row=row, column=col_idx).value
+                    if cell_value:
+                        max_len = max(max_len, len(str(cell_value)))
+                except Exception:
+                    pass
+            column_letter = get_column_letter(col_idx)
+            ws.column_dimensions[column_letter].width = max_len + 4
 
         slot_time = f"{slot.start_time.strftime('%I%M%p')}-{slot.end_time.strftime('%I%M%p')}"
         filename = f"slot_bookings_{center.center_name}_{slot_time}.xlsx"
