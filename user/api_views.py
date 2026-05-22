@@ -1465,13 +1465,11 @@ class BranchSlotBookingReportView(APIView):
             booked_count = slot_bookings_for_slot.count()
             
             if booked_count > 0:  # Only show slots with bookings
-                # Count unique booking dates for this slot
-                unique_dates = slot_bookings_for_slot.values('booking_date').distinct().count()
+                # Calculate utilization: (total booked / slot capacity) × 100
+                utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
                 
-                # Calculate average utilization per session
-                # Total capacity across all dates = slot.total_slot * unique_dates
-                total_capacity_all_dates = slot.total_slot * unique_dates if unique_dates > 0 else slot.total_slot
-                utilization = round((booked_count / total_capacity_all_dates * 100), 1) if total_capacity_all_dates > 0 else 0
+                # Cap utilization at 100%
+                utilization = min(utilization, 100.0)
                 
                 if utilization == 100:
                     util_status = 'full'
@@ -1493,7 +1491,6 @@ class BranchSlotBookingReportView(APIView):
                     'slot_id': slot.id,
                     'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                     'booked_slot_count': booked_count,
-                    'unique_dates': unique_dates,
                     'utilization': f"{utilization}%",
                     'status': util_status,
                     'download_url': download_url,
@@ -1983,13 +1980,11 @@ class AdminSlotBookingReportView(APIView):
             total_booked = slot_bookings.count()
             
             if total_booked > 0:  # Only show slots with bookings
-                # Count unique booking dates for this slot
-                unique_dates = slot_bookings.values('booking_date').distinct().count()
+                # Calculate utilization: (total booked / slot capacity) × 100
+                utilization = round((total_booked / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
                 
-                # Calculate average utilization per session
-                # Total capacity across all dates = slot.total_slot * unique_dates
-                total_capacity_all_dates = slot.total_slot * unique_dates if unique_dates > 0 else slot.total_slot
-                utilization = round((total_booked / total_capacity_all_dates * 100), 1) if total_capacity_all_dates > 0 else 0
+                # Cap utilization at 100%
+                utilization = min(utilization, 100.0)
                 
                 if utilization == 100:
                     util_status = 'full'
@@ -2017,7 +2012,6 @@ class AdminSlotBookingReportView(APIView):
                     "slot": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                     "total_booked": total_booked,
                     "total_capacity": slot.total_slot,
-                    "unique_dates": unique_dates,
                     "utilization": f"{utilization}%",
                     "status": util_status,
                     "download_url": download_url,
