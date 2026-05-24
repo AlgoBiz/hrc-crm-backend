@@ -924,7 +924,7 @@ class CustomerExcelDownloadView(APIView):
         ws = wb.active
         ws.title = 'Customers'
 
-        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status']
+        headers = ['Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status']
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
@@ -955,16 +955,15 @@ class CustomerExcelDownloadView(APIView):
             filename = 'customers.xlsx'
 
         for row, c in enumerate(customers, 2):
-            ws.cell(row=row, column=1, value=c.id)
-            ws.cell(row=row, column=2, value=c.name)
-            ws.cell(row=row, column=3, value=c.mobile)
-            ws.cell(row=row, column=4, value=c.email or '')
-            ws.cell(row=row, column=5, value=c.center.center_name if c.center else '')
-            ws.cell(row=row, column=6, value=c.plan.plan_name if c.plan else '')
-            ws.cell(row=row, column=7, value=c.wave)
-            ws.cell(row=row, column=8, value=str(c.start_date) if c.start_date else '')
-            ws.cell(row=row, column=9, value=str(c.expiry_date) if c.expiry_date else '')
-            ws.cell(row=row, column=10, value=c.status)
+            ws.cell(row=row, column=1, value=c.name)
+            ws.cell(row=row, column=2, value=c.mobile)
+            ws.cell(row=row, column=3, value=c.email or '')
+            ws.cell(row=row, column=4, value=c.center.center_name if c.center else '')
+            ws.cell(row=row, column=5, value=c.plan.plan_name if c.plan else '')
+            ws.cell(row=row, column=6, value=c.wave)
+            ws.cell(row=row, column=7, value=str(c.start_date) if c.start_date else '')
+            ws.cell(row=row, column=8, value=str(c.expiry_date) if c.expiry_date else '')
+            ws.cell(row=row, column=9, value=c.status)
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
@@ -1246,12 +1245,12 @@ class CustomerReportView(APIView):
         ws = wb.active
         ws.title = "Customer Report"
 
-        headers = ["ID", "Name", "Mobile", "Email", "Center", "Plan", "Start Date", "Expiry Date", "Status", "Joined"]
+        headers = ["Name", "Mobile", "Email", "Center", "Plan", "Start Date", "Expiry Date", "Status", "Joined"]
         ws.append(headers)
 
         for c in qs:
             ws.append([
-                c.id, c.name, c.mobile, c.email or "",
+                c.name, c.mobile, c.email or "",
                 c.center.center_name if c.center else "",
                 c.plan.plan_name if c.plan else "",
                 str(c.start_date), str(c.expiry_date),
@@ -1425,7 +1424,7 @@ class BranchCustomerReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
         
-        headers = ['ID', 'Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status', 'Joined']
+        headers = ['Name', 'Mobile', 'Email', 'Center', 'Plan', 'Wave', 'Start Date', 'Expiry Date', 'Status', 'Joined']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.fill = header_fill
@@ -1433,17 +1432,16 @@ class BranchCustomerReportView(APIView):
             cell.alignment = Alignment(horizontal='center')
         
         for row, c in enumerate(customers_qs, 2):
-            ws.cell(row=row, column=1, value=c.id)
-            ws.cell(row=row, column=2, value=c.name)
-            ws.cell(row=row, column=3, value=c.mobile)
-            ws.cell(row=row, column=4, value=c.email or '')
-            ws.cell(row=row, column=5, value=c.center.center_name if c.center else '')
-            ws.cell(row=row, column=6, value=c.plan.plan_name if c.plan else '')
-            ws.cell(row=row, column=7, value=c.wave or '')
-            ws.cell(row=row, column=8, value=c.start_date.strftime('%d/%m/%Y') if c.start_date else '')
-            ws.cell(row=row, column=9, value=c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else '')
-            ws.cell(row=row, column=10, value=c.status)
-            ws.cell(row=row, column=11, value=c.created_at.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=1, value=c.name)
+            ws.cell(row=row, column=2, value=c.mobile)
+            ws.cell(row=row, column=3, value=c.email or '')
+            ws.cell(row=row, column=4, value=c.center.center_name if c.center else '')
+            ws.cell(row=row, column=5, value=c.plan.plan_name if c.plan else '')
+            ws.cell(row=row, column=6, value=c.wave or '')
+            ws.cell(row=row, column=7, value=c.start_date.strftime('%d/%m/%Y') if c.start_date else '')
+            ws.cell(row=row, column=8, value=c.expiry_date.strftime('%d/%m/%Y') if c.expiry_date else '')
+            ws.cell(row=row, column=9, value=c.status)
+            ws.cell(row=row, column=10, value=c.created_at.strftime('%d/%m/%Y'))
         
         # Auto-adjust column widths
         for col in ws.columns:
@@ -1661,7 +1659,7 @@ class BranchSlotBookingDetailView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Booking ID', 'Customer Name', 'Mobile', 'Email', 'Booking Date', 'Status', 'Wave']
+        headers = ['Customer Name', 'Mobile', 'Email', 'Booking Date', 'Status', 'Wave']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=4, column=col, value=header)
             cell.fill = header_fill
@@ -1670,13 +1668,12 @@ class BranchSlotBookingDetailView(APIView):
 
         # Data rows
         for row, booking in enumerate(bookings_qs, 5):
-            ws.cell(row=row, column=1, value=booking.id)
-            ws.cell(row=row, column=2, value=booking.customer.name)
-            ws.cell(row=row, column=3, value=booking.customer.mobile)
-            ws.cell(row=row, column=4, value=booking.customer.email or '')
-            ws.cell(row=row, column=5, value=booking.booking_date.strftime('%d/%m/%Y'))
-            ws.cell(row=row, column=6, value=booking.status)
-            ws.cell(row=row, column=7, value=booking.customer.wave or '')
+            ws.cell(row=row, column=1, value=booking.customer.name)
+            ws.cell(row=row, column=2, value=booking.customer.mobile)
+            ws.cell(row=row, column=3, value=booking.customer.email or '')
+            ws.cell(row=row, column=4, value=booking.booking_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=5, value=booking.status)
+            ws.cell(row=row, column=6, value=booking.customer.wave or '')
 
         # Auto-adjust column widths
         for col_idx in range(1, len(headers) + 1):
@@ -1768,7 +1765,7 @@ class AdminCustomerReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
         
-        headers = ['ID', 'Name', 'Mobile', 'Center', 'Plan', 'Joined', 'Status']
+        headers = ['Name', 'Mobile', 'Center', 'Plan', 'Joined', 'Status']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col, value=header)
             cell.fill = header_fill
@@ -1776,13 +1773,12 @@ class AdminCustomerReportView(APIView):
             cell.alignment = Alignment(horizontal='center')
         
         for row, c in enumerate(customers_data, 2):
-            ws.cell(row=row, column=1, value=c['id'])
-            ws.cell(row=row, column=2, value=c['name'])
-            ws.cell(row=row, column=3, value=c['mobile'])
-            ws.cell(row=row, column=4, value=c['center'] or '')
-            ws.cell(row=row, column=5, value=c['plan'] or '')
-            ws.cell(row=row, column=6, value=c['joined'])
-            ws.cell(row=row, column=7, value=c['status'])
+            ws.cell(row=row, column=1, value=c['name'])
+            ws.cell(row=row, column=2, value=c['mobile'])
+            ws.cell(row=row, column=3, value=c['center'] or '')
+            ws.cell(row=row, column=4, value=c['plan'] or '')
+            ws.cell(row=row, column=5, value=c['joined'])
+            ws.cell(row=row, column=6, value=c['status'])
         
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="admin_customers_all_branches.xlsx"'
@@ -2252,7 +2248,7 @@ class AdminSlotBookingDetailView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Booking ID', 'Customer Name', 'Mobile', 'Email', 'Branch', 'Booking Date', 'Status', 'Wave']
+        headers = ['Customer Name', 'Mobile', 'Email', 'Branch', 'Booking Date', 'Status', 'Wave']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=header_row, column=col, value=header)
             cell.fill = header_fill
@@ -2261,14 +2257,13 @@ class AdminSlotBookingDetailView(APIView):
 
         # Data rows
         for row, booking in enumerate(bookings_qs, header_row + 1):
-            ws.cell(row=row, column=1, value=booking.id)
-            ws.cell(row=row, column=2, value=booking.customer.name)
-            ws.cell(row=row, column=3, value=booking.customer.mobile)
-            ws.cell(row=row, column=4, value=booking.customer.email or '')
-            ws.cell(row=row, column=5, value=booking.center.center_name if booking.center else '')
-            ws.cell(row=row, column=6, value=booking.booking_date.strftime('%d/%m/%Y'))
-            ws.cell(row=row, column=7, value=booking.status)
-            ws.cell(row=row, column=8, value=booking.customer.wave or '')
+            ws.cell(row=row, column=1, value=booking.customer.name)
+            ws.cell(row=row, column=2, value=booking.customer.mobile)
+            ws.cell(row=row, column=3, value=booking.customer.email or '')
+            ws.cell(row=row, column=4, value=booking.center.center_name if booking.center else '')
+            ws.cell(row=row, column=5, value=booking.booking_date.strftime('%d/%m/%Y'))
+            ws.cell(row=row, column=6, value=booking.status)
+            ws.cell(row=row, column=7, value=booking.customer.wave or '')
 
         # Auto-adjust column widths
         for col_idx in range(1, len(headers) + 1):
