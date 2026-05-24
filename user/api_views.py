@@ -2054,49 +2054,53 @@ class AdminSlotBookingReportView(APIView):
         if center_id:
             centers = centers.filter(id=center_id)
         
-        # Build slot booking data for each day, slot, and center combination
+        # Build slot booking data grouped by slot and center (not by individual dates)
         slot_bookings_data = []
         
-        for booking_date in date_list:
+        for center in centers:
             for slot in slots:
-                for center in centers:
-                    # Count bookings for this specific slot, center, and date
-                    booked_count = SlotBooking.objects.filter(
-                        slot=slot,
-                        center=center,
-                        booking_date=booking_date
-                    ).count()
-                    
-                    # Calculate utilization for this day: (booked / slot capacity) × 100
-                    utilization = round((booked_count / slot.total_slot * 100), 1) if slot.total_slot > 0 else 0
-                    
-                    # Determine status
-                    if utilization == 100:
-                        util_status = 'full'
-                    elif utilization >= 90:
-                        util_status = 'high'
-                    elif utilization >= 70:
-                        util_status = 'medium'
-                    elif utilization > 0:
-                        util_status = 'low'
-                    else:
-                        util_status = 'empty'
-                    
-                    # Build download URL
-                    download_url = f"/api/reports/admin/slot-bookings/{slot.id}/download/?center_id={center.id}&start_date={booking_date}&end_date={booking_date}"
-                    
-                    slot_bookings_data.append({
-                        "date": booking_date.strftime('%d/%m/%Y'),
-                        "slot_id": slot.id,
-                        "slot": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
-                        "center_id": center.id,
-                        "center": center.center_name,
-                        "total_booked": booked_count,
-                        "total_capacity": slot.total_slot,
-                        "utilization": f"{utilization}%",
-                        "status": util_status,
-                        "download_url": download_url,
-                    })
+                # Count total bookings for this slot and center across the entire date range
+                total_booked = SlotBooking.objects.filter(
+                    slot=slot,
+                    center=center,
+                    booking_date__gte=start_date_obj,
+                    booking_date__lte=end_date_obj
+                ).count()
+                
+                # Calculate total capacity across the date range
+                num_days = (end_date_obj - start_date_obj).days + 1
+                total_capacity = slot.total_slot * num_days
+                
+                # Calculate utilization: (total booked / total capacity) × 100
+                utilization = round((total_booked / total_capacity * 100), 1) if total_capacity > 0 else 0
+                
+                # Determine status
+                if utilization == 100:
+                    util_status = 'full'
+                elif utilization >= 90:
+                    util_status = 'high'
+                elif utilization >= 70:
+                    util_status = 'medium'
+                elif utilization > 0:
+                    util_status = 'low'
+                else:
+                    util_status = 'empty'
+                
+                # Build download URL with date range
+                download_url = f"/api/reports/admin/slot-bookings/{slot.id}/download/?center_id={center.id}&start_date={start_date_obj}&end_date={end_date_obj}"
+                
+                slot_bookings_data.append({
+                    "date_range": f"{start_date_obj.strftime('%d/%m/%Y')} - {end_date_obj.strftime('%d/%m/%Y')}",
+                    "slot_id": slot.id,
+                    "slot": f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                    "center_id": center.id,
+                    "center": center.center_name,
+                    "total_booked": total_booked,
+                    "total_capacity": total_capacity,
+                    "utilization": f"{utilization}%",
+                    "status": util_status,
+                    "download_url": download_url,
+                })
         
         # Export to Excel
         if export:
@@ -2144,7 +2148,7 @@ class AdminSlotBookingReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
         
-        headers = ['Date', 'Slot', 'Center', 'Total Booked', 'Total Capacity', 'Utilization', 'Status']
+        headers = ['Date Range', 'Slot', 'Center', 'Total Booked', 'Total Capacity', 'Utilization', 'Status']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=3, column=col, value=header)
             cell.fill = header_fill
@@ -2153,7 +2157,7 @@ class AdminSlotBookingReportView(APIView):
         
         # Add data rows
         for row, data in enumerate(slot_bookings_data, 4):
-            ws.cell(row=row, column=1, value=data['date'])
+            ws.cell(row=row, column=1, value=data['date_range'])
             ws.cell(row=row, column=2, value=data['slot'])
             ws.cell(row=row, column=3, value=data['center'])
             ws.cell(row=row, column=4, value=data['total_booked'])
