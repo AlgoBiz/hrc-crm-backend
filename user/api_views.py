@@ -1491,23 +1491,63 @@ class BranchSlotBookingReportView(APIView):
         start_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date() if isinstance(from_date, str) else from_date
         end_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date() if isinstance(to_date, str) else to_date
         
-        # Generate list of dates in range
-        date_list = []
-        current_date = start_date_obj
-        while current_date <= end_date_obj:
-            date_list.append(current_date)
-            current_date += timedelta(days=1)
+        # Calculate number of days in the date range
+        num_days = (end_date_obj - start_date_obj).days + 1
+        
+        # Check if it's a date range (more than 1 day)
+        is_date_range = num_days > 1
+        
+        # Get bookings for this center and date range
+        bookings_qs = SlotBooking.objects.filter(
+            center_id=center_id,
+            booking_date__gte=start_date_obj,
+            booking_date__lte=end_date_obj
+        )
 
-        # Calculate slot statistics for each day
         slot_data = []
-        for booking_date in date_list:
+        
+        if is_date_range:
+            # DATE RANGE MODE: Show aggregated data per slot
             for slot in Slot.objects.all().order_by('start_time'):
-                # Count bookings for this slot, center, and specific date
-                booked_count = SlotBooking.objects.filter(
-                    slot=slot,
-                    center_id=center_id,
-                    booking_date=booking_date
-                ).count()
+                # Count total bookings for this slot across all days in range
+                total_booked = bookings_qs.filter(slot=slot).count()
+                
+                if total_booked > 0:  # Only show slots with bookings
+                    # Calculate total available seats: slot capacity × number of days
+                    total_available_seats = slot.total_slot * num_days
+                    
+                    # Calculate utilization: (total booked / total available seats) × 100
+                    utilization = round((total_booked / total_available_seats * 100), 1) if total_available_seats > 0 else 0
+                    
+                    if utilization == 100:
+                        util_status = 'full'
+                    elif utilization >= 90:
+                        util_status = 'high'
+                    elif utilization >= 70:
+                        util_status = 'medium'
+                    else:
+                        util_status = 'low'
+                    
+                    # Build download URL
+                    download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}&start_date={from_date}&end_date={to_date}"
+                    
+                    slot_data.append({
+                        'date_range': f"{start_date_obj.strftime('%d/%m/%Y')} - {end_date_obj.strftime('%d/%m/%Y')}",
+                        'slot_id': slot.id,
+                        'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
+                        'center': center.center_name,
+                        'total_booked': total_booked,
+                        'total_available_seats': total_available_seats,
+                        'num_days': num_days,
+                        'utilization': f"{utilization}%",
+                        'status': util_status,
+                        'download_url': download_url,
+                    })
+        else:
+            # SINGLE DATE MODE: Show per-day data
+            for slot in Slot.objects.all().order_by('start_time'):
+                # Count bookings for this slot on the specific date
+                booked_count = bookings_qs.filter(slot=slot).count()
                 
                 if booked_count > 0:  # Only show slots with bookings
                     # Calculate utilization for this day: (booked / slot capacity) × 100
@@ -1522,11 +1562,11 @@ class BranchSlotBookingReportView(APIView):
                     else:
                         util_status = 'low'
                     
-                    # Build download URL with date filters
-                    download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}&start_date={booking_date}&end_date={booking_date}"
+                    # Build download URL
+                    download_url = f"/api/reports/branch/slot-bookings/{slot.id}/download/?center_id={center_id}&start_date={from_date}&end_date={to_date}"
                     
                     slot_data.append({
-                        'date': booking_date.strftime('%d/%m/%Y'),
+                        'date': start_date_obj.strftime('%d/%m/%Y'),
                         'slot_id': slot.id,
                         'slot': f"{slot.start_time.strftime('%I:%M %p')} - {slot.end_time.strftime('%I:%M %p')}",
                         'center': center.center_name,
@@ -1538,11 +1578,11 @@ class BranchSlotBookingReportView(APIView):
                     })
 
         if export:
-            return self._export_excel(center.center_name, slot_data, from_date, to_date)
+            return self._export_excel(center.center_name, slot_data, from_date, to_date, is_date_range)
 
         return custom_response(True, f"Slot booking report for {center.center_name}", slot_data)
 
-    def _export_excel(self, center_name, slot_data, from_date, to_date):
+    def _export_excel(self, center_name, slot_data, from_date, to_date, is_date_range):
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment
         from django.http import HttpResponse
@@ -1561,7 +1601,11 @@ class BranchSlotBookingReportView(APIView):
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
-        headers = ['Date', 'Slot', 'Center', 'Booked Slot Count', 'Total Capacity', 'Utilization', 'Status']
+        if is_date_range:
+            headers = ['Date Range', 'Slot', 'Center', 'Total Booked', 'Total Available Seats', 'Utilization', 'Status']
+        else:
+            headers = ['Date', 'Slot', 'Center', 'Booked Slot Count', 'Total Capacity', 'Utilization', 'Status']
+        
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=3, column=col, value=header)
             cell.fill = header_fill
@@ -1569,13 +1613,22 @@ class BranchSlotBookingReportView(APIView):
             cell.alignment = Alignment(horizontal='center')
 
         for row, s in enumerate(slot_data, 4):
-            ws.cell(row=row, column=1, value=s['date'])
-            ws.cell(row=row, column=2, value=s['slot'])
-            ws.cell(row=row, column=3, value=s['center'])
-            ws.cell(row=row, column=4, value=s['booked_slot_count'])
-            ws.cell(row=row, column=5, value=s['total_capacity'])
-            ws.cell(row=row, column=6, value=s['utilization'])
-            ws.cell(row=row, column=7, value=s['status'])
+            if is_date_range:
+                ws.cell(row=row, column=1, value=s['date_range'])
+                ws.cell(row=row, column=2, value=s['slot'])
+                ws.cell(row=row, column=3, value=s['center'])
+                ws.cell(row=row, column=4, value=s['total_booked'])
+                ws.cell(row=row, column=5, value=s['total_available_seats'])
+                ws.cell(row=row, column=6, value=s['utilization'])
+                ws.cell(row=row, column=7, value=s['status'])
+            else:
+                ws.cell(row=row, column=1, value=s['date'])
+                ws.cell(row=row, column=2, value=s['slot'])
+                ws.cell(row=row, column=3, value=s['center'])
+                ws.cell(row=row, column=4, value=s['booked_slot_count'])
+                ws.cell(row=row, column=5, value=s['total_capacity'])
+                ws.cell(row=row, column=6, value=s['utilization'])
+                ws.cell(row=row, column=7, value=s['status'])
         
         # Auto-adjust column widths
         for col_idx in range(1, len(headers) + 1):
