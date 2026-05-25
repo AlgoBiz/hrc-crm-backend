@@ -569,14 +569,17 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
     pagination_class = StandardPagination
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related('customer', 'slot', 'center')
         date_param = self.request.query_params.get('date')
         center_param = self.request.query_params.get('center')
+        search = self.request.query_params.get('search')
         
         if date_param:
             qs = qs.filter(booking_date=date_param)
         if center_param:
             qs = qs.filter(center_id=center_param)
+        if search:
+            qs = qs.filter(Q(customer__name__icontains=search) | Q(customer__mobile__icontains=search))
         
         return qs
 
