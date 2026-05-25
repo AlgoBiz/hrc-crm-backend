@@ -394,13 +394,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='minimal')
     def minimal(self, request):
         center = request.query_params.get('center')
-        qs = Customer.objects.only('id', 'name').order_by('-id')
+        # Get all customers without pagination
+        qs = Customer.objects.only('id', 'name', 'mobile').order_by('name')
         if center:
             qs = qs.filter(center_id=center)
         else:
             if hasattr(request.user, 'center') and request.user.center:
                 qs = qs.filter(center_id=request.user.center.id)
-        data = [{'id': c.id, 'name': c.name} for c in qs]
+        # Return all customers without limit
+        data = [{'id': c.id, 'name': c.name, 'mobile': c.mobile} for c in qs]
         return custom_response(True, "Customers fetched successfully", data)
 
     @action(detail=True, methods=['get', 'post'], url_path='secondary')
