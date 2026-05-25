@@ -1755,22 +1755,59 @@ class AdminCustomerReportView(APIView):
     """Get customers from all branches"""
     
     def get(self, request):
-        center_id = request.query_params.get('center')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        from datetime import datetime
+        
+        # Support multiple parameter names
+        center_id = request.query_params.get('center') or request.query_params.get('center_id')
+        start_date = (request.query_params.get('start_date') or 
+                     request.query_params.get('from_date') or 
+                     request.query_params.get('date_from'))
+        end_date = (request.query_params.get('end_date') or 
+                   request.query_params.get('to_date') or 
+                   request.query_params.get('date_to'))
+        search = request.query_params.get('search')
         export = request.query_params.get('export') == 'true'
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
         
         # Get customers from all branches (or filtered by center)
         customers_qs = Customer.objects.select_related('center', 'plan').order_by('-created_at')
+        
+        # Apply search filter
+        if search:
+            customers_qs = customers_qs.filter(
+                Q(name__icontains=search) | 
+                Q(mobile__icontains=search) | 
+                Q(email__icontains=search)
+            )
+        
+        # Apply filters
         if center_id:
             customers_qs = customers_qs.filter(center_id=center_id)
-        if start_date:
-            customers_qs = customers_qs.filter(created_at__date__gte=start_date)
-        if end_date:
-            customers_qs = customers_qs.filter(created_at__date__lte=end_date)
         
+        if start_date:
+            # Parse date if it's a string
+            if isinstance(start_date, str):
+                try:
+                    start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+                except ValueError:
+                    return custom_response(False, "Invalid start_date format. Use YYYY-MM-DD", None, status.HTTP_400_BAD_REQUEST)
+            else:
+                start_date_obj = start_date
+            customers_qs = customers_qs.filter(created_at__date__gte=start_date_obj)
+        
+        if end_date:
+            # Parse date if it's a string
+            if isinstance(end_date, str):
+                try:
+                    end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+                except ValueError:
+                    return custom_response(False, "Invalid end_date format. Use YYYY-MM-DD", None, status.HTTP_400_BAD_REQUEST)
+            else:
+                end_date_obj = end_date
+            customers_qs = customers_qs.filter(created_at__date__lte=end_date_obj)
+        
+        # Build customer data from filtered queryset
         customers_data = [
             {
                 "id": c.id,
@@ -1798,6 +1835,12 @@ class AdminCustomerReportView(APIView):
             "success": True,
             "message": "Customers from all branches",
             "data": paginated,
+            "filters": {
+                "center_id": center_id,
+                "start_date": start_date,
+                "end_date": end_date,
+                "search": search,
+            },
             "pagination": {
                 "count": total,
                 "total_pages": max(1, (total + page_size - 1) // page_size),
