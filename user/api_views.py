@@ -72,6 +72,8 @@ class LoginAPIView(APIView):
                 return custom_response(False, "Access denied. Not an admin.", None, status.HTTP_403_FORBIDDEN)
             if is_branch and user.role != 'branch_user':
                 return custom_response(False, "Access denied. Not a branch user.", None, status.HTTP_403_FORBIDDEN)
+            if is_branch and not user.center:
+                return custom_response(False, "Access denied. No branch assigned to this user.", None, status.HTTP_403_FORBIDDEN)
             if is_branch and user.center and user.center.status == 'inactive':
                 return custom_response(False, "Your branch has been deactivated. Please contact admin.", None, status.HTTP_403_FORBIDDEN)
 
@@ -572,12 +574,15 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset().select_related('customer', 'slot', 'center')
         date_param = self.request.query_params.get('date')
         center_param = self.request.query_params.get('center')
+        slot_param = self.request.query_params.get('slot')
         search = self.request.query_params.get('search')
         
         if date_param:
             qs = qs.filter(booking_date=date_param)
         if center_param:
             qs = qs.filter(center_id=center_param)
+        if slot_param:
+            qs = qs.filter(slot_id=slot_param)
         if search:
             qs = qs.filter(Q(customer__name__icontains=search) | Q(customer__mobile__icontains=search))
         
