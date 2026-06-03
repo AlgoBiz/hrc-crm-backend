@@ -168,7 +168,7 @@ class CustomerInvoiceSerializer(serializers.ModelSerializer):
         return obj.plan.gst if obj.plan else False
 
     def get_gst_amount(self, obj):
-        if obj.plan and obj.plan.gst:
+        if obj.plan and not obj.plan.gst:  # If plan gst is False, calculate 18% GST
             return round(float(obj.amount) * 18 / 100, 2)
         return 0.0
 
@@ -434,12 +434,12 @@ class PlanSerializer(serializers.ModelSerializer):
         read_only_fields = ['gst_amount', 'total_amount']
 
     def get_gst_amount(self, obj):
-        if obj.gst:
+        if not obj.gst:  # If gst is False, calculate 18% GST
             return round(float(obj.price) * 18 / 100, 2)
         return 0.0
 
     def get_total_amount(self, obj):
-        if obj.gst:
+        if not obj.gst:  # If gst is False, add GST to price
             return round(float(obj.price) + float(obj.price) * 18 / 100, 2)
         return float(obj.price)
 
@@ -740,7 +740,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         return obj.plan.gst if obj.plan else False
 
     def get_gst_amount(self, obj):
-        if obj.plan and obj.plan.gst:
+        if obj.plan and not obj.plan.gst:  # If plan gst is False, calculate 18% GST
             return round(float(obj.amount) * 18 / 100, 2)
         return 0.0
 
