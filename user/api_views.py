@@ -1004,7 +1004,7 @@ class InvoiceExcelDownloadView(APIView):
         ws = wb.active
         ws.title = 'Invoices'
 
-        headers = ['Invoice ID', 'Customer', 'Center', 'Plan', 'Amount', 'Date', 'Status']
+        headers = ['Invoice ID', 'Customer', 'Center', 'Plan', 'Amount', 'GST Amount', 'Subtotal', 'Date', 'Status']
         header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
         header_font = Font(bold=True, color='FFFFFF')
 
@@ -1025,13 +1025,23 @@ class InvoiceExcelDownloadView(APIView):
             filename = 'invoices.xlsx'
 
         for row, inv in enumerate(invoices, 2):
+            # Calculate GST amount and subtotal based on plan's gst field
+            amount = float(inv.amount)
+            if inv.plan and not inv.plan.gst:
+                gst_amount = round(amount * 18 / 100, 2)
+            else:
+                gst_amount = 0.0
+            subtotal = round(amount + gst_amount, 2)
+            
             ws.cell(row=row, column=1, value=f'INV-{inv.id:03d}')
             ws.cell(row=row, column=2, value=inv.customer.name if inv.customer else '')
             ws.cell(row=row, column=3, value=inv.center.center_name if inv.center else '')
             ws.cell(row=row, column=4, value=inv.plan.plan_name if inv.plan else '')
-            ws.cell(row=row, column=5, value=float(inv.amount))
-            ws.cell(row=row, column=6, value=str(inv.date))
-            ws.cell(row=row, column=7, value='paid')
+            ws.cell(row=row, column=5, value=amount)
+            ws.cell(row=row, column=6, value=gst_amount)
+            ws.cell(row=row, column=7, value=subtotal)
+            ws.cell(row=row, column=8, value=str(inv.date))
+            ws.cell(row=row, column=9, value='paid')
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
