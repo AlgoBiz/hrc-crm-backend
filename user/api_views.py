@@ -1030,8 +1030,12 @@ class InvoiceExcelDownloadView(APIView):
             if inv.plan and not inv.plan.gst:
                 gst_amount = round(amount * 18 / 100, 2)
             else:
-                gst_amount = 0.0
-            subtotal = round(amount + gst_amount, 2)
+                gst_amount = 'GST Included'
+            
+            if isinstance(gst_amount, str):
+                subtotal = amount
+            else:
+                subtotal = round(amount + gst_amount, 2)
             
             ws.cell(row=row, column=1, value=f'INV-{inv.id:03d}')
             ws.cell(row=row, column=2, value=inv.customer.name if inv.customer else '')
