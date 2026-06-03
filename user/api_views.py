@@ -1031,7 +1031,7 @@ class InvoiceExcelDownloadView(APIView):
             ws.cell(row=row, column=4, value=inv.plan.plan_name if inv.plan else '')
             ws.cell(row=row, column=5, value=float(inv.amount))
             ws.cell(row=row, column=6, value=str(inv.date))
-            ws.cell(row=row, column=7, value=inv.status)
+            ws.cell(row=row, column=7, value='paid')
 
         for col in ws.columns:
             max_len = max(len(str(cell.value or '')) for cell in col)
