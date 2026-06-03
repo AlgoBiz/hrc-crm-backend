@@ -342,19 +342,18 @@ class CustomerSerializer(serializers.ModelSerializer):
             SecondaryCustomer.objects.create(customer=customer, **sc_data)
 
         # Create invoice
-               # Create invoice
         center = customer.center
         if plan and center:
-            gst_amount = round(float(plan.price) * 18 / 100, 2) if plan.gst else 0.0
-            total_amount = round(float(plan.price) + gst_amount, 2)
             Invoice.objects.create(
                 customer=customer,
                 center=center,
                 plan=plan,
-                amount=total_amount,
+                amount=plan.price,
                 date=customer.start_date,
                 status='pending',
             )
+            # Refresh customer to include the newly created invoice in billing_history
+            customer.refresh_from_db()
         
         # Send welcome email
         if customer.email:
@@ -394,13 +393,11 @@ class CustomerSerializer(serializers.ModelSerializer):
             # Create new invoice for the new plan
             center = validated_data.get('center', instance.center)
             if center:
-                gst_amount = round(float(new_plan.price) * 18 / 100, 2) if new_plan.gst else 0.0
-                total_amount = round(float(new_plan.price) + gst_amount, 2)
                 Invoice.objects.create(
                     customer=instance,
                     center=center,
                     plan=new_plan,
-                    amount=total_amount,
+                    amount=new_plan.price,
                     date=start,
                     status='pending',
                 )
@@ -409,6 +406,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+        
+        # Refresh instance to include updated relationships
+        instance.refresh_from_db()
+        
         return instance
 
 
@@ -717,6 +718,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
     gst_amount = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -747,6 +750,12 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         return 'paid'
+
+    def get_date(self, obj):
+        return obj.date.strftime('%d/%m/%Y') if obj.date else None
+
+    def get_created_at(self, obj):
+        return obj.created_at.strftime('%d/%m/%Y %H:%M') if obj.created_at else None
 
     def validate(self, attrs):
         customer = attrs.get('customer')

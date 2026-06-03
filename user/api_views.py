@@ -625,7 +625,7 @@ class SlotBookingViewSet(viewsets.ModelViewSet):
 # =========================================
 
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all().order_by('-id')
+    queryset = Invoice.objects.select_related('customer', 'center', 'plan').all().order_by('-id')
     serializer_class = InvoiceSerializer
     pagination_class = StandardPagination
 
